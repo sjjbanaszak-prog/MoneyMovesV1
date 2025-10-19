@@ -1,0 +1,361 @@
+/* Premium Bonds Analysis Styles */
+
+.premium-bonds-wrapper {
+  background-color: #111827;
+  padding: 24px;
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+  color: #fff;
+  margin-top: 24px;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.premium-bonds-loading,
+.premium-bonds-error {
+  text-align: center;
+  padding: 20px;
+  color: #9ca3af;
+}
+
+.premium-bonds-error {
+  color: #ef4444;
+}
+
+/* Header */
+.premium-bonds-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.premium-bonds-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #fff;
+  margin: 0;
+}
+
+.premium-bonds-date-badge {
+  font-size: 0.875rem;
+  color: #9ca3af;
+  background-color: #1f2937;
+  padding: 4px 12px;
+  border-radius: 6px;
+  border: 1px solid #374151;
+}
+
+/* Current Holdings Overview */
+.premium-bonds-overview {
+  background-color: #1f2937;
+  border: 1px solid #374151;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.premium-bonds-balance {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.premium-bonds-label {
+  font-size: 1rem;
+  color: #d1d5db;
+  font-weight: 500;
+}
+
+.premium-bonds-amount {
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+/* Progress Bar */
+.premium-bonds-progress-container {
+  margin-bottom: 16px;
+}
+
+.premium-bonds-progress-bar {
+  width: 100%;
+  height: 8px;
+  background-color: #374151;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 6px;
+  display: flex;
+}
+
+.premium-bonds-progress-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.premium-bonds-progress-label {
+  font-size: 0.875rem;
+  color: #9ca3af;
+}
+
+/* Messages */
+.premium-bonds-message {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #374151;
+  font-size: 0.875rem;
+  color: #9ca3af;
+  text-align: center;
+  font-style: italic;
+}
+
+.premium-bonds-message.near-limit {
+  color: #fbbf24;
+  font-weight: 600;
+  font-style: normal;
+  background-color: #1e1a0f;
+  border: 1px solid #92400e;
+  border-radius: 6px;
+  padding: 12px;
+  margin-top: 16px;
+}
+
+.premium-bonds-message.at-limit {
+  color: #10b981;
+  font-weight: 600;
+  font-style: normal;
+  background-color: #064e3b;
+  border: 1px solid #059669;
+  border-radius: 6px;
+  padding: 12px;
+  margin-top: 16px;
+}
+
+/* Prize Winnings Card */
+.premium-bonds-prizes-card {
+  background-color: #1f2937;
+  border: 1px solid #374151;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+  border-left: 4px solid #10b981;
+}
+
+.premium-bonds-prizes-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.premium-bonds-prizes-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #f3f4f6;
+  margin: 0;
+}
+
+.premium-bonds-prizes-amount {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #10b981;
+}
+
+.premium-bonds-prizes-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.premium-bonds-prizes-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid #374151;
+  padding-top: 12px;
+}
+
+.premium-bonds-prizes-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #d1d5db;
+}
+
+.premium-bonds-prizes-value {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #10b981;
+}
+
+/* Grid Layout - MATCHED TO ISALISAUtilization */
+.premium-bonds-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+/* Card Styles */
+.premium-bonds-card {
+  background-color: #1f2937;
+  border: 1px solid #374151;
+  border-radius: 12px;
+  padding: 20px;
+  transition: background-color 0.2s ease;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.premium-bonds-card:hover {
+  background-color: #2c3342;
+}
+
+.premium-bonds-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.premium-bonds-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.premium-bonds-card-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #f3f4f6;
+}
+
+.premium-bonds-card-badge {
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  width: fit-content;
+  background-color: #065f46;
+  color: #10b981;
+}
+
+.premium-bonds-card-amount {
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+/* Stats */
+.premium-bonds-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.premium-bonds-stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.875rem;
+}
+
+.premium-bonds-stat-label {
+  color: #9ca3af;
+}
+
+.premium-bonds-stat-value {
+  color: #f3f4f6;
+  font-weight: 500;
+}
+
+.premium-bonds-performance-message {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #374151;
+  font-size: 0.875rem;
+  color: #9ca3af;
+  text-align: center;
+  font-style: italic;
+}
+
+/* Account Details */
+.premium-bonds-account-details {
+  margin-bottom: 16px;
+  border-top: 1px solid #374151;
+  padding-top: 16px;
+}
+
+.premium-bonds-account-name {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #e5e7eb;
+  margin-bottom: 8px;
+}
+
+.premium-bonds-account-balances {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.premium-bonds-balance-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.75rem;
+}
+
+.premium-bonds-balance-label {
+  color: #9ca3af;
+}
+
+.premium-bonds-balance-value {
+  color: #e5e7eb;
+  font-weight: 500;
+}
+
+.premium-bonds-prizes-highlight {
+  color: #10b981;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .premium-bonds-wrapper {
+    padding: 16px;
+  }
+
+  .premium-bonds-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .premium-bonds-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .premium-bonds-balance {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .premium-bonds-card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .premium-bonds-prizes-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .premium-bonds-message.near-limit,
+  .premium-bonds-message.at-limit {
+    font-size: 0.8125rem;
+    padding: 10px;
+  }
+}

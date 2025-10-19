@@ -1,0 +1,99 @@
+/* MortgageSummaryStyles.css */
+
+.mortgage-summary-wrapper {
+  margin-top: 2rem;
+  padding: 24px;
+  background-color: #1f2937; /* dark card bg */
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+  color: #f9fafb;
+}
+
+.mortgage-summary-section {
+  margin-bottom: 0rem;
+}
+
+.mortgage-summary-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #fff;
+  margin: 0;
+  margin-bottom: 16px;
+}
+
+.mortgage-summary-label {
+  display: block;
+  font-size: 0.875rem;
+  color: #ccc;
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+.mortgage-summary-value {
+  color: #f9fafb;
+  font-weight: 400;
+  margin-bottom: 0.75rem;
+}
+
+.mortgage-summary-highlight {
+  color: #10b981;
+  font-weight: 600;
+}
+
+.mortgage-summary-input {
+  margin-top: 0.5rem;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.95rem;
+  border-radius: 0.5rem;
+  border: 1px solid #4b5563;
+  background-color: #111827;
+  color: #f9fafb;
+  width: 100%;
+  max-width: 220px;
+}
+
+.mortgage-summary-input:focus {
+  border-color: #10b981;
+  outline: none;
+  box-shadow: 0 0 0 1px #10b981;
+}
+
+.mortgage-summary-recommendation {
+  font-size: 0.95rem;
+  margin-top: 1rem;
+  font-style: italic;
+  color: #6ee7b7;
+}
+
+/* Card grid layout for summary */
+.summary-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+/* Individual card */
+.summary-card {
+  background-color: #111827;
+  border: 1px solid #374151;
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.card-label {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #d1d5db;
+  margin-bottom: 0.5rem;
+}
+
+.card-value {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #f9fafb;
+}

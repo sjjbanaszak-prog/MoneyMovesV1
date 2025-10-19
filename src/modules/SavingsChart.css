@@ -1,0 +1,82 @@
+/* Chart wrapper uses design system from SharedStyles.css with component-specific class */
+
+.chart-wrapper.dark-mode {
+  /* Card styling - part of design system */
+  background-color: var(--bg-secondary);
+  padding: var(--padding-card);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+  color: var(--text-primary);
+}
+
+.chart-header {
+  /* Inherits: display, justify-content, align-items from SharedStyles.css */
+  align-items: flex-start; /* Override: SavingsChart aligns to flex-start */
+  margin-bottom: 0.5rem; /* Override: Tighter spacing */
+}
+
+.chart-heading {
+  /* Inherits from .chart-title in SharedStyles.css */
+  /* Keeping this class for backwards compatibility with SavingsChart component */
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #fff;
+  margin: 0;
+}
+
+.chart-meta {
+  /* Inherits base styles from SharedStyles.css */
+  text-align: right; /* Custom: Right-aligned metadata */
+  flex-direction: column; /* Override: Stack vertically */
+  gap: 4px; /* Custom: Tighter gap */
+}
+
+.last-updated {
+  font-size: 0.875rem;
+  color: #aaa;
+  margin: 0;
+}
+
+.change-indicator {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.change-indicator.positive {
+  color: #00e676;
+}
+
+.change-indicator.negative {
+  color: #ff5252;
+}
+
+.timeframe-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+
+.timeframe-tab {
+  background-color: #1e1e1e;
+  border: 1px solid #333;
+  color: #aaa;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.timeframe-tab:hover {
+  background-color: #292929;
+  color: #0ff;
+  border-color: #0ff;
+}
+
+.timeframe-tab.active {
+  background-color: #00e5ff;
+  color: #000;
+  font-weight: 600;
+}

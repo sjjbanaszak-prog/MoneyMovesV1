@@ -1,0 +1,255 @@
+.file-uploader-container {
+  margin: 1rem 0;
+  display: flex;
+  justify-content: center;
+}
+
+/* Override any conflicting styles to match FileUploader exactly */
+.file-uploader-container .file-upload-label {
+  background-color: #1f2937;
+  color: #f9fafb;
+  border: 1px solid #4b5563;
+  padding: 12px 20px;
+  border-radius: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  transition: background-color 0.3s, border-color 0.3s, color 0.3s;
+}
+
+.file-uploader-container .file-upload-label:hover {
+  background-color: #111827;
+  border-color: #10b981;
+  color: #10b981;
+}
+
+.file-upload-label {
+  background-color: #1f2937;
+  color: #f9fafb;
+  border: 1px solid #4b5563;
+  padding: 12px 20px;
+  border-radius: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  transition: background-color 0.3s, border-color 0.3s, color 0.3s;
+}
+
+.file-upload-label:hover {
+  background-color: #111827;
+  border-color: #10b981;
+  color: #10b981;
+}
+
+/* Equal width upload button - match the add pension button exactly */
+.file-upload-label.equal-width-upload {
+  width: 100%;
+  justify-content: center;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  /* Match the add-pension-button styling exactly */
+  background-color: #1f2937;
+  color: #f9fafb;
+  border: 1px solid #4b5563;
+  padding: 12px 20px;
+  border-radius: 12px;
+  font-weight: 500;
+  font-size: inherit; /* Use the same font size as parent */
+  font-family: inherit; /* Use the same font family */
+  transition: background-color 0.3s, border-color 0.3s, color 0.3s;
+}
+
+.file-upload-label.equal-width-upload:hover {
+  background-color: #111827;
+  border-color: #10b981;
+  color: #10b981;
+}
+
+.file-input {
+  display: none;
+}
+
+.upload-icon {
+  font-size: 1.2rem;
+}
+
+/* Buttons side by side - equal width */
+.two-button-row {
+  display: flex;
+  flex-direction: row;
+  gap: 1rem;
+  align-items: baseline;
+}
+
+.two-button-row .add-pension-button,
+.two-button-row button.add-pension-button,
+.two-button-row label.add-pension-button {
+  flex: 1;
+  width: 100%;
+  justify-content: center;
+  background-color: #1f2937;
+  color: #f9fafb;
+  border: 1px solid #4b5563;
+  padding: 12px 20px;
+  border-radius: 12px;
+  font-weight: 500;
+  font-size: 1rem;
+  font-family: inherit;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: background-color 0.3s, border-color 0.3s, color 0.3s;
+  box-sizing: border-box;
+  height: 48px;
+  margin: 0;
+  vertical-align: top;
+  text-decoration: none;
+}
+
+.two-button-row .add-pension-button:hover,
+.two-button-row button.add-pension-button:hover,
+.two-button-row label.add-pension-button:hover {
+  background-color: #111827;
+  border-color: #10b981;
+  color: #10b981;
+}
+
+/* Mobile responsive: stack buttons vertically when screen gets too small */
+@media (max-width: 640px) {
+  .two-button-row {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .two-button-row .add-pension-button,
+  .two-button-row button.add-pension-button,
+  .two-button-row label.add-pension-button {
+    width: 100%;
+    flex: none;
+  }
+}
+
+/* Additional breakpoint for tablets in portrait mode */
+@media (max-width: 768px) and (max-width: 640px) {
+  .two-button-row {
+    flex-direction: column;
+  }
+}
+
+/* Modal Overlay Styles */
+/* Upload Modal - uses .modal-overlay from SharedStyles.css */
+.upload-modal {
+  background: #1f2937;
+  border-radius: 16px;
+  padding: 32px;
+  max-width: 600px;
+  width: 100%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  border: 1px solid #374151;
+}
+
+.upload-modal h2 {
+  font-size: 1.5rem;
+  margin-bottom: 24px;
+  color: #fff;
+  margin-top: 0;
+}
+
+.dropzone {
+  border: 2px dashed #4b5563;
+  border-radius: 12px;
+  padding: 48px 24px;
+  text-align: center;
+  transition: all 0.3s;
+  cursor: pointer;
+  background: #111827;
+}
+
+.dropzone:hover,
+.dropzone.dragover {
+  border-color: #10b981;
+  background: #0f1f16;
+}
+
+.dropzone-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.upload-icon-large {
+  font-size: 3rem;
+  color: #6b7280;
+}
+
+.dropzone:hover .upload-icon-large,
+.dropzone.dragover .upload-icon-large {
+  color: #10b981;
+}
+
+.dropzone-text {
+  color: #9ca3af;
+  font-size: 1.1rem;
+}
+
+.dropzone-subtext {
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+/* Mapping Modal Overlay */
+.mapping-modal-overlay {
+  background: #1f2937;
+  border-radius: 16px;
+  padding: 32px;
+  max-width: 95vw;
+  width: 1000px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  border: 1px solid #374151;
+}
+
+.mapping-modal {
+  background-color: #1f2937;
+  border: 1px solid #374151;
+  padding: 1rem;
+  margin-top: 1rem;
+  border-radius: 12px;
+  color: #f3f4f6;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.mapping-modal button {
+  margin-top: 1rem;
+  margin-right: 10px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: none;
+  font-weight: 500;
+  cursor: pointer;
+  background-color: #10b981;
+  color: white;
+  transition: background 0.3s;
+}
+
+.mapping-modal button:hover {
+  background-color: #059669;
+}

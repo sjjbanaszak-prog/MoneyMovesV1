@@ -1,0 +1,17 @@
+.card {
+  max-width: 500px;
+  margin: 40px auto;
+  background: white;
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.input-wrapper {
+  background-color: #111827;
+  padding: 24px;
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+  color: #fff;
+  margin-top: 24px;
+}

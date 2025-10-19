@@ -1,0 +1,91 @@
+.input-wrapper {
+  background-color: #111827;
+  padding: 24px;
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+  color: #fff;
+  margin-top: 24px;
+}
+
+/* Grid layout for input groups */
+.mapper-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  column-gap: 24px; /* Consistent with .input-wrapper padding */
+  row-gap: 1px;
+  margin-bottom: 24px; /* Increased slightly for visual breathing room */
+}
+
+/* Input labels */
+.mapper-label {
+  display: block;
+  font-size: 0.875rem;
+  color: #ccc;
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+/* Input fields (text, number, select) */
+.mapper-input {
+  width: 100%;
+  padding: 10px; /* Slightly increased for consistency with dropdown */
+  border: 1px solid #374151;
+  border-radius: 6px;
+  background-color: #1f2937;
+  color: #e5e7eb;
+  font-size: 0.875rem;
+  box-sizing: border-box;
+}
+
+.mapper-input:focus {
+  outline: none;
+  border-color: #0ff;
+  box-shadow: 0 0 0 2px rgba(0, 255, 255, 0.2);
+}
+
+/* Tabs (e.g., Pension Type selector) */
+.tab-group {
+  display: flex;
+  justify-content: space-between;
+  background-color: #1f2937;
+  border-radius: 9999px;
+  padding: 4px;
+  margin: 12px 0; /* Increased vertical margin for better separation */
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.tab-group button {
+  flex: 1;
+  text-align: center;
+  background: transparent;
+  color: #ccc;
+  padding: 8px 0;
+  font-size: 14px;
+  font-weight: 500;
+  border: none;
+  border-radius: 9999px;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  cursor: pointer;
+}
+
+.tab-group button:hover {
+  background-color: #1e293b;
+  color: #e5e7eb;
+}
+
+.tab-group button.active {
+  background-color: #374151;
+  color: #ffffff;
+}
+
+/* Checkbox + label */
+.checkbox-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 1.5rem 0 1rem; /* Slight increase in top spacing */
+  font-size: 1rem;
+  color: #f3f4f6;
+}

@@ -1,0 +1,567 @@
+@import '../styles/variables.css';
+
+
+.pension-accounts-wrapper.dark-mode {
+  background-color: var(--bg-primary);
+  padding: var(--padding-card);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+  color: var(--text-primary);
+  overflow-x: auto;
+}
+
+.pension-accounts-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #fff;
+  margin: 0;
+  margin-bottom: 16px;
+}
+
+.table-scroll-container {
+  overflow-x: auto;
+  width: 100%;
+}
+
+.pension-accounts-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+  color: #e5e7eb;
+  table-layout: auto;
+}
+
+.pension-accounts-table thead th {
+  text-align: left;
+  padding: 12px 8px;
+  background-color: #1f2937;
+  color: #9ca3af;
+  font-weight: 500;
+  border-bottom: 1px solid #374151;
+  white-space: nowrap;
+}
+
+.pension-accounts-table th.text-right,
+.pension-accounts-table td.text-right {
+  text-align: right;
+}
+
+.expand-col {
+  width: 40px;
+  min-width: 40px;
+  max-width: 40px;
+}
+
+.icon-col {
+  width: 100px;
+  min-width: 100px;
+  max-width: 100px;
+}
+
+.pension-accounts-table tbody td:nth-child(2) {
+  white-space: normal;
+  word-wrap: break-word;
+  overflow: visible;
+}
+
+.pension-accounts-table tbody td {
+  padding: 12px 8px;
+  border-top: 1px solid #2c3342;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pension-account-row {
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.pension-account-row:hover {
+  background-color: #1e293b;
+}
+
+.pension-account-row.deselected {
+  background-color: #374151;
+  color: #9ca3af;
+}
+
+.expand-button {
+  background: transparent;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  transition: color 0.2s ease;
+}
+
+.expand-button:hover {
+  color: #f3f4f6;
+}
+
+.remove-button-cell {
+  text-align: center;
+  padding: 12px 4px;
+}
+
+.add-button {
+  font-size: 1rem;
+  color: #9ca3af;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  margin-right: 6px;
+  transition: color 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  padding: 2px;
+  line-height: 1;
+  vertical-align: middle;
+}
+
+.add-button:hover {
+  color: #3b82f6;
+}
+
+.edit-button,
+.save-button {
+  font-size: 1.1rem;
+  color: #9ca3af;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  margin-right: 6px;
+  line-height: 1;
+  transition: color 0.2s ease;
+  vertical-align: middle;
+}
+
+.edit-button:hover {
+  color: #eab308;
+}
+
+.save-button:hover {
+  color: #10b981;
+}
+
+.remove-button {
+  font-size: 1.2rem;
+  color: #888;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: color 0.2s ease;
+  line-height: 1;
+  vertical-align: middle;
+}
+
+.remove-button:hover {
+  color: #ef4444;
+}
+
+.edit-input {
+  width: 100px;
+  padding: 4px 6px;
+  font-size: 0.875rem;
+  border-radius: 4px;
+  border: 1px solid #374151;
+  background-color: #1f2937;
+  color: #f3f4f6;
+}
+
+.gain-text {
+  color: #10b981;
+}
+
+.loss-text {
+  color: #f87171;
+}
+
+/* Expanded row styles */
+.expanded-cell {
+  padding: 0;
+  background-color: #1f2937;
+  border-top: none;
+}
+
+.expanded-content {
+  margin-top: 5px;
+  margin-left: 10px;
+  margin-right: 10px;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+.history-title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 16px 0;
+  color: #f3f4f6;
+}
+
+.history-table-wrapper {
+  max-height: 280px;
+  overflow-y: auto;
+  margin-bottom: 20px;
+  border: 1px solid #374151;
+  border-radius: 6px;
+  overflow-x: hidden;
+}
+
+.history-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  table-layout: auto;
+}
+
+.history-table thead th {
+  text-align: left;
+  padding: 10px 12px;
+  background-color: #111827;
+  color: #9ca3af;
+  font-weight: 500;
+  border-bottom: 1px solid #374151;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  white-space: nowrap;
+}
+
+.history-table tbody td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #2c3342;
+  color: #e5e7eb;
+  white-space: nowrap;
+}
+
+.history-row {
+  transition: background-color 0.2s ease;
+}
+
+.history-row:hover {
+  background-color: #374151;
+}
+
+.history-desc-col {
+  width: auto;
+  min-width: 150px;
+}
+
+.history-date-col {
+  width: auto;
+  min-width: 105px;
+}
+
+.history-value-col {
+  width: auto;
+  min-width: 115px;
+}
+
+.history-actions-col {
+  width: 70px;
+  min-width: 70px;
+  text-align: center;
+}
+
+.icon-group {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+}
+
+.history-edit-button,
+.history-save-button {
+  font-size: 1rem;
+  color: #9ca3af;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: color 0.2s ease;
+  line-height: 1;
+  padding: 0;
+}
+
+.history-edit-button:hover {
+  color: #eab308;
+}
+
+.history-save-button:hover {
+  color: #10b981;
+}
+
+.history-remove-button {
+  font-size: 1.1rem;
+  color: #888;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: color 0.2s ease;
+  line-height: 1;
+  padding: 0;
+}
+
+.history-remove-button:hover {
+  color: #ef4444;
+}
+
+.description-text {
+  display: inline-block;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.history-input {
+  padding: 6px;
+  font-size: 1rem;
+  border-radius: 4px;
+  border: 1px solid #374151;
+  background-color: #1f2937;
+  color: #f3f4f6;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.history-desc-input {
+  width: 100%;
+  max-width: 200px;
+}
+
+.history-date-input {
+  width: 85px;
+  font-size: 0.75rem;
+  padding: 6px 4px;
+}
+
+.history-amount-input {
+  width: 90px;
+  font-size: 0.875rem;
+  padding: 6px;
+}
+
+/* Add deposit form styles */
+.add-deposit-form {
+  background-color: #111827;
+  padding: 16px;
+  border-radius: 8px;
+  border: 1px solid #374151;
+  margin-top: 16px;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.form-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin: 0 0 12px 0;
+  color: #f3f4f6;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.form-grid-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.form-label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: #9ca3af;
+  font-size: 0.85rem;
+}
+
+.form-input {
+  padding: 8px;
+  font-size: 1rem;
+  border-radius: 4px;
+  border: 1px solid #374151;
+  background-color: #1f2937;
+  color: #f3f4f6;
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 44px;
+}
+
+.form-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.save-deposit-button {
+  padding: 8px 16px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  background-color: #10b981;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.save-deposit-button:hover {
+  background-color: #059669;
+}
+
+.cancel-deposit-button {
+  padding: 8px 16px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  background-color: #374151;
+  color: #f3f4f6;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.cancel-deposit-button:hover {
+  background-color: #4b5563;
+}
+
+/* Modal styles */
+/* Modal styles - .modal-overlay comes from SharedStyles.css */
+.modal-content {
+  background-color: #1f2937;
+  padding: 24px;
+  border-radius: 12px;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+.modal-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #f3f4f6;
+  margin: 0 0 12px 0;
+}
+
+.modal-text {
+  font-size: 0.95rem;
+  color: #d1d5db;
+  margin: 0 0 20px 0;
+  line-height: 1.5;
+}
+
+.modal-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.modal-confirm-button {
+  padding: 10px 20px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  background-color: #ef4444;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.modal-confirm-button:hover {
+  background-color: #dc2626;
+}
+
+.modal-cancel-button {
+  padding: 10px 20px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  background-color: #374151;
+  color: #f3f4f6;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.modal-cancel-button:hover {
+  background-color: #4b5563;
+}
+
+/* Progressive column visibility based on screen width */
+.col-irr,
+.col-deposits,
+.col-first-payment,
+.col-last-payment {
+  display: none;
+}
+
+@media (min-width: 500px) {
+  .col-irr {
+    display: table-cell;
+  }
+}
+
+@media (min-width: 600px) {
+  .col-deposits {
+    display: table-cell;
+  }
+}
+
+@media (min-width: 750px) {
+  .col-first-payment {
+    display: table-cell;
+  }
+}
+
+@media (min-width: 850px) {
+  .col-last-payment {
+    display: table-cell;
+  }
+}
+
+/* Hide description column on smaller screens */
+@media (max-width: 650px) {
+  .history-desc-col {
+    display: none;
+  }
+}
+
+/* Responsive form layout */
+@media (min-width: 768px) {
+  .form-grid {
+    grid-template-columns: 2fr 1fr 1fr;
+  }
+
+  .form-grid-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Mobile adjustments */
+@media (max-width: 480px) {
+  .pension-accounts-wrapper.dark-mode {
+    padding: 16px;
+  }
+
+  .pension-accounts-table thead th,
+  .pension-accounts-table tbody td {
+    padding: 8px 4px;
+  }
+
+  .expanded-content {
+    padding: 12px;
+  }
+
+  .add-deposit-form {
+    padding: 12px;
+  }
+}

@@ -1,0 +1,306 @@
+/* Pension Peer Comparison Styles */
+
+.peer-comparison-wrapper {
+  background-color: #111827;
+  padding: 24px;
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+  color: #fff;
+  font-family: "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Roboto, sans-serif;
+}
+
+/* Header */
+.peer-comparison-header {
+  margin-bottom: 1rem;
+}
+
+.peer-comparison-title {
+  font-size: 1.25rem;
+  color: #f3f4f6;
+  margin: 0 0 0.25rem 0;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.title-icon {
+  width: 20px;
+  height: 20px;
+  color: #3b82f6;
+}
+
+.peer-comparison-subtitle {
+  font-size: 0.875rem;
+  color: #9ca3af;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+/* Info Icon with Tooltip */
+.peer-info-icon-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  cursor: help;
+  margin-left: 0.25rem;
+}
+
+.peer-info-icon-inline {
+  width: 14px;
+  height: 14px;
+  color: #9ca3af;
+}
+
+.peer-tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #1e293b;
+  color: #e2e8f0;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  width: 280px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+  pointer-events: none;
+  border: 1px solid #334155;
+}
+
+.peer-tooltip strong {
+  color: #f1f5f9;
+}
+
+/* Responsive tooltip positioning */
+@media (max-width: 640px) {
+  .peer-tooltip {
+    width: 240px;
+    left: auto;
+    right: 0;
+    transform: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .peer-tooltip {
+    width: 200px;
+    font-size: 0.7rem;
+  }
+}
+
+/* Dynamic positioning classes for JavaScript control */
+.peer-tooltip.tooltip-left {
+  left: auto;
+  right: 0;
+  transform: none;
+}
+
+.peer-tooltip.tooltip-right {
+  left: 0;
+  right: auto;
+  transform: none;
+}
+
+.peer-tooltip.tooltip-center {
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+}
+
+/* Motivational Message */
+.peer-motivational-message {
+  background-color: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  padding: 14px 16px;
+  border-radius: 8px;
+  margin-bottom: 1.25rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.peer-zap-icon {
+  width: 20px;
+  height: 20px;
+  color: #fbbf24;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.peer-motivational-message p {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #fef3c7;
+  line-height: 1.5;
+  flex: 1;
+}
+
+/* Chart Section */
+.peer-chart-section {
+  background-color: #1f2937;
+  padding: 20px;
+  border-radius: 12px;
+  margin-bottom: 1rem;
+}
+
+.peer-chart-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #f3f4f6;
+  margin: 0 0 1rem 0;
+}
+
+.peer-chart-container {
+  position: relative;
+  width: 100%;
+  padding-bottom: 0%;
+  min-height: 280px;
+  margin-bottom: 1.5rem;
+}
+
+.peer-bell-curve {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* Percentile Grid */
+.peer-percentile-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.5rem;
+  font-size: 0.75rem;
+}
+
+.peer-percentile-box {
+  padding: 0.75rem;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.peer-percentile-box.peer-bottom {
+  background-color: rgba(239, 68, 68, 0.2);
+}
+
+.peer-percentile-box.peer-bottom .peer-percentile-label {
+  color: #fca5a5;
+}
+
+.peer-percentile-box.peer-below-median {
+  background-color: rgba(245, 158, 11, 0.2);
+}
+
+.peer-percentile-box.peer-below-median .peer-percentile-label {
+  color: #fcd34d;
+}
+
+.peer-percentile-box.peer-above-median {
+  background-color: rgba(16, 185, 129, 0.2);
+}
+
+.peer-percentile-box.peer-above-median .peer-percentile-label {
+  color: #6ee7b7;
+}
+
+.peer-percentile-box.peer-high {
+  background-color: rgba(59, 130, 246, 0.2);
+}
+
+.peer-percentile-box.peer-high .peer-percentile-label {
+  color: #93c5fd;
+}
+
+.peer-percentile-box.peer-top {
+  background-color: rgba(139, 92, 246, 0.2);
+}
+
+.peer-percentile-box.peer-top .peer-percentile-label {
+  color: #c4b5fd;
+}
+
+.peer-percentile-label {
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.peer-percentile-value {
+  color: #d1d5db;
+}
+
+/* Progress Section */
+.peer-progress-section {
+  background-color: #1f2937;
+  padding: 16px;
+  border-radius: 12px;
+}
+
+.peer-progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.peer-progress-label {
+  font-size: 0.75rem;
+  color: #d1d5db;
+  font-weight: 500;
+}
+
+.peer-progress-bar-container {
+  width: 100%;
+  background-color: #374151;
+  border-radius: 9999px;
+  height: 12px;
+  overflow: hidden;
+}
+
+.peer-progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(to right, #3b82f6, #10b981);
+  transition: width 0.5s ease;
+}
+
+/* Responsive Design */
+@media (max-width: 640px) {
+  .peer-percentile-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .peer-percentile-box.peer-top {
+    grid-column: span 2;
+  }
+
+  .peer-comparison-wrapper {
+    padding: 16px;
+  }
+
+  .peer-chart-section {
+    padding: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .peer-comparison-title {
+    font-size: 1.125rem;
+  }
+
+  .peer-percentile-box {
+    padding: 0.5rem;
+  }
+
+  .peer-percentile-label {
+    font-size: 0.65rem;
+  }
+
+  .peer-percentile-value {
+    font-size: 0.7rem;
+  }
+}

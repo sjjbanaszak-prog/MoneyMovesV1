@@ -1,0 +1,142 @@
+/* UploadSummaryCard Styles */
+
+.upload-summary-card {
+  background: linear-gradient(
+    135deg,
+    rgba(99, 102, 241, 0.1) 0%,
+    rgba(139, 92, 246, 0.05) 100%
+  );
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: var(--radius-xl, 12px);
+  padding: 20px;
+  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* File Info Section */
+.file-info-section {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.file-icon {
+  font-size: 2.5rem;
+  line-height: 1;
+}
+
+.file-details {
+  flex: 1;
+}
+
+.file-name {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary, #f3f4f6);
+  margin-bottom: 4px;
+  word-break: break-word;
+}
+
+.file-meta {
+  font-size: 0.875rem;
+  color: var(--text-secondary, #9ca3af);
+}
+
+/* Detection Results */
+.detection-results {
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 16px 0;
+}
+
+.detection-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+.detection-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.detection-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-tertiary, #6b7280);
+}
+
+.detection-value {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.detection-value-main {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--text-primary, #e5e7eb);
+}
+
+.detection-confidence {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background-color: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+}
+
+/* Confidence Section */
+.confidence-section {
+  padding-top: 4px;
+}
+
+.confidence-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.confidence-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-secondary, #9ca3af);
+}
+
+.confidence-score {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--text-primary, #f3f4f6);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .upload-summary-card {
+    padding: 16px;
+    gap: 16px;
+  }
+
+  .detection-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .file-icon {
+    font-size: 2rem;
+  }
+
+  .file-name {
+    font-size: 0.9375rem;
+  }
+
+  .file-meta {
+    font-size: 0.8125rem;
+  }
+}

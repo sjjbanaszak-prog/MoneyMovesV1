@@ -1,0 +1,125 @@
+.tax-table-wrapper.dark-mode {
+  background-color: #111827;
+  padding: 24px;
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+  color: #fff;
+  margin-top: 24px;
+  overflow-x: hidden; /* ✅ Prevent horizontal scrollbar */
+}
+
+.tax-table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.tax-table-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #fff;
+  margin: 0;
+}
+
+.view-selector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.875rem;
+  color: #ccc;
+}
+
+.view-selector select {
+  background-color: #1f2937;
+  border: 1px solid #374151;
+  border-radius: 6px;
+  color: #fff;
+  padding: 6px 10px;
+  font-size: 0.875rem;
+}
+
+.tax-breakdown-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+  color: #e5e7eb;
+  table-layout: fixed;
+}
+
+.tax-breakdown-table th,
+.tax-breakdown-table td {
+  padding: 12px 8px;
+  border-top: 1px solid #2c3342;
+}
+
+.tax-breakdown-table thead th {
+  text-align: left;
+  background-color: #1f2937;
+  color: #9ca3af;
+  font-weight: 500;
+  border-bottom: 1px solid #374151;
+}
+
+.tax-breakdown-table th.text-right,
+.tax-breakdown-table td.text-right {
+  text-align: right;
+}
+.tax-band-row td {
+  /* Remove grey text color & smaller font to match main table */
+  /* color: #555; */
+  /* font-size: 0.9em; */
+  /* Remove background color */
+  /* background-color: #f9f9f9; */
+  padding-top: 12px;
+  padding-bottom: 12px;
+  border-top: 1px solid #2c3342;
+  color: #e5e7eb; /* same as normal table cells */
+  font-weight: normal;
+}
+
+.tax-band-row td:first-child {
+  padding-left: 20px; /* keep indentation */
+}
+.period-tabs-container {
+  display: flex;
+  justify-content: space-between;
+  background-color: #1f2937; /* matches table header background */
+  border-radius: 9999px;
+  padding: 4px;
+  margin-top: 16px;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.period-tab {
+  flex: 1;
+  text-align: center;
+  background: transparent;
+  color: #ccc;
+  padding: 8px 0;
+  font-size: 14px;
+  font-weight: 500;
+  border: none;
+  border-radius: 9999px;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  cursor: pointer;
+}
+
+.period-tab:hover {
+  background-color: #1e293b;
+  color: #e5e7eb;
+}
+
+.period-tab.active {
+  background-color: #374151;
+  color: #ffffff;
+}
+
+/* Hide certain columns on narrow portrait screens */
+@media (max-width: 640px) and (orientation: portrait) {
+  .responsive-col {
+    display: none;
+  }
+}

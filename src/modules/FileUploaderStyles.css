@@ -1,0 +1,173 @@
+.file-uploader-container {
+  margin: 1rem 0;
+  display: flex;
+  justify-content: center;
+}
+
+/* Override any conflicting styles to match FileUploader exactly */
+.file-uploader-container .file-upload-label {
+  background-color: #1f2937;
+  color: #f9fafb;
+  border: 1px solid #4b5563;
+  padding: 12px 20px;
+  border-radius: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  transition: background-color 0.3s, border-color 0.3s, color 0.3s;
+}
+
+.file-uploader-container .file-upload-label:hover {
+  background-color: #111827;
+  border-color: #10b981;
+  color: #10b981;
+}
+
+.file-upload-label {
+  background-color: #1f2937;
+  color: #f9fafb;
+  border: 1px solid #4b5563;
+  padding: 12px 20px;
+  border-radius: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  transition: background-color 0.3s, border-color 0.3s, color 0.3s;
+}
+
+.file-upload-label:hover {
+  background-color: #111827;
+  border-color: #10b981;
+  color: #10b981;
+}
+
+.file-input {
+  display: none;
+}
+
+.upload-icon {
+  font-size: 1.2rem;
+}
+
+/* Modal Overlay Styles */
+/* Upload Modal - uses .modal-overlay from SharedStyles.css */
+.upload-modal {
+  background: #1f2937;
+  border-radius: 16px;
+  padding: 32px;
+  max-width: 600px;
+  width: 100%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  border: 1px solid #374151;
+}
+
+.upload-modal h2 {
+  font-size: 1.5rem;
+  margin-bottom: 24px;
+  color: #fff;
+  margin-top: 0;
+}
+
+.dropzone {
+  border: 2px dashed #4b5563;
+  border-radius: 12px;
+  padding: 48px 24px;
+  text-align: center;
+  transition: all 0.3s;
+  cursor: pointer;
+  background: #111827;
+}
+
+.dropzone:hover,
+.dropzone.dragover {
+  border-color: #10b981;
+  background: #0f1f16;
+}
+
+.dropzone-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.upload-icon-large {
+  font-size: 3rem;
+  color: #6b7280;
+}
+
+.dropzone:hover .upload-icon-large,
+.dropzone.dragover .upload-icon-large {
+  color: #10b981;
+}
+
+.dropzone-text {
+  color: #9ca3af;
+  font-size: 1.1rem;
+}
+
+.dropzone-subtext {
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.cancel-button {
+  font-size: 0.875rem;
+  color: #9ca3af;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 8px 16px;
+}
+
+.cancel-button:hover {
+  color: #f87171;
+}
+
+.confirm-button {
+  font-size: 0.875rem;
+  color: #fff;
+  background-color: #10b981;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background-color 0.2s ease;
+}
+
+.confirm-button:hover {
+  background-color: #059669;
+}
+
+/* Mobile responsive */
+@media (max-width: 640px) {
+  .upload-modal {
+    max-width: 95vw;
+    padding: 24px;
+  }
+
+  .dropzone {
+    padding: 32px 16px;
+  }
+
+  .upload-modal h2 {
+    font-size: 1.25rem;
+  }
+
+  .dropzone-text {
+    font-size: 1rem;
+  }
+}

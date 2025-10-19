@@ -1,0 +1,21 @@
+/* Trading212Dashboard.css */
+
+.card {
+  background-color: white;
+  border-radius: 1rem; /* Rounded-2xl */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  padding: 1.5rem; /* Tailwind p-6 */
+}
+
+.card-title {
+  font-size: 1.25rem; /* Tailwind text-xl */
+  font-weight: 600;
+  color: #1f2937; /* Tailwind gray-800 */
+  margin-bottom: 1rem;
+}
+
+/* Ensure charts resize properly in their containers */
+.recharts-wrapper {
+  width: 100% !important;
+  height: 100% !important;
+}

@@ -1,0 +1,60 @@
+/* Chart wrapper uses design system from SharedStyles.css */
+
+.mortgage-chart-wrapper {
+  /* Card styling - part of design system */
+  background-color: var(--bg-secondary);
+  padding: var(--padding-card);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+  color: var(--text-primary);
+  /* Component-specific override */
+  margin-top: 12px; /* Custom: Top margin for spacing */
+}
+
+.mortgage-chart-header {
+  /* Inherits: display, justify-content from .chart-header in SharedStyles.css */
+  align-items: flex-start; /* Override: Align to flex-start instead of center */
+  margin-bottom: 1rem; /* Inherits from SharedStyles.css */
+}
+
+.chart-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: right;
+}
+
+.mortgage-legend {
+  font-size: 0.875rem;
+  color: #ccc;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.dot.with-overpay {
+  background-color: #10b981;
+}
+
+.dot.no-overpay {
+  background-color: #6366f1;
+}
+
+.mortgage-legend div {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mortgage-chart-title {
+  font-size: 1.25rem;
+  color: #f3f4f6;
+  margin: 0;
+}

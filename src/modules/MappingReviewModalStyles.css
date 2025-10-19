@@ -1,0 +1,343 @@
+/* MappingReviewModal - Compact Dark Theme */
+
+/* Modal Overlay */
+.mapper-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1001;
+  padding: 16px;
+  overflow-y: auto;
+}
+
+/* Modal Container - More Compact */
+.mapper-modal-container {
+  background-color: #1f2937;
+  border-radius: 12px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+  max-width: 900px;
+  width: 100%;
+  margin: 20px 0;
+}
+
+/* Modal Content - Reduced Padding */
+.mapper-modal-content {
+  padding: 20px;
+}
+
+/* Compact Header */
+.mapper-header-compact {
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.mapper-title-compact {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #f3f4f6;
+  margin: 0 0 6px 0;
+}
+
+.mapper-file-info-compact {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+/* Provider Section - Compact */
+.provider-section-compact {
+  margin-bottom: 14px;
+}
+
+/* Form Elements - Compact */
+.form-label-compact {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #e5e7eb;
+  margin-bottom: 6px;
+}
+
+.required-star {
+  color: #ef4444;
+}
+
+.form-input-compact,
+.form-select-compact {
+  width: 100%;
+  padding: 8px 10px;
+  background-color: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  color: #f3f4f6;
+  font-size: 0.8125rem;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.form-input-compact:focus,
+.form-select-compact:focus {
+  border-color: #6366f1;
+  background-color: rgba(0, 0, 0, 0.4);
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
+}
+
+.form-input-compact::placeholder {
+  color: #6b7280;
+}
+
+.form-select-compact option {
+  background-color: #1f2937;
+  color: #f3f4f6;
+}
+
+/* Confidence Badges - Compact */
+.confidence-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.confidence-badge-high {
+  background-color: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+}
+
+.confidence-badge-medium {
+  background-color: rgba(99, 102, 241, 0.15);
+  color: #6366f1;
+}
+
+.confidence-badge-low {
+  background-color: rgba(107, 114, 128, 0.15);
+  color: #9ca3af;
+}
+
+.confidence-badge-learned {
+  background-color: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+}
+
+/* Mapping Section - Single Column Compact */
+.mapping-section-compact {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.mapping-field-compact {
+  /* No additional margin */
+}
+
+/* Compact Data Preview */
+.preview-section-compact {
+  margin-bottom: 14px;
+}
+
+.preview-title-compact {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #f3f4f6;
+  margin: 0 0 8px 0;
+}
+
+.preview-table-wrapper {
+  overflow-x: auto;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+}
+
+.preview-table-compact {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.6875rem;
+}
+
+.preview-table-compact thead {
+  background-color: rgba(0, 0, 0, 0.3);
+}
+
+.preview-table-compact th {
+  padding: 8px 10px;
+  text-align: left;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #9ca3af;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.preview-table-compact th.mapped-header {
+  background-color: rgba(99, 102, 241, 0.2);
+  color: #a5b4fc;
+}
+
+.preview-table-compact .header-tag {
+  font-size: 0.625rem;
+  text-transform: none;
+  font-weight: 400;
+  letter-spacing: normal;
+  margin-top: 2px;
+  color: #6b7280;
+}
+
+.preview-table-compact tbody {
+  background-color: rgba(0, 0, 0, 0.2);
+}
+
+.preview-table-compact td {
+  padding: 8px 10px;
+  white-space: nowrap;
+  color: #e5e7eb;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.preview-table-compact td.mapped-cell {
+  background-color: rgba(99, 102, 241, 0.08);
+}
+
+.preview-table-compact tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Modal Footer - Match AccountSettings */
+.modal-footer {
+  padding: 1.5rem;
+  border-top: 1px solid #334155;
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+}
+
+/* Modal Buttons - Match AccountSettings Exactly */
+.modal-btn {
+  padding: 0.75rem 1.5rem;
+  border-radius: 12px;
+  border: none;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.modal-btn-secondary {
+  background-color: #374151;
+  color: #f3f4f6;
+}
+
+.modal-btn-secondary:hover:not(:disabled) {
+  background-color: #4b5563;
+}
+
+.modal-btn-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.modal-btn-primary {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+}
+
+.modal-btn-primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.modal-btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-spinner {
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Responsive - More Compact on Mobile */
+@media (max-width: 768px) {
+  .mapper-modal-container {
+    max-width: 100%;
+    border-radius: 0;
+    margin: 0;
+  }
+
+  .mapper-modal-content {
+    padding: 16px;
+  }
+
+  .mapper-title-compact {
+    font-size: 1.25rem;
+  }
+
+  .mapping-section-compact {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .mapper-actions-compact {
+    flex-direction: column-reverse;
+    gap: 8px;
+  }
+
+  .mapper-actions-compact .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .preview-table-compact {
+    font-size: 0.625rem;
+  }
+
+  .preview-table-compact th,
+  .preview-table-compact td {
+    padding: 6px 8px;
+  }
+}
+
+/* Scroll Improvements */
+.mapper-modal-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.mapper-modal-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.mapper-modal-container::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+.mapper-modal-container::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+}

@@ -1,0 +1,569 @@
+/* Consolidated Navbar.css - Mobile and Desktop Navigation */
+@import '../styles/variables.css';
+
+/* Local CSS Variables for Navbar-specific theming */
+:root {
+  --sidebar-width: 18rem;
+}
+
+body.collapsed {
+  --sidebar-width: 5rem;
+}
+
+/* Global styles */
+html,
+
+* {
+  box-sizing: border-box;
+}
+
+/* MOBILE NAVIGATION STYLES */
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background-color: var(--bg-secondary);
+  box-shadow: var(--shadow-md);
+  color: var(--text-primary);
+}
+
+.navbar-left {
+  display: flex;
+  align-items: center;
+}
+
+.navbar-logo {
+  height: 20px;
+  width: auto;
+  margin-left: auto;
+  margin-right: 0;
+}
+
+.hamburger {
+  font-size: 24px;
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  cursor: pointer;
+  display: block;
+}
+
+.navbar-links {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background-color: var(--bg-primary);
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--border-primary);
+  gap: 12px;
+  max-height: 0;
+  overflow: visible;
+  opacity: 0;
+  transition: max-height 0.3s ease, opacity 0.3s ease, padding 0.3s ease;
+  z-index: 999;
+}
+
+.navbar-links.active {
+  padding: 16px;
+  max-height: 500px;
+  opacity: 1;
+}
+
+.nav-link,
+.auth-button {
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 0.95rem;
+  width: 100%;
+  padding: 8px 0;
+  display: flex;
+  align-items: center;
+}
+
+.nav-link:hover {
+  color: var(--color-info-light);
+}
+
+.auth-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.login-button:hover {
+  color: var(--color-primary-light);
+}
+
+.logout-button:hover {
+  color: var(--color-danger-light);
+}
+
+.hamburger .icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.4s ease, color 0.3s ease;
+  font-size: 1.25rem;
+}
+
+.hamburger:hover .icon-wrapper {
+  color: var(--color-info-light);
+  transform: scale(1.1);
+}
+
+.hamburger.down .icon-wrapper {
+  transform: rotate(180deg);
+}
+
+.hamburger.up .icon-wrapper {
+  transform: rotate(180deg);
+}
+
+/* Separator line */
+.menu-separator {
+  width: 100%;
+  height: 1px;
+  background-color: var(--border-primary);
+  margin: 8px 0;
+}
+
+/* User profile section */
+.user-profile {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  width: 100%;
+}
+
+.user-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+}
+
+.user-info {
+  flex-grow: 1;
+}
+
+.user-name {
+  font-size: 0.95rem;
+  font-weight: bold;
+  color: var(--text-primary);
+}
+
+.user-email {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.logout-icon {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 0.5rem;
+  border-radius: 8px;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.logout-icon:hover {
+  background-color: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+
+.user-menu-wrapper-mobile {
+  position: relative;
+}
+
+.user-menu-wrapper-mobile .user-dropdown-menu {
+  z-index: 10000;
+}
+
+/* DESKTOP SIDEBAR STYLES */
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  padding: 1.5rem 1rem;
+  border-radius: 0.5rem;
+  width: var(--sidebar-width);
+  min-width: 4rem;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-secondary);
+  transition: width 0.2s ease-in-out !important;
+  overflow-y: auto;
+  overflow-x: hidden;
+  z-index: 100;
+}
+
+/* Hide scrollbar but keep functionality */
+.sidebar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+  background: var(--bg-tertiary);
+  border-radius: 4px;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* Hide only the label text, not the icons, when collapsed */
+body.collapsed .sidebar .hide {
+  display: none;
+}
+
+.sidebar .hide {
+  opacity: 1;
+  transition: opacity 0.2s ease-in-out;
+}
+
+.separator {
+  height: 1px;
+  background: var(--border-primary);
+  margin: 1rem 0;
+}
+
+.separator--top {
+  margin-top: auto;
+}
+
+.sidebar-top-wrapper {
+  display: flex;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.logo__wrapper {
+  display: flex;
+  align-items: center;
+  font-weight: 700;
+  text-decoration: none;
+  font-size: 1.35rem;
+  gap: 0.75rem;
+  color: var(--text-primary);
+}
+
+/* Center logo when collapsed */
+body.collapsed .logo__wrapper {
+  justify-content: center;
+}
+
+.company-name {
+  white-space: nowrap;
+}
+
+.sidebar-links {
+  margin-top: 1rem;
+  flex-shrink: 0;
+}
+
+.sidebar-links ul {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  row-gap: 0.5rem;
+  padding: 0;
+  margin: 0;
+}
+
+.sidebar-links li a {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border-radius: 0.75rem;
+  color: var(--text-muted);
+  text-decoration: none;
+  background: var(--bg-secondary);
+  border: none;
+  box-shadow: none;
+  transition: background 0.2s ease, color 0.2s ease;
+  text-align: left;
+  justify-content: flex-start;
+}
+
+/* When collapsed, center the icons */
+body.collapsed .sidebar-links li a {
+  justify-content: center;
+  padding: 0.75rem;
+}
+
+.sidebar-links li a svg,
+.sidebar-links li a .icon {
+  flex-shrink: 0;
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.sidebar-links li a .icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Ensure icons remain visible when collapsed */
+body.collapsed .sidebar-links li a .icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sidebar-links li a:hover {
+  background: var(--bg-hover);
+  color: var(--text-secondary);
+}
+
+.sidebar-links .active {
+  background: var(--bg-hover);
+  color: var(--text-secondary);
+}
+
+/* CSS-only tooltips using data attributes - only show when collapsed */
+body.collapsed .sidebar-links li a[data-tooltip]:hover::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: calc(100% + 0.75rem);
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--color-primary);
+  color: var(--text-primary);
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  white-space: nowrap;
+  z-index: 1000;
+  pointer-events: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Optional: Add a small arrow to the tooltip */
+body.collapsed .sidebar-links li a[data-tooltip]:hover::before {
+  content: "";
+  position: absolute;
+  left: calc(100% + 0.25rem);
+  top: 50%;
+  transform: translateY(-50%);
+  border: 6px solid transparent;
+  border-right-color: var(--color-primary);
+  z-index: 1001;
+  pointer-events: none;
+}
+
+.sidebar__profile {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0;
+  position: relative;
+}
+
+/* Center profile section when collapsed */
+body.collapsed .sidebar__profile {
+  justify-content: center;
+}
+
+.avatar {
+  width: 3rem;
+  height: 3rem;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.expand-btn {
+  position: absolute;
+  right: -1.125rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  border: none;
+  background: var(--bg-tertiary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.expand-btn svg {
+  stroke: var(--text-secondary);
+  transition: transform 0.2s ease-in-out;
+}
+
+body.collapsed .expand-btn svg {
+  transform: rotate(-180deg);
+}
+
+.logo-small {
+  width: 32px;
+  height: auto;
+  object-fit: contain;
+}
+
+.avatar__name {
+  display: flex;
+  flex-direction: column;
+}
+
+.avatar__name .user-name {
+  color: var(--text-primary);
+  font-weight: bold;
+  font-size: 0.95rem;
+}
+
+.avatar__name .email {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.logout {
+  background: none;
+  border: none;
+  color: var(--color-danger-light);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.logout:hover {
+  color: var(--color-danger);
+}
+
+.link {
+  white-space: nowrap;
+  text-align: left;
+}
+
+/* User Menu Dropdown Styles */
+.user-menu-wrapper {
+  position: relative;
+  margin-left: auto;
+}
+
+.user-menu-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.user-menu-btn:hover {
+  background-color: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+
+.user-dropdown-menu {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  right: 0;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: 12px;
+  min-width: 200px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+  animation: slideUp 0.2s ease-out;
+  z-index: 1000;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.user-dropdown-item {
+  width: 100%;
+  padding: 12px 16px;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.95rem;
+  text-align: left;
+  transition: background-color 0.2s;
+}
+
+.user-dropdown-item:hover {
+  background-color: var(--bg-tertiary);
+}
+
+.user-dropdown-item-danger {
+  color: var(--color-danger-light);
+}
+
+.user-dropdown-item-danger:hover {
+  background-color: rgba(248, 113, 113, 0.1);
+}
+
+.user-dropdown-separator {
+  height: 1px;
+  background-color: var(--border-primary);
+  margin: 4px 0;
+}
+
+/* Main content offset for fixed sidebar */
+@media (min-width: 1024px) {
+  /* Add margin to the Navbar sibling div that contains routes */
+  .sidebar ~ div {
+    margin-left: 18rem;
+    transition: margin-left 0.2s ease-in-out;
+  }
+
+  body.collapsed .sidebar ~ div {
+    margin-left: 5rem;
+  }
+}
+
+/* RESPONSIVE MEDIA QUERIES */
+/* Hide desktop sidebar on mobile/tablet */
+@media (max-width: 1023px) {
+  .sidebar {
+    display: none;
+  }
+}
+
+/* Hide mobile navbar on desktop */
+@media (min-width: 1024px) {
+  .navbar {
+    display: none;
+  }
+}

@@ -1,0 +1,42 @@
+.timeframe-tabs-container {
+  display: flex;
+  justify-content: space-between;
+  background-color: #1f2937; /* matches table header background */
+  border-radius: 9999px;
+  padding: 4px;
+  margin-bottom: 16px;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.timeframe-tab {
+  flex: 1;
+  text-align: center;
+  background: transparent;
+  color: #ccc;
+  padding: 8px 0;
+  font-size: 14px;
+  font-weight: 500;
+  border: none;
+  border-radius: 9999px;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  cursor: pointer;
+}
+
+/* Hover matches account-row:hover */
+.timeframe-tab:hover {
+  background-color: #1e293b;
+  color: #e5e7eb;
+}
+
+/* Selected tab matches .account-row.deselected */
+.timeframe-tab.active {
+  background-color: #374151;
+  color: #ffffff;
+}
+
+/* Optional: fade inactive tabs slightly */
+.timeframe-tab.inactive {
+  color: #9ca3af;
+}
