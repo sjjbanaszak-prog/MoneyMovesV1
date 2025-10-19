@@ -517,12 +517,6 @@ export default function AccountSettings() {
                     <div className="toggle-slider" />
                   </button>
                 </div>
-                <p className="preference-description">
-                  Notifications are off in iOS.{" "}
-                  <a href="#" className="preference-link">
-                    Open Settings
-                  </a>
-                </p>
               </SettingsCard>
 
               {/* Support */}
@@ -676,7 +670,7 @@ function EditProfileModal({
           </button>
         </div>
 
-        <div className="modal-body">
+        <div className="modal-body modal-body-compact">
           <div className="form-group">
             <label className="form-label-1">Full Name</label>
             <input
@@ -1033,7 +1027,7 @@ function ReportProblemModal({
 }) {
   const problemTypes = [
     { id: "bug", label: "Bug Report", icon: AlertCircle },
-    { id: "feature", label: "Feature Request", icon: Lightbulb },
+    { id: "feature", label: "New Feature", icon: Lightbulb },
     { id: "question", label: "Question", icon: HelpCircle },
     { id: "other", label: "Other", icon: MessageSquare },
   ];
@@ -1044,9 +1038,6 @@ function ReportProblemModal({
         <div className="modal-header">
           <div>
             <h2 className="modal-title">Report a Problem</h2>
-            <p className="modal-subtitle">
-              We're here to help. Let us know what's going on.
-            </p>
           </div>
           <button
             onClick={() => setReportProblemOpen(false)}
@@ -1059,7 +1050,7 @@ function ReportProblemModal({
         <div className="modal-body modal-body-compact">
           <div className="form-group">
             <label className="form-label-1">
-              What type of issue are you experiencing?
+              What issue are you experiencing?
             </label>
             <div className="problem-types">
               {problemTypes.map((type) => {
@@ -1104,7 +1095,6 @@ function ReportProblemModal({
                 setReportData({ ...reportData, description: e.target.value })
               }
               placeholder="Please provide as much detail as possible..."
-              rows={6}
             />
           </div>
 

@@ -114,6 +114,19 @@ body {
    BUTTON STYLES
    ============================================ */
 
+/*
+ * BUTTON DESIGN STANDARDS
+ *
+ * All buttons MUST include these properties for proper text alignment:
+ * - display: inline-flex (or flex for full-width buttons)
+ * - align-items: center (vertical centering)
+ * - justify-content: center (horizontal centering)
+ * - gap: var(--space-sm) (for icon + text buttons)
+ *
+ * This ensures text and icons are perfectly centered both
+ * horizontally and vertically within the button container.
+ */
+
 /* Base Button */
 .btn {
   border: none;
