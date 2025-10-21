@@ -61,8 +61,8 @@
 /* New: Grid layout for pie chart and performance cards */
 .pension-overview-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1.5rem;
+  grid-template-columns: minmax(350px, 400px) minmax(350px, 1fr);
+  gap: 16px;
   margin-bottom: 0px;
 }
 
@@ -95,6 +95,7 @@
   display: flex;
   flex-direction: column;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  margin: 0;
 }
 
 .chart-header {
@@ -131,11 +132,18 @@
   transition: none !important;
 }
 
-/* Mobile responsive: stack vertically on smaller screens */
-@media (max-width: 768px) {
+/* Desktop optimizations for larger screens */
+@media (min-width: 721px) {
+  .pie-wrapper .chart-header {
+    margin-bottom: 0.25rem;
+  }
+}
+
+/* Stack modules when both would be at minimum width (equal size) */
+@media (max-width: 720px) {
   .pension-overview-grid {
     grid-template-columns: 1fr;
-    gap: 1rem;
+    gap: 16px;
   }
 
   .pie-chart-container,
@@ -147,6 +155,6 @@
 /* Tablet responsive: adjust for medium screens */
 @media (max-width: 1024px) and (min-width: 769px) {
   .pension-overview-grid {
-    gap: 1rem;
+    gap: 16px;
   }
 }

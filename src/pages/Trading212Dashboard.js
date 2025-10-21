@@ -25,12 +25,10 @@ const Trading212Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 py-8 px-4 md:px-8">
+    <div className="trading-dashboard-container min-h-screen bg-gray-100 py-4 px-0 md:px-8">
+      {/* Mobile margin (all sides): 4px (handled by SharedStyles.css) */}
+      {/* Mobile: px-0 removes horizontal padding, SharedStyles provides 4px margin */}
       <div className="max-w-6xl mx-auto space-y-6">
-        <h1 className="text-3xl font-semibold text-gray-800">
-          📊 Trading 212 Portfolio Dashboard
-        </h1>
-
         <div className="card">
           <h2 className="card-title">Upload Your Trading 212 CSV File</h2>
           <label className="inline-flex items-center space-x-2 mb-4">

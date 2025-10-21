@@ -16,7 +16,7 @@
   max-width: 880px;
   margin-left: auto;
   margin-right: auto;
-  padding: 0 16px;
+  padding: 1rem 16px 0;
   /* width: 100% removed - auto width allows margins to work correctly without overflow */
   overflow-x: hidden;
 }
@@ -264,8 +264,10 @@
 }
 
 @media (max-width: 768px) {
+  /* Mobile margin (all sides): 4px (handled by SharedStyles.css) */
+
   .savings-tracker-container {
-    padding: 0;  /* Remove padding on mobile - parent uses 4px margin from SharedStyles.css */
+    padding: 0 !important;  /* Remove all padding on mobile - SharedStyles.css provides 4px margin */
   }
 
   .tracker-header {

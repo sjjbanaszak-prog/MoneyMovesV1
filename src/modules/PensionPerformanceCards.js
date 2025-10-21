@@ -246,7 +246,7 @@ export default function PensionPerformanceCards({
         </div>
 
         <div className="value-pair">
-          <span>Pension Value:</span>
+          <span>Current Value:</span>
           <span>£{formatCurrency(totalValue)}</span>
         </div>
 

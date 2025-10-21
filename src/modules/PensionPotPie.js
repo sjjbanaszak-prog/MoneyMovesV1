@@ -149,7 +149,7 @@ export default function PensionPotPie({
     <div className="pie-wrapper">
       <div className="chart-header">
         <h3 className="chart-heading">
-          Pension Value: £
+          Current Value: £
           {total.toLocaleString(undefined, {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2,
@@ -186,14 +186,15 @@ export default function PensionPotPie({
             wrapperStyle={{ transition: "none" }}
           />
           <Legend
+            layout="horizontal"
             verticalAlign="bottom"
-            height={36}
+            align="center"
             wrapperStyle={{
-              color: "#ccc",
-              fontSize: 12,
+              color: "#d1d5db",
+              fontSize: "12px",
               paddingTop: "10px",
             }}
-            iconType="circle"
+            iconType="line"
           />
         </PieChart>
       </ResponsiveContainer>

@@ -346,7 +346,7 @@ const PensionGrowthChart = ({
   return (
     <div className="growth-chart-wrapper">
       <div className="chart-header">
-        <h3 className="chart-heading">Pension Growth Over Time</h3>
+        <h3 className="chart-heading">Deposit History</h3>
         {isDummyData && (
           <div className="demo-badge">
             <span className="demo-text">Demo Data</span>
@@ -355,7 +355,7 @@ const PensionGrowthChart = ({
       </div>
 
       <div className="chart-container">
-        <ResponsiveContainer width="100%" height={200}>
+        <ResponsiveContainer width="100%" height={250}>
           <AreaChart
             data={chartData}
             margin={{ top: 10, right: 0, left: -15, bottom: 0 }}
@@ -406,31 +406,6 @@ const PensionGrowthChart = ({
             })}
           </AreaChart>
         </ResponsiveContainer>
-      </div>
-
-      <div className="chart-controls-bottom">
-        <div className="view-toggle">
-          <button
-            className={`toggle-button ${isContributionsMode ? "active" : ""}`}
-            onClick={() => setViewMode("contributions")}
-          >
-            <div className="toggle-content">
-              <div className="toggle-label">Contributions Only</div>
-            </div>
-          </button>
-          <button
-            className={`toggle-button ${
-              !isContributionsMode ? "active disabled" : "disabled"
-            }`}
-            onClick={() => setViewMode("total")}
-            title="Total value tracking - showing demo growth patterns"
-          >
-            <div className="toggle-content">
-              <div className="toggle-label">Total Value</div>
-              <span className="coming-soon">Demo Data</span>
-            </div>
-          </button>
-        </div>
       </div>
     </div>
   );

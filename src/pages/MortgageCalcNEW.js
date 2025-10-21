@@ -184,8 +184,6 @@ const MortgageCalcNEW = () => {
 
   return (
     <div className="savings-tracker-container">
-      <h1 className="tracker-title">Mortgage Calculator</h1>
-
       <MortgageInputForm
         inputs={inputs}
         updateInput={updateInput}

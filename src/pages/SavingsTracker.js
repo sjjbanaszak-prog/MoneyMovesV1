@@ -312,10 +312,6 @@ export default function SavingsTracker() {
 
   return (
     <div className="savings-tracker-container">
-      <div className="dashboard-header">
-        <h1 className="tracker-title">Savings Tracker</h1>
-      </div>
-
       <div className="full-width-card">
         <FileUploader onDataParsed={handleFileParsed} />
         {processingFile && (

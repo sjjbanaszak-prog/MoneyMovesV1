@@ -402,17 +402,6 @@ export default function NetWorthChart({
       </div>
 
       <div className="networth-metric-card">
-        <div className="networth-metric-label">Asset/Liability Ratio</div>
-        <div className="networth-metric-value" style={{ color: "#06b6d4" }}>
-          {assetLiabilityRatio.toFixed(2)}x
-        </div>
-        <div className="networth-metric-subtitle">
-          Assets: £{(totalAssets / 1000).toFixed(0)}k | Liabilities: £
-          {(totalLiabilities / 1000).toFixed(0)}k
-        </div>
-      </div>
-
-      <div className="networth-metric-card">
         <div className="networth-metric-label">Growth</div>
         <div
           className="networth-metric-value"
@@ -423,6 +412,17 @@ export default function NetWorthChart({
         <div className="networth-metric-subtitle">
           {earliestData?.displayMonth || "Start"} to{" "}
           {latestData?.displayMonth || "End"}
+        </div>
+      </div>
+
+      <div className="networth-metric-card">
+        <div className="networth-metric-label">Asset/Liability Ratio</div>
+        <div className="networth-metric-value" style={{ color: "#06b6d4" }}>
+          {assetLiabilityRatio.toFixed(2)}x
+        </div>
+        <div className="networth-metric-subtitle">
+          Assets: £{(totalAssets / 1000).toFixed(0)}k | Liabilities: £
+          {(totalLiabilities / 1000).toFixed(0)}k
         </div>
       </div>
     </div>

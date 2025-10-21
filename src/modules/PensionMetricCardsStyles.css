@@ -1,0 +1,245 @@
+/* Pension Metric Cards - Matches Landing Page Net Worth Card Styling */
+
+.pension-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 1.5rem;
+}
+
+.pension-metric-card {
+  background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+  border: 1px solid #374151;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.pension-metric-label {
+  font-size: 0.875rem;
+  color: #9ca3af;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pension-metric-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 8px;
+}
+
+.pension-metric-change {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.pension-metric-subtitle {
+  font-size: 0.75rem;
+  color: #9ca3af;
+}
+
+/* Info Icon Styling - Copied from PensionPerformanceCards */
+.info-icon-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  cursor: help;
+  margin-left: 0.25rem;
+}
+
+.info-icon-inline {
+  width: 14px;
+  height: 14px;
+  color: #9ca3af;
+}
+
+.info-tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #1e293b;
+  color: #e2e8f0;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  width: 280px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+  pointer-events: none;
+  border: 1px solid #334155;
+}
+
+.info-tooltip strong {
+  color: #f1f5f9;
+}
+
+/* Responsive tooltip positioning */
+@media (max-width: 640px) {
+  .info-tooltip {
+    width: 240px;
+    left: auto;
+    right: 0;
+    transform: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .info-tooltip {
+    width: 200px;
+    font-size: 0.7rem;
+  }
+}
+
+/* Dynamic positioning classes for JavaScript control */
+.info-tooltip.tooltip-left {
+  left: auto;
+  right: 0;
+  transform: none;
+}
+
+.info-tooltip.tooltip-right {
+  left: 0;
+  right: auto;
+  transform: none;
+}
+
+.info-tooltip.tooltip-center {
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+}
+
+/* Progress Bar Card - Full Width */
+.pension-progress-card {
+  background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+  border: 1px solid #374151;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 1.5rem;
+}
+
+.progress-card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.progress-legend {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.progress-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.progress-legend-color {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+}
+
+.progress-legend-color.deposit-color {
+  background-color: #00aaff;
+}
+
+.progress-legend-color.gain-color {
+  background-color: #00d97e;
+}
+
+.progress-legend-color.loss-color {
+  background-color: #ff5c5c;
+}
+
+.progress-legend-label {
+  font-size: 0.875rem;
+  color: #9ca3af;
+  font-weight: 500;
+}
+
+.pension-performance-bar {
+  height: 14px;
+  display: flex;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #374151;
+}
+
+.pension-deposit-bar {
+  background-color: #00aaff;
+  height: 100%;
+}
+
+.pension-gainloss-bar {
+  height: 100%;
+}
+
+.pension-gainloss-bar.gain {
+  background-color: #00d97e;
+}
+
+.pension-gainloss-bar.loss {
+  background-color: #ff5c5c;
+}
+
+/* Animation on mount or update */
+.animated-bar {
+  transition: width 1s ease-in-out;
+}
+
+/* Mobile responsive - 2x2 grid */
+@media (max-width: 768px) {
+  .pension-metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .pension-metric-card {
+    padding: 14px;
+  }
+
+  /* Ensure Current Value is top-left, Growth is top-right */
+  .pension-metric-card:nth-child(1) {
+    order: 1;
+  }
+
+  .pension-metric-card:nth-child(2) {
+    order: 2;
+  }
+
+  /* Ensure IRR is bottom-left, CAGR is bottom-right */
+  .pension-metric-card:nth-child(3) {
+    order: 3;
+  }
+
+  .pension-metric-card:nth-child(4) {
+    order: 4;
+  }
+
+  .pension-metric-value {
+    font-size: 1.25rem;
+  }
+
+  .pension-progress-card {
+    padding: 14px;
+  }
+
+  .progress-legend {
+    gap: 16px;
+  }
+
+  .progress-legend-label {
+    font-size: 0.8125rem;
+  }
+}

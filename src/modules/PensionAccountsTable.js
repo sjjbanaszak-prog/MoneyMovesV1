@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ChevronDown, ChevronRight, Plus } from "lucide-react";
+import { ChevronDown, ChevronRight, Plus, X } from "lucide-react";
 import dayjs from "dayjs";
 import { auth, db } from "../firebase";
 import { doc, setDoc } from "firebase/firestore";
@@ -30,6 +30,7 @@ export default function PensionAccountsTable({
     description: "",
   });
   const [confirmDelete, setConfirmDelete] = useState(null);
+  const [sortConfig, setSortConfig] = useState({ key: 'provider', direction: 'asc' });
 
   // Debounced Firebase save function
   const debouncedSaveToFirebase = React.useCallback(
@@ -66,6 +67,37 @@ export default function PensionAccountsTable({
   const formatDate = (dateStr) => {
     if (!dateStr) return "-";
     return dayjs(dateStr).format("DD/MM/YY");
+  };
+
+  // Calculate UK Financial Year (April 6 - April 5)
+  const getFinancialYear = (dateStr) => {
+    if (!dateStr) return "-";
+    const date = dayjs(dateStr);
+    const year = date.year();
+    const month = date.month(); // 0-indexed (0 = January)
+    const day = date.date();
+
+    // UK tax year starts April 6
+    // If date is before April 6, it belongs to previous FY
+    if (month < 3 || (month === 3 && day < 6)) {
+      return `${year - 1}/${String(year).slice(2)}`;
+    } else {
+      return `${year}/${String(year + 1).slice(2)}`;
+    }
+  };
+
+  // Determine data source based on payment properties
+  const getDataSource = (payment) => {
+    // If payment has a 'source' property, use it
+    if (payment.source) {
+      return payment.source;
+    }
+    // If description contains "Manual deposit" or was added via Add Deposit, mark as Manual
+    if (payment.description && payment.description.includes("Manual deposit")) {
+      return "Manual";
+    }
+    // Default to Upload for legacy data
+    return "Upload";
   };
 
   const calculateIRR = (cashflows, guess = 0.05) => {
@@ -178,9 +210,22 @@ export default function PensionAccountsTable({
     setAddingDepositIndex(idx);
     const today = dayjs().format("YYYY-MM-DD");
     setNewDeposit({ amount: "", date: today, description: "" });
+
+    // Expand the row if not already expanded
     if (!expandedRows.includes(idx)) {
       setExpandedRows((prev) => [...prev, idx]);
     }
+
+    // Scroll to the bottom of the expanded row after it renders
+    setTimeout(() => {
+      const expandedRow = document.querySelector(`[data-expanded-row="${idx}"]`);
+      if (expandedRow) {
+        const historyTable = expandedRow.querySelector('.history-table-wrapper');
+        if (historyTable) {
+          historyTable.scrollTop = historyTable.scrollHeight;
+        }
+      }
+    }, 100);
   };
 
   const handleSaveDeposit = async (idx, e) => {
@@ -195,6 +240,7 @@ export default function PensionAccountsTable({
         date: newDeposit.date,
         amount,
         description: newDeposit.description || "Manual deposit",
+        source: "Manual",
       };
 
       const updatedHistory = [...(p.paymentHistory || []), newPayment].sort(
@@ -242,12 +288,31 @@ export default function PensionAccountsTable({
 
     setAddingDepositIndex(null);
     setNewDeposit({ amount: "", date: "", description: "" });
+
+    // Scroll to show the new entry after state updates
+    setTimeout(() => {
+      const expandedRow = document.querySelector(`[data-expanded-row="${idx}"]`);
+      if (expandedRow) {
+        const historyTable = expandedRow.querySelector('.history-table-wrapper');
+        if (historyTable) {
+          historyTable.scrollTop = historyTable.scrollHeight;
+        }
+      }
+    }, 100);
   };
 
   const handleCancelDeposit = (e) => {
-    e.stopPropagation();
+    if (e && e.stopPropagation) {
+      e.stopPropagation();
+    }
+    const idx = addingDepositIndex;
     setAddingDepositIndex(null);
     setNewDeposit({ amount: "", date: "", description: "" });
+
+    // Collapse the row
+    if (idx !== null) {
+      setExpandedRows((prev) => prev.filter((rowIdx) => rowIdx !== idx));
+    }
   };
 
   const handleEditDeposit = (pensionIdx, depositIdx, payment, e) => {
@@ -276,6 +341,7 @@ export default function PensionAccountsTable({
                 date: editedDeposit.date,
                 amount,
                 description: editedDeposit.description || payment.description,
+                source: payment.source || "Upload", // Preserve source or default to Upload
               }
             : payment
         )
@@ -332,7 +398,8 @@ export default function PensionAccountsTable({
   const handleRemoveDeposit = (pensionIdx, depositIdx, e) => {
     e.stopPropagation();
 
-    const pension = pensions[pensionIdx];
+    // Use sortedPensions since pensionIdx is from the sorted array
+    const pension = sortedPensions[pensionIdx];
     const depositToRemove = pension.paymentHistory[depositIdx];
 
     setConfirmDelete({
@@ -347,8 +414,12 @@ export default function PensionAccountsTable({
   const confirmRemoveDeposit = async () => {
     const { pensionIdx, depositIdx } = confirmDelete;
 
-    const updatedPensions = pensions.map((p, i) => {
-      if (i !== pensionIdx) return p;
+    // Get the actual pension from sortedPensions to ensure we're working with the right one
+    const targetPension = sortedPensions[pensionIdx];
+
+    const updatedPensions = pensions.map((p) => {
+      // Match by provider name instead of index
+      if (p.provider !== targetPension.provider) return p;
 
       const removedAmount = p.paymentHistory[depositIdx].amount;
       const updatedHistory = p.paymentHistory.filter(
@@ -409,25 +480,96 @@ export default function PensionAccountsTable({
     setConfirmDelete(null);
   };
 
+  // Sort handlers
+  const handleSort = (key) => {
+    let direction = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const getSortIcon = (key) => {
+    if (sortConfig.key !== key) {
+      return <span className="sort-icon">⇅</span>;
+    }
+    return sortConfig.direction === 'asc' ?
+      <span className="sort-icon active">↑</span> :
+      <span className="sort-icon active">↓</span>;
+  };
+
+  // Sort pensions based on sortConfig
+  const sortedPensions = [...pensions].sort((a, b) => {
+    let aValue = a[sortConfig.key];
+    let bValue = b[sortConfig.key];
+
+    // Handle IRR sorting (calculated value)
+    if (sortConfig.key === 'irr') {
+      aValue = calculateProviderIRR(a.paymentHistory, a.currentValue);
+      bValue = calculateProviderIRR(b.paymentHistory, b.currentValue);
+      // Treat null IRR as -Infinity so it sorts to the bottom
+      if (aValue === null) aValue = -Infinity;
+      if (bValue === null) bValue = -Infinity;
+    }
+    // Handle Growth sorting (calculated value)
+    else if (sortConfig.key === 'growth') {
+      aValue = (a.currentValue || 0) - (a.deposits || 0);
+      bValue = (b.currentValue || 0) - (b.deposits || 0);
+    }
+    // Handle date comparisons
+    else if (sortConfig.key === 'firstPayment' || sortConfig.key === 'lastPayment') {
+      aValue = aValue ? new Date(aValue).getTime() : 0;
+      bValue = bValue ? new Date(bValue).getTime() : 0;
+    }
+    // Handle null/undefined values for other columns
+    else {
+      if (aValue === null || aValue === undefined) aValue = 0;
+      if (bValue === null || bValue === undefined) bValue = 0;
+    }
+
+    if (aValue < bValue) {
+      return sortConfig.direction === 'asc' ? -1 : 1;
+    }
+    if (aValue > bValue) {
+      return sortConfig.direction === 'asc' ? 1 : -1;
+    }
+    return 0;
+  });
+
   return (
     <div className="pension-accounts-wrapper dark-mode">
-      <h3 className="pension-accounts-title">Pension Providers</h3>
+      <h3 className="pension-accounts-title">Pension Accounts</h3>
       <div className="table-scroll-container">
         <table className="pension-accounts-table">
           <thead>
             <tr>
               <th className="expand-col"></th>
-              <th>Provider</th>
-              <th className="text-right col-first-payment">First Deposit</th>
-              <th className="text-right col-last-payment">Last Deposit</th>
-              <th className="text-right col-deposits">Total Deposits</th>
-              <th className="text-right">Current Value</th>
-              <th className="text-right col-irr">IRR</th>
+              <th onClick={() => handleSort('provider')} className="sortable">
+                Provider {getSortIcon('provider')}
+              </th>
+              <th onClick={() => handleSort('firstPayment')} className="sortable text-right col-first-payment">
+                First Deposit {getSortIcon('firstPayment')}
+              </th>
+              <th onClick={() => handleSort('lastPayment')} className="sortable text-right col-last-payment">
+                Last Deposit {getSortIcon('lastPayment')}
+              </th>
+              <th onClick={() => handleSort('deposits')} className="sortable text-right col-deposits">
+                Total Deposits {getSortIcon('deposits')}
+              </th>
+              <th onClick={() => handleSort('currentValue')} className="sortable text-right">
+                Current Value {getSortIcon('currentValue')}
+              </th>
+              <th onClick={() => handleSort('growth')} className="sortable text-right col-growth hide-mobile">
+                Growth {getSortIcon('growth')}
+              </th>
+              <th onClick={() => handleSort('irr')} className="sortable text-right col-irr">
+                IRR {getSortIcon('irr')}
+              </th>
               <th className="icon-col"></th>
             </tr>
           </thead>
           <tbody>
-            {pensions.map((pension, idx) => {
+            {sortedPensions.map((pension, idx) => {
               const isSelected = selectedPensions.includes(pension.provider);
               const isExpanded = expandedRows.includes(idx);
               const isEditing = editingIndex === idx;
@@ -436,6 +578,8 @@ export default function PensionAccountsTable({
                 pension.paymentHistory,
                 pension.currentValue
               );
+              const growth = (pension.currentValue || 0) - (pension.deposits || 0);
+              const isGrowthPositive = growth >= 0;
 
               return (
                 <React.Fragment key={pension.provider}>
@@ -484,6 +628,12 @@ export default function PensionAccountsTable({
                         formatCurrency(pension.currentValue)
                       )}
                     </td>
+                    <td className="text-right col-growth hide-mobile">
+                      <span className={isGrowthPositive ? "gain-text" : "loss-text"}>
+                        {isGrowthPositive ? "+" : "−"}
+                        {formatCurrency(Math.abs(growth))}
+                      </span>
+                    </td>
                     <td className="text-right col-irr">
                       <span
                         className={irr && irr >= 0 ? "gain-text" : "loss-text"}
@@ -493,7 +643,7 @@ export default function PensionAccountsTable({
                     </td>
                     <td className="text-center remove-button-cell">
                       {isEditing ? (
-                        <>
+                        <div className="icon-group">
                           <button
                             className="save-button"
                             onClick={(e) =>
@@ -510,9 +660,9 @@ export default function PensionAccountsTable({
                           >
                             ×
                           </button>
-                        </>
+                        </div>
                       ) : (
-                        <>
+                        <div className="icon-group">
                           <button
                             className="add-button"
                             onClick={(e) => handleAddDepositClick(idx, e)}
@@ -536,14 +686,14 @@ export default function PensionAccountsTable({
                           >
                             ×
                           </button>
-                        </>
+                        </div>
                       )}
                     </td>
                   </tr>
 
                   {isExpanded && (
-                    <tr>
-                      <td colSpan="8" className="expanded-cell">
+                    <tr data-expanded-row={idx}>
+                      <td colSpan="9" className="expanded-cell">
                         <div className="expanded-content">
                           <h4 className="history-title">
                             Contribution History
@@ -557,10 +707,18 @@ export default function PensionAccountsTable({
                                     Description
                                   </th>
                                   <th className="text-right history-date-col">
-                                    Deposit Date
+                                    <span className="hide-mobile">Deposit Date</span>
+                                    <span className="show-mobile">Date</span>
                                   </th>
                                   <th className="text-right history-value-col">
-                                    Deposit Value
+                                    <span className="hide-mobile">Deposit Value</span>
+                                    <span className="show-mobile">Deposit</span>
+                                  </th>
+                                  <th className="text-right history-fy-col hide-mobile">
+                                    Financial Year
+                                  </th>
+                                  <th className="text-right history-source-col hide-mobile">
+                                    Data Source
                                   </th>
                                   <th className="history-actions-col"></th>
                                 </tr>
@@ -651,6 +809,14 @@ export default function PensionAccountsTable({
                                               )
                                             )}
                                           </td>
+                                          <td className="text-right history-fy-col hide-mobile">
+                                            {getFinancialYear(payment.date)}
+                                          </td>
+                                          <td className="text-right history-source-col hide-mobile">
+                                            <span className={`source-badge source-${getDataSource(payment).toLowerCase()}`}>
+                                              {getDataSource(payment)}
+                                            </span>
+                                          </td>
                                           <td className="text-center history-actions-col">
                                             {isEditingThis ? (
                                               <div className="icon-group">
@@ -716,77 +882,6 @@ export default function PensionAccountsTable({
                               </tbody>
                             </table>
                           </div>
-
-                          {isAddingDeposit && (
-                            <div className="add-deposit-form">
-                              <h5 className="form-title">Add New Deposit</h5>
-                              <div className="form-grid">
-                                <label className="form-label">
-                                  Description:
-                                  <input
-                                    type="text"
-                                    className="form-input"
-                                    value={newDeposit.description}
-                                    onChange={(e) =>
-                                      setNewDeposit((prev) => ({
-                                        ...prev,
-                                        description: e.target.value,
-                                      }))
-                                    }
-                                    placeholder="e.g., Monthly contribution"
-                                    autoFocus
-                                  />
-                                </label>
-                                <div className="form-grid-row">
-                                  <label className="form-label">
-                                    Date:
-                                    <input
-                                      type="date"
-                                      className="form-input"
-                                      value={newDeposit.date}
-                                      onChange={(e) =>
-                                        setNewDeposit((prev) => ({
-                                          ...prev,
-                                          date: e.target.value,
-                                        }))
-                                      }
-                                    />
-                                  </label>
-                                  <label className="form-label">
-                                    Amount (£):
-                                    <input
-                                      type="number"
-                                      min="0"
-                                      step="0.01"
-                                      className="form-input"
-                                      value={newDeposit.amount}
-                                      onChange={(e) =>
-                                        setNewDeposit((prev) => ({
-                                          ...prev,
-                                          amount: e.target.value,
-                                        }))
-                                      }
-                                      placeholder="0.00"
-                                    />
-                                  </label>
-                                </div>
-                              </div>
-                              <div className="form-buttons">
-                                <button
-                                  className="save-deposit-button"
-                                  onClick={(e) => handleSaveDeposit(idx, e)}
-                                >
-                                  Save Deposit
-                                </button>
-                                <button
-                                  className="cancel-deposit-button"
-                                  onClick={handleCancelDeposit}
-                                >
-                                  Cancel
-                                </button>
-                              </div>
-                            </div>
-                          )}
                         </div>
                       </td>
                     </tr>
@@ -825,6 +920,87 @@ export default function PensionAccountsTable({
                 onClick={() => setConfirmDelete(null)}
               >
                 Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {addingDepositIndex !== null && (
+        <div className="modal-overlay" onClick={handleCancelDeposit}>
+          <div className="modal-content-box" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2 className="modal-title">Add New Deposit</h2>
+              <button onClick={handleCancelDeposit} className="modal-close">
+                <X size={24} />
+              </button>
+            </div>
+
+            <div className="modal-body modal-body-compact">
+              <div className="form-group">
+                <label className="form-label">Description</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={newDeposit.description}
+                  onChange={(e) =>
+                    setNewDeposit((prev) => ({
+                      ...prev,
+                      description: e.target.value,
+                    }))
+                  }
+                  placeholder="e.g., Monthly contribution"
+                  autoFocus
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Date</label>
+                <input
+                  type="date"
+                  className="form-input"
+                  value={newDeposit.date}
+                  onChange={(e) =>
+                    setNewDeposit((prev) => ({
+                      ...prev,
+                      date: e.target.value,
+                    }))
+                  }
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Amount (£)</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  className="form-input"
+                  value={newDeposit.amount}
+                  onChange={(e) =>
+                    setNewDeposit((prev) => ({
+                      ...prev,
+                      amount: e.target.value,
+                    }))
+                  }
+                  placeholder="0.00"
+                />
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button
+                onClick={handleCancelDeposit}
+                className="modal-btn modal-btn-secondary"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={(e) => handleSaveDeposit(addingDepositIndex, e)}
+                className="modal-btn modal-btn-primary"
+                disabled={!newDeposit.amount || !newDeposit.date}
+              >
+                Save Deposit
               </button>
             </div>
           </div>

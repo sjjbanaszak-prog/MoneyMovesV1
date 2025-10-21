@@ -5,7 +5,7 @@
   min-height: 100vh;
   background-color: #0f172a;
   color: #f3f4f6;
-  padding: 2rem 0;  /* Vertical padding only - horizontal spacing from margin */
+  padding: 1rem 0;  /* Vertical padding only - horizontal spacing from margin */
 }
 
 .landing-content-wrapper {
@@ -256,13 +256,15 @@
 }
 
 @media (max-width: 768px) {
+  /* Mobile margin (all sides): 4px (handled by SharedStyles.css) */
+
   .landing-page-container {
-    padding: 1.5rem 0;  /* Vertical padding only - uses shared 4px margin for horizontal spacing */
+    padding: 0 !important;  /* Remove all padding on mobile - SharedStyles.css provides 4px margin */
   }
 
   .landing-content-wrapper {
     max-width: 100%;
-    padding: 0;  /* Remove padding on mobile - parent container provides 4px margin */
+    padding: 0 !important;  /* Remove padding on mobile - parent container provides 4px margin */
   }
 
   .landing-title {

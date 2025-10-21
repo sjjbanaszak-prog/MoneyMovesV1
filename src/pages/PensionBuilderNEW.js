@@ -180,8 +180,6 @@ export default function PensionBuilder() {
 
   return (
     <div className="savings-tracker-container">
-      <h1 className="tracker-title">Income Tax Modeller</h1>
-
       <div className="full-width-card">
         <IncomeTaxInputs
           salary={salary}

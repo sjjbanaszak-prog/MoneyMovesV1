@@ -14,7 +14,7 @@ import IntelligentFileUploader from "../modules/IntelligentFileUploader";
 import MappingReviewModal from "../modules/MappingReviewModal";
 import { processPensionUpload } from "../modules/utils/pensionDataProcessor";
 import PensionAllowanceChart from "../modules/PensionAllowanceChart";
-import PensionPerformanceCards from "../modules/PensionPerformanceCards";
+import PensionMetricCards from "../modules/PensionMetricCards";
 import PensionGrowthChart from "../modules/PensionGrowthChart";
 import PensionPeerComparison from "../modules/PensionPeerComparison";
 import AIFinancialAdvisory from "../modules/AIFinancialAdvisory";
@@ -23,7 +23,6 @@ const DEFAULT_MODULE_ORDER = [
   "uploader",
   "ai-advisory",
   "overview",
-  "growth-chart",
   "peer-comparison",
   "accounts-table",
   "allowance-chart",
@@ -43,11 +42,7 @@ const MODULE_CONFIG = {
   },
   overview: {
     name: "Overview",
-    description: "Pie Chart & Performance Cards",
-  },
-  "growth-chart": {
-    name: "Growth Over Time",
-    description: "Pension growth visualization",
+    description: "Pie Chart & Deposit History",
   },
   "peer-comparison": {
     name: "Peer Comparison",
@@ -547,26 +542,12 @@ export default function PensionPots() {
               <div className="full-width-card pie-chart-container">
                 <PensionPotPie pensionAccounts={selectedPensionAccounts} />
               </div>
-              <div className="full-width-card performance-card-container">
-                <PensionPerformanceCards
-                  pensionAccounts={pensions}
-                  selectedPensions={selectedPensions}
+              <div className="full-width-card growth-chart-container">
+                <PensionGrowthChart
+                  pensionAccounts={selectedPensionAccounts}
                   yearlyTotals={yearlyTotals}
                 />
               </div>
-            </div>
-          );
-        }
-        return null;
-
-      case "growth-chart":
-        if (shouldShowModule("growth-chart", pensions.length > 0)) {
-          return (
-            <div className="full-width-card">
-              <PensionGrowthChart
-                pensionAccounts={selectedPensionAccounts}
-                yearlyTotals={yearlyTotals}
-              />
             </div>
           );
         }
@@ -630,9 +611,6 @@ export default function PensionPots() {
   if (isLoading) {
     return (
       <div className="savings-tracker-container">
-        <div className="dashboard-header">
-          <h1 className="tracker-title">Pension Dashboard</h1>
-        </div>
         <div className="loading-state">
           <p>Loading your dashboard...</p>
         </div>
@@ -642,8 +620,8 @@ export default function PensionPots() {
 
   return (
     <div className="savings-tracker-container">
-      <div className="dashboard-header">
-        <h1 className="tracker-title">Pension Dashboard</h1>
+      {/* Settings button hidden for now - will be re-introduced later */}
+      {/* <div className="dashboard-header">
         <button
           className="customize-dashboard-btn"
           onClick={(e) => {
@@ -656,7 +634,7 @@ export default function PensionPots() {
         >
           <Settings size={20} />
         </button>
-      </div>
+      </div> */}
 
       {showCustomizePanel && (
         <div className="modal-overlay" onClick={() => setShowCustomizePanel(false)}>
@@ -728,6 +706,15 @@ export default function PensionPots() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Pension Metric Cards - Always displayed at the top when pensions exist */}
+      {pensions.length > 0 && selectedPensions.length > 0 && (
+        <PensionMetricCards
+          pensionAccounts={pensions}
+          selectedPensions={selectedPensions}
+          yearlyTotals={yearlyTotals}
+        />
       )}
 
       <div className="dashboard-modules">

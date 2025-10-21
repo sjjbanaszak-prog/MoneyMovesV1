@@ -212,12 +212,6 @@ const DebtManager = () => {
 
       {/* Header */}
       <div className="debt-manager-header">
-        <div className="header-content">
-          <h1>Debt Manager</h1>
-          <p className="header-subtitle">
-            Take control of your debts with smart repayment strategies
-          </p>
-        </div>
         <button
           className="btn-add-debt"
           onClick={() => setShowAddForm(!showAddForm)}

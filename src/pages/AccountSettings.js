@@ -433,8 +433,6 @@ export default function AccountSettings() {
       {/* Main Content */}
       <div className="account-settings-content">
         <div className="content-wrapper">
-          <h1 className="tracker-title">Account Settings</h1>
-
           {/* Profile Card */}
           <div className="profile-card">
             <div className="profile-card-content">

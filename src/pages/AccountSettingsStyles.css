@@ -9,7 +9,15 @@
 
 /* Main Content */
 .account-settings-content {
-  padding: 2rem 1rem;
+  padding: 1rem 1rem;
+}
+
+@media (max-width: 768px) {
+  /* Mobile margin (all sides): 4px (handled by SharedStyles.css) */
+
+  .account-settings-content {
+    padding: 0 !important;  /* Remove all padding on mobile - SharedStyles.css provides 4px margin */
+  }
 }
 
 .content-wrapper {

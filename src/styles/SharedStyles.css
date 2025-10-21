@@ -545,6 +545,11 @@ body {
   box-shadow: var(--input-focus-ring);
 }
 
+/* Modal Form Inputs - Background matches modal container when not focused */
+.modal-body .form-input:not(:focus) {
+  background-color: #1f2937;
+}
+
 /* ============================================
    TABLE STYLES
    ============================================ */
@@ -1044,11 +1049,12 @@ body {
  * - Provides consistent 4px edge spacing on all page containers for mobile devices
  * - Ensures content doesn't touch screen edges while maximizing usable space
  * - Creates visual breathing room on small screens
+ * - Applies to all 4 sides (top, right, bottom, left)
  *
  * Implementation:
- * 1. All page container classes are listed below and receive 4px margin on mobile
- * 2. Page-specific CSS should REMOVE horizontal padding on mobile to prevent overflow
- * 3. Use vertical padding only (e.g., `padding: 1.5rem 0;`) on mobile
+ * 1. All page container classes receive 4px margin on all sides on mobile
+ * 2. Page-specific CSS should remove horizontal padding to prevent overflow
+ * 3. Page-specific CSS can define vertical padding as needed (typically 1rem on desktop)
  *
  * Box Model Explanation:
  * - AVOID: `width: 100%` + `margin: 4px` = overflow (total width exceeds viewport)
@@ -1057,22 +1063,20 @@ body {
  *
  * Best Practices for New Pages:
  * 1. Add your page container class to the list below
- * 2. In your page-specific CSS, add mobile media query to remove horizontal padding:
- *    @media (max-width: 768px) {
- *      .your-page-container {
- *        padding: [vertical-value] 0;  // Remove horizontal padding
- *      }
- *    }
- * 3. Do NOT use `width: 100%` on page containers
- * 4. Import SharedStyles.css before your page-specific CSS
+ * 2. Define desktop top padding in your page-specific CSS (typically 1rem)
+ * 3. Remove horizontal padding on mobile in your page-specific CSS
+ * 4. Do NOT use `width: 100%` on page containers
+ * 5. Import SharedStyles.css before your page-specific CSS
  *
- * Pages Currently Using This System:
+ * Pages Using This System:
  * - Landing Page (.landing-page-container)
  * - Pension Pots (.savings-tracker-container via PensionPotsStyles.css)
  * - Savings Tracker (.savings-tracker-container)
- * - Debt Manager (.debt-manager-container via .debt-manager)
+ * - Debt Manager (.debt-manager)
  * - Mortgage Calculator (.savings-tracker-container)
  * - Income Tax Modeller (.savings-tracker-container)
+ * - Account Settings (.account-settings-content)
+ * - Trading 212 Dashboard (.trading-dashboard-container)
  */
 @media (max-width: 768px) {
   .savings-tracker-container,
@@ -1081,7 +1085,9 @@ body {
   .debt-manager-container,
   .mortgage-calc-container,
   .trading-dashboard-container,
-  .account-settings-container {
+  .account-settings-container,
+  .debt-manager,
+  .account-settings-content {
     margin: 4px !important;
   }
 }

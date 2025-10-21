@@ -3,7 +3,7 @@
   max-width: 1400px !important;
   margin-left: auto !important;
   margin-right: auto !important;
-  padding: 0 16px !important;
+  padding: 1rem 16px 0 !important;
   /* width removed - auto width allows margins to work correctly without overflow */
 }
 
@@ -316,30 +316,24 @@
   cursor: grabbing;
 }
 
-/* Grid layout for pie chart and performance cards */
+/* Grid layout for pie chart and growth chart - responsive side-by-side */
 .pension-overview-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1.5rem;
-  margin-bottom: 1.5rem;
+  grid-template-columns: minmax(350px, 400px) minmax(350px, 1fr);
+  gap: 16px;
+  margin-bottom: 0;
 }
 
-.pie-chart-container,
-.performance-card-container {
+.pie-chart-container {
   min-height: 300px;
+  width: 100%;
+  margin-bottom: 0;
 }
 
-.performance-card-container .performance-cards-container {
-  height: 100%;
-  margin-top: 0;
-}
-
-.performance-card-container .performance-card.responsive-card {
-  height: 100%;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
+.growth-chart-container {
+  min-height: 300px;
+  width: 100%;
+  margin-bottom: 0;
 }
 
 .pie-wrapper {
@@ -350,6 +344,7 @@
   display: flex;
   flex-direction: column;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  margin: 0;
 }
 
 .chart-header {
@@ -387,8 +382,10 @@
 
 /* Mobile responsive */
 @media (max-width: 768px) {
+  /* Mobile margin (all sides): 4px (handled by SharedStyles.css) */
+
   .savings-tracker-container {
-    padding: 0 !important;  /* Remove padding on mobile - uses 4px margin from SharedStyles.css */
+    padding: 0 !important;  /* Remove all padding on mobile - SharedStyles.css provides 4px margin */
   }
 
   .dashboard-header {
@@ -414,8 +411,9 @@
   }
 
   .pie-chart-container,
-  .performance-card-container {
+  .growth-chart-container {
     min-height: auto;
+    max-width: 100%;
   }
 
   .module-toggles-grid {
@@ -427,10 +425,23 @@
   }
 }
 
+/* Stack overview modules when both would be at minimum width (equal size) */
+@media (max-width: 720px) {
+  .pension-overview-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .pie-chart-container,
+  .growth-chart-container {
+    max-width: 100%;
+  }
+}
+
 /* Tablet responsive */
 @media (max-width: 1024px) and (min-width: 769px) {
   .pension-overview-grid {
-    gap: 1rem;
+    gap: 16px;
   }
 
   .module-toggles-grid {

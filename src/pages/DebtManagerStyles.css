@@ -3,7 +3,7 @@
 .debt-manager {
   max-width: 1400px;
   margin: 0 auto;
-  padding: var(--padding-xl, 32px);
+  padding: 1rem var(--padding-xl, 32px) var(--padding-xl, 32px);
   min-height: 100vh;
   position: relative;
 }
@@ -269,8 +269,10 @@
 
 /* Mobile Responsive */
 @media (max-width: 768px) {
+  /* Mobile margin (all sides): 4px (handled by SharedStyles.css) */
+
   .debt-manager {
-    padding: var(--padding-lg, 16px) 0;  /* Vertical padding only - horizontal uses 4px margin from SharedStyles.css */
+    padding: 0 !important;  /* Remove all padding on mobile - SharedStyles.css provides 4px margin */
   }
 
   .debt-manager-header {
