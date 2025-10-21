@@ -1,19 +1,18 @@
 /* Landing Page Styles */
 
 .landing-page-container {
-  width: 100%;
+  /* Width auto (default) - allows margins to work correctly without overflow */
   min-height: 100vh;
   background-color: #0f172a;
   color: #f3f4f6;
-  padding: 2rem 1rem;
-  display: flex;
-  justify-content: center;
+  padding: 2rem 0;  /* Vertical padding only - horizontal spacing from margin */
 }
 
 .landing-content-wrapper {
-  width: 100%;
+  /* Width auto (default) allows margins and padding to work correctly */
   max-width: 1400px;
   margin: 0 auto;
+  padding: 0 1rem;  /* Inner horizontal padding for content */
 }
 
 .welcome-section {
@@ -258,11 +257,12 @@
 
 @media (max-width: 768px) {
   .landing-page-container {
-    padding: 1.5rem 0.75rem;
+    padding: 1.5rem 0;  /* Vertical padding only - uses shared 4px margin for horizontal spacing */
   }
 
   .landing-content-wrapper {
     max-width: 100%;
+    padding: 0;  /* Remove padding on mobile - parent container provides 4px margin */
   }
 
   .landing-title {

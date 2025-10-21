@@ -73,13 +73,13 @@
 }
 
 .ai-title {
-  font-size: 1.3rem;
-  font-weight: 600;
+  font-size: var(--text-xl, 20px);
+  font-weight: var(--font-semibold, 600);
   color: #f1f5f9;
 }
 
 .ai-subtitle {
-  font-size: 0.9rem;
+  font-size: var(--text-sm, 14px);
   color: #c4b5fd;
   margin-top: 4px;
 }
@@ -90,7 +90,7 @@
   border-radius: 8px;
   color: #c4b5fd;
   padding: 8px 12px;
-  font-size: 0.9rem;
+  font-size: var(--text-sm, 14px);
   cursor: pointer;
   transition: all 0.2s ease;
   display: flex;
@@ -193,13 +193,13 @@
 }
 
 .insight-icon {
-  width: 24px;
-  height: 24px;
-  border-radius: 6px;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
+  font-size: var(--text-xl, 20px);
 }
 
 .insight-icon.performance {
@@ -216,14 +216,14 @@
 }
 
 .insight-title {
-  font-size: 1rem;
-  font-weight: 600;
+  font-size: var(--text-base, 16px);
+  font-weight: var(--font-semibold, 600);
   color: #f1f5f9;
 }
 
 .insight-content {
-  font-size: 0.9rem;
-  line-height: 1.5;
+  font-size: var(--text-sm, 14px);
+  line-height: 1.6;
   color: #e2e8f0;
   margin-bottom: 12px;
 }
@@ -247,12 +247,12 @@
 }
 
 .metric-label {
-  font-size: 0.85rem;
+  font-size: var(--text-sm, 14px);
   color: #94a3b8;
 }
 
 .metric-value {
-  font-weight: 600;
+  font-weight: var(--font-semibold, 600);
   color: #f1f5f9;
 }
 
@@ -283,8 +283,8 @@
 }
 
 .recommendations-title {
-  font-size: 1.1rem;
-  font-weight: 600;
+  font-size: var(--text-lg, 18px);
+  font-weight: var(--font-semibold, 600);
   color: #22d3ee;
 }
 
@@ -301,15 +301,15 @@
 }
 
 .recommendation-title {
-  font-size: 0.95rem;
-  font-weight: 600;
+  font-size: var(--text-base, 16px);
+  font-weight: var(--font-semibold, 600);
   color: #f1f5f9;
   margin-bottom: 8px;
 }
 
 .recommendation-content {
-  font-size: 0.85rem;
-  line-height: 1.5;
+  font-size: var(--text-sm, 14px);
+  line-height: 1.6;
   color: #e2e8f0;
 }
 
@@ -319,7 +319,7 @@
   border-radius: 6px;
   padding: 8px 12px;
   margin-top: 8px;
-  font-size: 0.8rem;
+  font-size: var(--text-sm, 14px);
   color: #67e8f9;
 }
 
@@ -343,7 +343,7 @@
 }
 
 .status-text {
-  font-size: 0.85rem;
+  font-size: var(--text-sm, 14px);
   color: #67e8f9;
 }
 
@@ -378,11 +378,11 @@
   }
 
   .ai-title {
-    font-size: 1.2rem;
+    font-size: var(--text-lg, 18px);
   }
 
   .collapse-btn {
     padding: 6px 10px;
-    font-size: 0.8rem;
+    font-size: var(--text-xs, 12px);
   }
 }

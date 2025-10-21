@@ -1,10 +1,8 @@
-/* Override SavingsTrackerStyles.css - Wide Container Pattern (Landing Page Style) */
-.savings-tracker-container {
-  max-width: 1400px !important;
-  margin-left: auto !important;
-  margin-right: auto !important;
-  padding: 0 16px !important;
-  /* width removed - auto width allows margins to work correctly without overflow */
+/* Base styles */
+.pension-pots-container {
+  margin: 1rem 0;
+  display: flex;
+  justify-content: center;
 }
 
 .add-pension-button {
@@ -387,10 +385,6 @@
 
 /* Mobile responsive */
 @media (max-width: 768px) {
-  .savings-tracker-container {
-    padding: 0 !important;  /* Remove padding on mobile - uses 4px margin from SharedStyles.css */
-  }
-
   .dashboard-header {
     justify-content: space-between;
     position: static;

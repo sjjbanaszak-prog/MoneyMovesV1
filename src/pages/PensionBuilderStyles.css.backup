@@ -1,0 +1,134 @@
+.card {
+  max-width: 500px;
+  margin: 40px auto;
+  background: white;
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+h1 {
+  font-size: 1.5rem;
+  margin-bottom: 12px;
+}
+.input-grid label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+.input-grid input {
+  width: 96%;
+  padding: 8px;
+  margin-top: 4px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+.tab-group,
+.return-tabs {
+  display: flex;
+  gap: 8px;
+  margin: 16px 0;
+}
+.tab-group button,
+.return-tabs button {
+  flex: 1;
+  padding: 8px;
+  background: #e5e7eb;
+  border: none;
+  border-radius: 4px;
+}
+.tab-group button.active,
+.return-tabs button.active {
+  background: #10b981;
+  color: white;
+}
+.contrib-section label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+.contrib-section input[type="number"] {
+  width: 96%;
+  padding: 8px;
+  margin-top: 4px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+.chart-wrapper {
+  margin: 24px 0;
+}
+.breakdown {
+  margin-top: 24px;
+}
+.breakdown table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+.breakdown th,
+.breakdown td {
+  font-size: 0.9rem;
+  padding: 8px;
+  text-align: right;
+  border-top: 1px solid #e5e7eb;
+}
+.breakdown th:first-child,
+.breakdown td:first-child {
+  text-align: left;
+}
+.checkbox-container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-bottom: 16px;
+  width: 100%;
+}
+
+.checkbox-label {
+  display: inline-flex;
+  align-items: center;
+  flex-direction: row;
+  gap: 0.5rem;
+  margin: 1rem 0;
+  width: 100%;
+  white-space: nowrap;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: auto;
+  margin: 0;
+}
+
+.checkbox-text {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.match-amount {
+  margin-top: 8px;
+  width: 100%;
+}
+
+.entry-box {
+  position: relative;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 16px;
+  margin-bottom: 16px;
+  background: #fafafa;
+}
+
+.delete-btn {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  color: #d11a2a;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.delete-btn:hover {
+  color: #a00;
+}

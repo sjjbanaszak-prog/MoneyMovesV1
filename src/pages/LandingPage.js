@@ -3,6 +3,7 @@ import { useAuth } from "../context/AuthProvider";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase";
 import NetWorthChart from "../modules/NetWorthChart";
+import "../styles/SharedStyles.css";
 import "./LandingPage.css";
 
 console.log("=== LANDINGPAGE.JS FILE LOADED - VERSION 2.0 ===");

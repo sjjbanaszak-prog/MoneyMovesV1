@@ -1032,3 +1032,56 @@ body {
 .shadow-sm { box-shadow: var(--shadow-sm); }
 .shadow-md { box-shadow: var(--shadow-md); }
 .shadow-lg { box-shadow: var(--shadow-lg); }
+
+/* ============================================
+   RESPONSIVE DESIGN - MOBILE MARGIN SYSTEM
+   ============================================ */
+
+/**
+ * MOBILE MARGIN SYSTEM (≤768px)
+ *
+ * Purpose:
+ * - Provides consistent 4px edge spacing on all page containers for mobile devices
+ * - Ensures content doesn't touch screen edges while maximizing usable space
+ * - Creates visual breathing room on small screens
+ *
+ * Implementation:
+ * 1. All page container classes are listed below and receive 4px margin on mobile
+ * 2. Page-specific CSS should REMOVE horizontal padding on mobile to prevent overflow
+ * 3. Use vertical padding only (e.g., `padding: 1.5rem 0;`) on mobile
+ *
+ * Box Model Explanation:
+ * - AVOID: `width: 100%` + `margin: 4px` = overflow (total width exceeds viewport)
+ * - CORRECT: Default `width: auto` + `margin: 4px` = fills available space correctly
+ * - Block-level divs use `width: auto` by default, which accounts for margins
+ *
+ * Best Practices for New Pages:
+ * 1. Add your page container class to the list below
+ * 2. In your page-specific CSS, add mobile media query to remove horizontal padding:
+ *    @media (max-width: 768px) {
+ *      .your-page-container {
+ *        padding: [vertical-value] 0;  // Remove horizontal padding
+ *      }
+ *    }
+ * 3. Do NOT use `width: 100%` on page containers
+ * 4. Import SharedStyles.css before your page-specific CSS
+ *
+ * Pages Currently Using This System:
+ * - Landing Page (.landing-page-container)
+ * - Pension Pots (.savings-tracker-container via PensionPotsStyles.css)
+ * - Savings Tracker (.savings-tracker-container)
+ * - Debt Manager (.debt-manager-container via .debt-manager)
+ * - Mortgage Calculator (.savings-tracker-container)
+ * - Income Tax Modeller (.savings-tracker-container)
+ */
+@media (max-width: 768px) {
+  .savings-tracker-container,
+  .landing-page-container,
+  .pension-pots-container,
+  .debt-manager-container,
+  .mortgage-calc-container,
+  .trading-dashboard-container,
+  .account-settings-container {
+    margin: 4px !important;
+  }
+}
