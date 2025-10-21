@@ -1,0 +1,170 @@
+/* Repayment Timeline Chart Styles */
+
+.repayment-timeline-chart {
+  background: var(--card-bg, #1e1e1e);
+  border-radius: var(--border-radius-lg, 12px);
+  padding: var(--padding-lg, 24px);
+  margin-bottom: var(--spacing-lg, 24px);
+  border: 1px solid var(--border-color, #333);
+}
+
+.chart-header {
+  margin-bottom: var(--spacing-lg, 24px);
+}
+
+.chart-header h3 {
+  color: var(--text-primary, #ffffff);
+  font-size: var(--text-xl, 20px);
+  font-weight: var(--font-semibold, 600);
+  margin: 0 0 var(--spacing-xs, 4px) 0;
+}
+
+.chart-subtitle {
+  color: var(--text-secondary, #b0b0b0);
+  font-size: var(--text-sm, 14px);
+  margin: 0;
+}
+
+/* Empty State */
+.chart-empty-state {
+  padding: var(--padding-xl, 48px);
+  text-align: center;
+}
+
+.chart-empty-state p {
+  color: var(--text-secondary, #b0b0b0);
+  font-size: var(--text-sm, 14px);
+  margin: 0;
+}
+
+/* Custom Tooltip */
+.timeline-tooltip {
+  background: rgba(30, 30, 30, 0.98);
+  border: 1px solid var(--border-color, #404040);
+  border-radius: var(--border-radius-md, 8px);
+  padding: var(--padding-md, 12px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  min-width: 200px;
+}
+
+.tooltip-label {
+  color: var(--text-primary, #ffffff);
+  font-size: var(--text-sm, 14px);
+  font-weight: var(--font-semibold, 600);
+  margin: 0 0 var(--spacing-xs, 8px) 0;
+}
+
+.tooltip-divider {
+  height: 1px;
+  background: var(--border-color, #404040);
+  margin: var(--spacing-sm, 8px) 0;
+}
+
+.tooltip-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm, 8px);
+  margin: var(--spacing-xs, 6px) 0;
+}
+
+.tooltip-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.tooltip-name {
+  color: var(--text-secondary, #b0b0b0);
+  font-size: var(--text-xs, 12px);
+  flex: 1;
+}
+
+.tooltip-value {
+  color: var(--text-primary, #ffffff);
+  font-size: var(--text-sm, 13px);
+  font-weight: var(--font-medium, 500);
+  text-align: right;
+}
+
+.tooltip-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: var(--text-primary, #ffffff);
+  font-size: var(--text-sm, 14px);
+  font-weight: var(--font-semibold, 600);
+  margin-top: var(--spacing-xs, 4px);
+}
+
+/* Chart Insights */
+.chart-insights {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--spacing-md, 16px);
+  margin-top: var(--spacing-lg, 24px);
+  padding-top: var(--spacing-lg, 24px);
+  border-top: 1px solid var(--border-color, #333);
+}
+
+.insight-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm, 12px);
+  padding: var(--padding-md, 12px);
+  background: var(--input-bg, #2a2a2a);
+  border-radius: var(--border-radius-md, 8px);
+  border: 1px solid var(--border-color, #404040);
+}
+
+.insight-icon {
+  font-size: var(--text-xl, 22px);
+  flex-shrink: 0;
+}
+
+.insight-text {
+  color: var(--text-secondary, #b0b0b0);
+  font-size: var(--text-sm, 14px);
+  line-height: 1.4;
+}
+
+.insight-text strong {
+  color: var(--text-primary, #ffffff);
+  font-weight: var(--font-semibold, 600);
+  display: block;
+}
+
+/* Recharts Legend Customization */
+.repayment-timeline-chart .recharts-legend-wrapper {
+  margin-top: var(--spacing-md, 16px);
+}
+
+.repayment-timeline-chart .recharts-legend-item-text {
+  color: var(--text-secondary, #b0b0b0) !important;
+  font-size: var(--text-sm, 13px) !important;
+}
+
+.repayment-timeline-chart .recharts-legend-item {
+  margin-right: var(--spacing-md, 16px) !important;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .repayment-timeline-chart {
+    padding: var(--padding-md, 16px);
+  }
+
+  .chart-insights {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-sm, 12px);
+  }
+
+  .insight-item {
+    padding: var(--padding-sm, 10px);
+  }
+
+  /* Make chart scrollable on very small screens */
+  .repayment-timeline-chart .recharts-responsive-container {
+    min-width: 300px;
+  }
+}

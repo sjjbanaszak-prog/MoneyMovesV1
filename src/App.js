@@ -19,6 +19,7 @@ import LandingPage from "./pages/LandingPage";
 import SavingsTracker from "./pages/SavingsTracker";
 import Trading212Dashboard from "./pages/Trading212Dashboard";
 import AccountSettings from "./pages/AccountSettings";
+import DebtManager from "./pages/DebtManager";
 
 const App = () => {
   // Shared state for both PensionStatus and PensionBuilder
@@ -94,6 +95,7 @@ const App = () => {
                         path="/Trading212Dashboard"
                         element={<Trading212Dashboard />}
                       />
+                      <Route path="/debt-manager" element={<DebtManager />} />
                       <Route path="/account-settings" element={<AccountSettings />} />
                     </Routes>
                   </div>

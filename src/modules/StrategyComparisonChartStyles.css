@@ -1,0 +1,319 @@
+/* Strategy Comparison Chart Styles */
+
+.strategy-comparison-chart {
+  background: var(--card-bg, #1e1e1e);
+  border-radius: var(--border-radius-lg, 12px);
+  padding: var(--padding-lg, 24px);
+  margin-bottom: var(--spacing-lg, 24px);
+  border: 1px solid var(--border-color, #333);
+}
+
+.comparison-header {
+  margin-bottom: var(--spacing-lg, 24px);
+}
+
+.comparison-header h3 {
+  color: var(--text-primary, #ffffff);
+  font-size: var(--text-xl, 20px);
+  font-weight: var(--font-semibold, 600);
+  margin: 0 0 var(--spacing-xs, 4px) 0;
+}
+
+.comparison-subtitle {
+  color: var(--text-secondary, #b0b0b0);
+  font-size: var(--text-sm, 14px);
+  margin: 0;
+}
+
+/* Empty/Error States */
+.comparison-empty-state,
+.comparison-error-state {
+  padding: var(--padding-xl, 48px);
+  text-align: center;
+}
+
+.comparison-empty-state p {
+  color: var(--text-secondary, #b0b0b0);
+  font-size: var(--text-sm, 14px);
+  margin: 0;
+}
+
+.error-message {
+  color: var(--warning-color, #fbbf24);
+  font-weight: var(--font-medium, 500);
+}
+
+/* Recommendation Banner */
+.recommendation-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md, 16px);
+  padding: var(--padding-lg, 20px);
+  border-radius: var(--border-radius-lg, 12px);
+  margin-bottom: var(--spacing-xl, 24px);
+  border: 2px solid;
+}
+
+.recommendation-banner.snowball {
+  background: rgba(251, 191, 36, 0.05);
+  border-color: rgba(251, 191, 36, 0.3);
+}
+
+.recommendation-banner.avalanche {
+  background: rgba(34, 197, 94, 0.05);
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
+.recommendation-icon {
+  font-size: 48px;
+  flex-shrink: 0;
+}
+
+.recommendation-content h4 {
+  color: var(--text-primary, #ffffff);
+  font-size: var(--text-lg, 18px);
+  font-weight: var(--font-semibold, 600);
+  margin: 0 0 var(--spacing-xs, 6px) 0;
+}
+
+.recommendation-content p {
+  color: var(--text-secondary, #b0b0b0);
+  font-size: var(--text-sm, 14px);
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Comparison Cards */
+.comparison-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--spacing-lg, 20px);
+  margin-bottom: var(--spacing-xl, 32px);
+}
+
+.comparison-card {
+  background: var(--input-bg, #2a2a2a);
+  border-radius: var(--border-radius-lg, 12px);
+  border: 2px solid;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.comparison-card.snowball {
+  border-color: rgba(251, 191, 36, 0.3);
+}
+
+.comparison-card.avalanche {
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
+.comparison-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.comparison-card.snowball:hover {
+  border-color: rgba(251, 191, 36, 0.6);
+  box-shadow: 0 8px 24px rgba(251, 191, 36, 0.2);
+}
+
+.comparison-card.avalanche:hover {
+  border-color: rgba(34, 197, 94, 0.6);
+  box-shadow: 0 8px 24px rgba(34, 197, 94, 0.2);
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm, 12px);
+  padding: var(--padding-lg, 18px);
+  border-bottom: 1px solid var(--border-color, #404040);
+}
+
+.card-icon {
+  font-size: var(--text-2xl, 28px);
+}
+
+.card-header h4 {
+  color: var(--text-primary, #ffffff);
+  font-size: var(--text-lg, 18px);
+  font-weight: var(--font-semibold, 600);
+  margin: 0;
+}
+
+.card-body {
+  padding: var(--padding-lg, 20px);
+}
+
+.card-metric {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--padding-sm, 10px) 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.card-metric:last-child {
+  border-bottom: none;
+}
+
+.metric-label {
+  color: var(--text-tertiary, #808080);
+  font-size: var(--text-xs, 12px);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.metric-value {
+  color: var(--text-primary, #ffffff);
+  font-size: var(--text-base, 16px);
+  font-weight: var(--font-semibold, 600);
+}
+
+.card-footer {
+  padding: var(--padding-md, 12px);
+  background: rgba(0, 0, 0, 0.2);
+  text-align: center;
+}
+
+.strategy-tag {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: var(--text-xs, 11px);
+  font-weight: var(--font-medium, 500);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.snowball .strategy-tag {
+  background: rgba(251, 191, 36, 0.2);
+  color: var(--warning-color, #fbbf24);
+}
+
+.avalanche .strategy-tag {
+  background: rgba(34, 197, 94, 0.2);
+  color: var(--success-color, #22c55e);
+}
+
+/* Chart Container */
+.comparison-chart-container {
+  margin-bottom: var(--spacing-xl, 32px);
+}
+
+.chart-title {
+  color: var(--text-primary, #ffffff);
+  font-size: var(--text-base, 16px);
+  font-weight: var(--font-semibold, 600);
+  margin: 0 0 var(--spacing-md, 16px) 0;
+}
+
+/* Custom Tooltip */
+.comparison-tooltip {
+  background: rgba(30, 30, 30, 0.98);
+  border: 1px solid var(--border-color, #404040);
+  border-radius: var(--border-radius-md, 8px);
+  padding: var(--padding-md, 12px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  min-width: 180px;
+}
+
+.tooltip-label {
+  color: var(--text-primary, #ffffff);
+  font-size: var(--text-sm, 14px);
+  font-weight: var(--font-semibold, 600);
+  margin: 0 0 var(--spacing-xs, 8px) 0;
+}
+
+.tooltip-divider {
+  height: 1px;
+  background: var(--border-color, #404040);
+  margin: var(--spacing-sm, 8px) 0;
+}
+
+.tooltip-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm, 8px);
+  margin: var(--spacing-xs, 6px) 0;
+}
+
+.tooltip-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.tooltip-name {
+  color: var(--text-secondary, #b0b0b0);
+  font-size: var(--text-xs, 12px);
+  flex: 1;
+}
+
+.tooltip-value {
+  color: var(--text-primary, #ffffff);
+  font-size: var(--text-sm, 13px);
+  font-weight: var(--font-medium, 500);
+  text-align: right;
+}
+
+/* Savings Summary */
+.savings-summary {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-md, 16px);
+  padding: var(--padding-lg, 20px);
+  background: rgba(59, 130, 246, 0.05);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: var(--border-radius-lg, 12px);
+}
+
+.savings-icon {
+  font-size: 32px;
+  flex-shrink: 0;
+}
+
+.savings-content h4 {
+  color: var(--text-primary, #ffffff);
+  font-size: var(--text-base, 16px);
+  font-weight: var(--font-semibold, 600);
+  margin: 0 0 var(--spacing-xs, 6px) 0;
+}
+
+.savings-content p {
+  color: var(--text-secondary, #b0b0b0);
+  font-size: var(--text-sm, 14px);
+  margin: 0;
+  line-height: 1.6;
+}
+
+.savings-content strong {
+  color: var(--primary-color, #3b82f6);
+  font-weight: var(--font-semibold, 600);
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .strategy-comparison-chart {
+    padding: var(--padding-md, 16px);
+  }
+
+  .recommendation-banner {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .recommendation-icon {
+    font-size: 40px;
+  }
+
+  .comparison-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .savings-summary {
+    flex-direction: column;
+    text-align: center;
+  }
+}

@@ -66,16 +66,21 @@ html,
   border-bottom: 1px solid var(--border-primary);
   gap: 12px;
   max-height: 0;
-  overflow: visible;
+  overflow: hidden;
   opacity: 0;
-  transition: max-height 0.3s ease, opacity 0.3s ease, padding 0.3s ease;
-  z-index: 999;
+  visibility: hidden;
+  pointer-events: none;
+  transition: max-height 0.3s ease, opacity 0.3s ease, padding 0.3s ease, visibility 0s 0.3s;
+  z-index: 9999;
 }
 
 .navbar-links.active {
   padding: 16px;
   max-height: 500px;
   opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition: max-height 0.3s ease, opacity 0.3s ease, padding 0.3s ease, visibility 0s 0s;
 }
 
 .nav-link,

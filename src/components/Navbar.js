@@ -11,6 +11,7 @@ import {
   FiBarChart2,
   FiMenu,
   FiUser,
+  FiCreditCard,
 } from "react-icons/fi";
 import { FaBars, FaChevronDown } from "react-icons/fa";
 import { TestTube2 } from "lucide-react";
@@ -135,6 +136,7 @@ const Navbar = () => {
       icon: <FiTrendingUp />,
     },
     { to: "/SavingsTracker", label: "Savings Tracker", icon: <FiDatabase /> },
+    { to: "/debt-manager", label: "Debt Manager", icon: <FiCreditCard /> },
   ];
 
   if (!isDesktop) {

@@ -1,0 +1,284 @@
+/* Progress Summary Card Styles */
+
+.progress-summary-card {
+  background: var(--card-bg, #1e1e1e);
+  border-radius: var(--border-radius-lg, 12px);
+  padding: var(--padding-lg, 24px);
+  margin-bottom: var(--spacing-lg, 24px);
+  border: 1px solid var(--border-color, #333);
+}
+
+.summary-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-xl, 32px);
+}
+
+.summary-header h3 {
+  color: var(--text-primary, #ffffff);
+  font-size: var(--text-xl, 20px);
+  font-weight: var(--font-semibold, 600);
+  margin: 0;
+}
+
+.strategy-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs, 6px);
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: var(--text-sm, 14px);
+  font-weight: var(--font-medium, 500);
+}
+
+.strategy-badge.strategy-snowball {
+  background: rgba(251, 191, 36, 0.1);
+  color: var(--warning-color, #fbbf24);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+}
+
+.strategy-badge.strategy-avalanche {
+  background: rgba(34, 197, 94, 0.1);
+  color: var(--success-color, #22c55e);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.strategy-badge.strategy-custom {
+  background: rgba(59, 130, 246, 0.1);
+  color: var(--primary-color, #3b82f6);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+/* Debt-Free Projection */
+.debt-free-projection {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-lg, 20px);
+  padding: var(--padding-xl, 32px);
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.05) 0%, rgba(34, 197, 94, 0.02) 100%);
+  border: 1px solid rgba(34, 197, 94, 0.2);
+  border-radius: var(--border-radius-lg, 12px);
+  margin-bottom: var(--spacing-xl, 32px);
+}
+
+.projection-icon {
+  font-size: 48px;
+  flex-shrink: 0;
+}
+
+.projection-content {
+  flex: 1;
+}
+
+.projection-date {
+  color: var(--success-color, #22c55e);
+  font-size: var(--text-3xl, 28px);
+  font-weight: var(--font-bold, 700);
+  margin: 0 0 var(--spacing-xs, 4px) 0;
+}
+
+.projection-label {
+  color: var(--text-secondary, #b0b0b0);
+  font-size: var(--text-sm, 14px);
+  margin: 0 0 var(--spacing-xs, 4px) 0;
+}
+
+.projection-months {
+  color: var(--text-tertiary, #808080);
+  font-size: var(--text-xs, 12px);
+  margin: 0;
+  font-style: italic;
+}
+
+/* Progress Bar */
+.progress-bar-section {
+  margin-bottom: var(--spacing-xl, 32px);
+}
+
+.progress-bar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-sm, 8px);
+}
+
+.progress-label {
+  color: var(--text-secondary, #b0b0b0);
+  font-size: var(--text-sm, 14px);
+  font-weight: var(--font-medium, 500);
+}
+
+.progress-percentage {
+  color: var(--primary-color, #3b82f6);
+  font-size: var(--text-lg, 18px);
+  font-weight: var(--font-bold, 700);
+}
+
+.progress-bar {
+  height: 12px;
+  background: var(--input-bg, #2a2a2a);
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: var(--spacing-sm, 8px);
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary-color, #3b82f6), var(--success-color, #22c55e));
+  border-radius: 6px;
+  transition: width 0.5s ease;
+}
+
+.progress-stats {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--text-xs, 12px);
+}
+
+.stat-paid {
+  color: var(--success-color, #22c55e);
+  font-weight: var(--font-medium, 500);
+}
+
+.stat-remaining {
+  color: var(--text-tertiary, #808080);
+}
+
+/* Metrics Grid */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--spacing-md, 16px);
+  margin-bottom: var(--spacing-xl, 32px);
+}
+
+.metric-card {
+  background: var(--input-bg, #2a2a2a);
+  border: 1px solid var(--border-color, #404040);
+  border-radius: var(--border-radius-md, 10px);
+  padding: var(--padding-md, 16px);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm, 12px);
+  transition: all 0.2s ease;
+}
+
+.metric-card:hover {
+  border-color: var(--primary-color, #3b82f6);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.metric-icon {
+  font-size: var(--text-2xl, 24px);
+  flex-shrink: 0;
+}
+
+.metric-icon.interest-icon {
+  filter: hue-rotate(330deg);
+}
+
+.metric-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.metric-label {
+  color: var(--text-tertiary, #808080);
+  font-size: var(--text-xs, 11px);
+  margin: 0 0 var(--spacing-xs, 4px) 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.metric-value {
+  color: var(--text-primary, #ffffff);
+  font-size: var(--text-lg, 17px);
+  font-weight: var(--font-semibold, 600);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.metric-value.interest-value {
+  color: var(--warning-color, #fbbf24);
+}
+
+/* Motivational Message */
+.motivational-message {
+  background: rgba(59, 130, 246, 0.05);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: var(--border-radius-md, 8px);
+  padding: var(--padding-md, 16px);
+  text-align: center;
+}
+
+.motivational-message p {
+  color: var(--text-secondary, #b0b0b0);
+  font-size: var(--text-sm, 14px);
+  font-style: italic;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* No Results State */
+.no-results {
+  padding: var(--padding-xl, 48px);
+  text-align: center;
+}
+
+.no-results p {
+  color: var(--text-secondary, #b0b0b0);
+  font-size: var(--text-sm, 14px);
+  margin: 0;
+}
+
+.error-message {
+  color: var(--warning-color, #fbbf24);
+  font-weight: var(--font-medium, 500);
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .progress-summary-card {
+    padding: var(--padding-md, 16px);
+  }
+
+  .summary-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-sm, 8px);
+  }
+
+  .debt-free-projection {
+    flex-direction: column;
+    text-align: center;
+    padding: var(--padding-lg, 24px);
+  }
+
+  .projection-date {
+    font-size: var(--text-2xl, 24px);
+  }
+
+  .metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--spacing-sm, 12px);
+  }
+
+  .metric-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .metric-value {
+    font-size: var(--text-base, 16px);
+  }
+}
+
+@media (max-width: 480px) {
+  .metrics-grid {
+    grid-template-columns: 1fr;
+  }
+}
