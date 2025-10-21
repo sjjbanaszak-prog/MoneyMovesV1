@@ -769,31 +769,6 @@
   line-height: 1.5;
 }
 
-/* Responsive adjustments for modals */
-@media (max-width: 768px) {
-  .modal-content-box {
-    max-width: 100%;
-    margin: 0 0.5rem;
-  }
-
-  .plans-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .problem-types {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .modal-footer {
-    flex-direction: row;
-    gap: 0.5rem;
-  }
-
-  .modal-btn {
-    flex: 1;
-  }
-}
-
 @media (max-width: 900px) {
   .form-textarea {
     min-height: 75px !important;

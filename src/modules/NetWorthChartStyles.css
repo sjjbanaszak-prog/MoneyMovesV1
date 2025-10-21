@@ -11,7 +11,10 @@
 }
 
 .networth-chart-header {
-  /* Inherits: display, justify-content, align-items, margin-bottom from .chart-header in SharedStyles.css */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
 }
 
 .networth-chart-title {

@@ -374,15 +374,6 @@ const LandingPage = () => {
   return (
     <div className="landing-page-container">
       <div className="landing-content-wrapper">
-        <div className="welcome-section">
-          <h1 className="landing-title">Welcome to MoneyMoves</h1>
-          <p className="landing-subtitle">
-            Take control of your financial future with our comprehensive suite
-            of planning tools. Model scenarios, optimize contributions, and make
-            informed decisions about your money.
-          </p>
-        </div>
-
         {savingsUploads.length > 0 || pensionAccounts.length > 0 ? (
           <div className="networth-section">
             <NetWorthChart
@@ -390,6 +381,7 @@ const LandingPage = () => {
               pensionAccounts={pensionAccounts}
               selectedSavingsAccounts={[]}
               selectedPensions={[]}
+              showMetricsAbove={true}
             />
           </div>
         ) : (

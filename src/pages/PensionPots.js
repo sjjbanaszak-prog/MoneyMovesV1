@@ -252,7 +252,30 @@ export default function PensionPots() {
   };
 
   const removePension = (providerName) => {
-    setPensions((prev) => prev.filter((p) => p.provider !== providerName));
+    setPensions((prev) => {
+      const updatedPensions = prev.filter((p) => p.provider !== providerName);
+
+      // Recalculate yearly totals from the remaining pensions
+      const newYearlyTotals = {};
+      updatedPensions.forEach((pension) => {
+        if (pension.paymentHistory) {
+          pension.paymentHistory.forEach((payment) => {
+            const paymentDate = new Date(payment.date);
+            const month = paymentDate.getMonth();
+            const day = paymentDate.getDate();
+            const year = paymentDate.getFullYear();
+
+            // Calculate UK tax year (April 6 cutoff)
+            const taxYear = (month > 3 || (month === 3 && day >= 6)) ? year : year - 1;
+
+            newYearlyTotals[taxYear] = (newYearlyTotals[taxYear] || 0) + payment.amount;
+          });
+        }
+      });
+
+      setYearlyTotals(newYearlyTotals);
+      return updatedPensions;
+    });
     setSelectedPensions((prev) => prev.filter((p) => p !== providerName));
   };
 
@@ -274,8 +297,15 @@ export default function PensionPots() {
     updatedPensions.forEach((pension) => {
       if (pension.paymentHistory) {
         pension.paymentHistory.forEach((payment) => {
-          const year = new Date(payment.date).getFullYear().toString();
-          newYearlyTotals[year] = (newYearlyTotals[year] || 0) + payment.amount;
+          const paymentDate = new Date(payment.date);
+          const month = paymentDate.getMonth();
+          const day = paymentDate.getDate();
+          const year = paymentDate.getFullYear();
+
+          // Calculate UK tax year (April 6 cutoff)
+          const taxYear = (month > 3 || (month === 3 && day >= 6)) ? year : year - 1;
+
+          newYearlyTotals[taxYear] = (newYearlyTotals[taxYear] || 0) + payment.amount;
         });
       }
     });
@@ -296,12 +326,6 @@ export default function PensionPots() {
     // Process the upload result using the pension data processor
     const { yearlyTotals: newYearlyTotals, providerData } =
       processPensionUpload(confirmedResult);
-
-    // Update yearly totals
-    setYearlyTotals((prevTotals) => ({
-      ...prevTotals,
-      ...newYearlyTotals,
-    }));
 
     // Update pension providers
     if (providerData && Array.isArray(providerData)) {
@@ -348,6 +372,25 @@ export default function PensionPots() {
           }
         });
 
+        // Recalculate yearly totals from ALL pensions after merge
+        const recalculatedYearlyTotals = {};
+        updatedPensions.forEach((pension) => {
+          if (pension.paymentHistory) {
+            pension.paymentHistory.forEach((payment) => {
+              const paymentDate = new Date(payment.date);
+              const month = paymentDate.getMonth();
+              const day = paymentDate.getDate();
+              const year = paymentDate.getFullYear();
+
+              // Calculate UK tax year (April 6 cutoff)
+              const taxYear = (month > 3 || (month === 3 && day >= 6)) ? year : year - 1;
+
+              recalculatedYearlyTotals[taxYear] = (recalculatedYearlyTotals[taxYear] || 0) + payment.amount;
+            });
+          }
+        });
+
+        setYearlyTotals(recalculatedYearlyTotals);
         return updatedPensions;
       });
     }
@@ -517,7 +560,7 @@ export default function PensionPots() {
         return null;
 
       case "growth-chart":
-        if (isModuleVisible("growth-chart")) {
+        if (shouldShowModule("growth-chart", pensions.length > 0)) {
           return (
             <div className="full-width-card">
               <PensionGrowthChart
@@ -533,7 +576,9 @@ export default function PensionPots() {
         if (
           shouldShowModule(
             "peer-comparison",
-            pensionBuilderData && pensionBuilderData.currentPot > 0
+            pensions.length > 0 &&
+              pensionBuilderData &&
+              pensionBuilderData.currentPot > 0
           )
         ) {
           return (
@@ -554,6 +599,7 @@ export default function PensionPots() {
                 onToggle={toggleSelectedPension}
                 onRemove={removePension}
                 onUpdateValue={updatePensionValue}
+                onUpdatePensions={handleUpdatePensions}
               />
             </div>
           );
@@ -600,7 +646,12 @@ export default function PensionPots() {
         <h1 className="tracker-title">Pension Dashboard</h1>
         <button
           className="customize-dashboard-btn"
-          onClick={() => setShowCustomizePanel(!showCustomizePanel)}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log("Customize button clicked!");
+            setShowCustomizePanel(!showCustomizePanel);
+          }}
           aria-label="Customize Dashboard"
         >
           <Settings size={20} />
@@ -608,60 +659,74 @@ export default function PensionPots() {
       </div>
 
       {showCustomizePanel && (
-        <div className="customize-panel">
-          <div className="panel-header">
-            <h3 className="panel-title">Configure Your Dashboard</h3>
-            <button
-              className="close-panel-btn"
-              onClick={() => setShowCustomizePanel(false)}
-            >
-              <X size={20} />
-            </button>
-          </div>
+        <div className="modal-overlay" onClick={() => setShowCustomizePanel(false)}>
+          <div className="modal-content-box" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div>
+                <h2 className="modal-title">Configure</h2>
+              </div>
+              <button
+                onClick={() => setShowCustomizePanel(false)}
+                className="modal-close"
+              >
+                <X size={24} />
+              </button>
+            </div>
 
-          <p className="panel-description">
-            Toggle modules on/off and drag to reorder them. Changes are saved
-            automatically.
-          </p>
+            <div className="modal-body modal-body-scrollable">
+              <p className="configure-description">
+                Toggle modules on/off and drag to reorder them. Changes are saved
+                automatically.
+              </p>
 
-          <div className="module-toggles-grid">
-            {dashboardPreferences.moduleOrder.map((moduleId) => {
-              const config = MODULE_CONFIG[moduleId];
-              const isVisible =
-                dashboardPreferences.visibleModules.includes(moduleId);
+              <div className="module-toggles-grid">
+                {dashboardPreferences.moduleOrder.map((moduleId) => {
+                  const config = MODULE_CONFIG[moduleId];
+                  const isVisible =
+                    dashboardPreferences.visibleModules.includes(moduleId);
 
-              return (
-                <div
-                  key={moduleId}
-                  className={`module-toggle-card ${isVisible ? "active" : ""} ${
-                    config.alwaysVisible ? "always-visible" : ""
-                  }`}
-                  onClick={() => toggleModuleVisibility(moduleId)}
-                >
-                  <div className="module-toggle-info">
-                    <span className="module-emoji">{config.icon}</span>
-                    <div>
-                      <div className="module-toggle-name">{config.name}</div>
-                      <div className="module-toggle-desc">
-                        {config.description}
+                  return (
+                    <div
+                      key={moduleId}
+                      className={`module-toggle-card ${isVisible ? "active" : ""} ${
+                        config.alwaysVisible ? "always-visible" : ""
+                      }`}
+                      onClick={() => toggleModuleVisibility(moduleId)}
+                    >
+                      <div className="module-toggle-info">
+                        <span className="module-emoji">{config.icon}</span>
+                        <div>
+                          <div className="module-toggle-name">{config.name}</div>
+                          <div className="module-toggle-desc">
+                            {config.description}
+                          </div>
+                        </div>
+                      </div>
+                      <div
+                        className={`toggle-switch ${isVisible ? "on" : "off"} ${
+                          config.alwaysVisible ? "disabled" : ""
+                        }`}
+                      >
+                        <div className="toggle-slider"></div>
                       </div>
                     </div>
-                  </div>
-                  <div
-                    className={`toggle-switch ${isVisible ? "on" : "off"} ${
-                      config.alwaysVisible ? "disabled" : ""
-                    }`}
-                  >
-                    <div className="toggle-slider"></div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                  );
+                })}
+              </div>
+            </div>
 
-          <button className="reset-dashboard-btn" onClick={resetDashboard}>
-            Reset to Default Layout
-          </button>
+            <div className="modal-footer">
+              <button className="modal-btn modal-btn-secondary" onClick={resetDashboard}>
+                Reset to Default
+              </button>
+              <button
+                className="modal-btn modal-btn-primary"
+                onClick={() => setShowCustomizePanel(false)}
+              >
+                Done
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -682,6 +747,17 @@ export default function PensionPots() {
           </div>
         ))}
       </div>
+
+      {pensions.length === 0 && !showUploadModal && !showReviewModal && (
+        <div className="empty-state">
+          <div className="empty-state-icon">💼</div>
+          <h3>No pension data uploaded yet</h3>
+          <p>
+            Upload your first pension contribution file to start tracking your pension
+            journey and unlock all dashboard features
+          </p>
+        </div>
+      )}
 
       {/* Upload Modal */}
       {showUploadModal && (

@@ -32,6 +32,7 @@ export default function NetWorthChart({
   pensionAccounts = [],
   selectedSavingsAccounts = [],
   selectedPensions = [],
+  showMetricsAbove = false,
 }) {
   const [selectedTimeframe, setSelectedTimeframe] = useState("All");
   const [customRange, setCustomRange] = useState(null);
@@ -383,80 +384,87 @@ export default function NetWorthChart({
     );
   }
 
+  const metricsCards = (
+    <div className="networth-metrics-grid">
+      <div className="networth-metric-card">
+        <div className="networth-metric-label">Current Net Worth</div>
+        <div className="networth-metric-value">
+          £{latestData?.netWorth.toLocaleString()}
+        </div>
+        <div
+          className={`networth-metric-change ${
+            isPositive ? "positive" : "negative"
+          }`}
+        >
+          {isPositive ? "▲" : "▼"} {Math.abs(netWorthChange).toFixed(1)}% (
+          {selectedTimeframe})
+        </div>
+      </div>
+
+      <div className="networth-metric-card">
+        <div className="networth-metric-label">Asset/Liability Ratio</div>
+        <div className="networth-metric-value" style={{ color: "#06b6d4" }}>
+          {assetLiabilityRatio.toFixed(2)}x
+        </div>
+        <div className="networth-metric-subtitle">
+          Assets: £{(totalAssets / 1000).toFixed(0)}k | Liabilities: £
+          {(totalLiabilities / 1000).toFixed(0)}k
+        </div>
+      </div>
+
+      <div className="networth-metric-card">
+        <div className="networth-metric-label">Growth</div>
+        <div
+          className="networth-metric-value"
+          style={{ color: growthChange >= 0 ? "#10b981" : "#ef4444" }}
+        >
+          {growthChange >= 0 ? "+" : ""}£{growthChange.toLocaleString()}
+        </div>
+        <div className="networth-metric-subtitle">
+          {earliestData?.displayMonth || "Start"} to{" "}
+          {latestData?.displayMonth || "End"}
+        </div>
+      </div>
+    </div>
+  );
+
   return (
-    <div className="networth-chart-wrapper">
-      <div className="networth-chart-header">
-        <h3 className="networth-chart-title">Net Worth</h3>
-        <div className="networth-header-actions">
-          <button onClick={handleExport} className="networth-export-btn">
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+    <>
+      {showMetricsAbove && metricsCards}
+
+      <div className="networth-chart-wrapper">
+        <div className="networth-chart-header">
+          <h3 className="networth-chart-title">Net Worth</h3>
+          <div className="networth-header-actions">
+            <button onClick={handleExport} className="networth-export-btn">
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              <span>Export</span>
+            </button>
+          </div>
+        </div>
+
+        {!showMetricsAbove && metricsCards}
+
+        <div className="networth-chart-container">
+          <ResponsiveContainer width="100%" height={300}>
+            <AreaChart
+              data={filteredData}
+              margin={{ top: 10, right: 0, left: -15, bottom: 0 }}
             >
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-              <polyline points="7 10 12 15 17 10" />
-              <line x1="12" y1="15" x2="12" y2="3" />
-            </svg>
-            <span>Export</span>
-          </button>
-        </div>
-      </div>
-
-      <div className="networth-metrics-grid">
-        <div className="networth-metric-card">
-          <div className="networth-metric-label">Current Net Worth</div>
-          <div className="networth-metric-value">
-            £{latestData?.netWorth.toLocaleString()}
-          </div>
-          <div
-            className={`networth-metric-change ${
-              isPositive ? "positive" : "negative"
-            }`}
-          >
-            {isPositive ? "▲" : "▼"} {Math.abs(netWorthChange).toFixed(1)}% (
-            {selectedTimeframe})
-          </div>
-        </div>
-
-        <div className="networth-metric-card">
-          <div className="networth-metric-label">Asset/Liability Ratio</div>
-          <div className="networth-metric-value" style={{ color: "#06b6d4" }}>
-            {assetLiabilityRatio.toFixed(2)}x
-          </div>
-          <div className="networth-metric-subtitle">
-            Assets: £{(totalAssets / 1000).toFixed(0)}k | Liabilities: £
-            {(totalLiabilities / 1000).toFixed(0)}k
-          </div>
-        </div>
-
-        <div className="networth-metric-card">
-          <div className="networth-metric-label">Growth</div>
-          <div
-            className="networth-metric-value"
-            style={{ color: growthChange >= 0 ? "#10b981" : "#ef4444" }}
-          >
-            {growthChange >= 0 ? "+" : ""}£{growthChange.toLocaleString()}
-          </div>
-          <div className="networth-metric-subtitle">
-            {earliestData?.displayMonth || "Start"} to{" "}
-            {latestData?.displayMonth || "End"}
-          </div>
-        </div>
-      </div>
-
-      <div className="networth-chart-container">
-        <ResponsiveContainer width="100%" height={300}>
-          <AreaChart
-            data={filteredData}
-            margin={{ top: 10, right: 0, left: -15, bottom: 0 }}
-          >
-            <defs>
+              <defs>
               <linearGradient id="gradSavings" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="#10b981" stopOpacity={0.8} />
                 <stop offset="95%" stopColor="#10b981" stopOpacity={0.1} />
@@ -707,5 +715,6 @@ export default function NetWorthChart({
         </div>
       </div>
     </div>
+    </>
   );
 }

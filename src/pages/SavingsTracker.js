@@ -126,7 +126,7 @@ export default function SavingsTracker() {
   };
 
   useEffect(() => {
-    if (user && uploads.length > 0) {
+    if (user) {
       saveToFirebase();
     }
   }, [uploads, selectedAccounts, user]);

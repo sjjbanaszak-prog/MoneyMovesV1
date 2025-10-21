@@ -1,24 +1,36 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+**Version**: 2.0
+**Last Updated**: October 2025
+**Status**: Active Development
 
-## Development & Documentation Responsibilities
+This file provides guidance to AI coding assistants when working with code in this repository.
 
-**Claude Code (claude.ai/code)**: Responsible for all code development, implementation, and technical work
-- Feature development and implementation
-- Bug fixes and code optimization
-- Component creation and modification
-- Data processing and calculations
-- Integration and testing
+## Table of Contents
 
-**Cursor**: Responsible for all documentation updates and maintenance
-- Updating .md files (README, CLAUDE.md, PROJECT_STATUS, etc.)
-- Maintaining project documentation
-- Updating feature documentation
-- Keeping documentation in sync with code changes
-- Ensuring documentation accuracy and completeness
+1. [Project Overview](#project-overview)
+2. [Tech Stack](#tech-stack)
+3. [Development Philosophy](#development-philosophy)
+4. [Module Design Process](#module-design-process)
+5. [Firestore Data Architecture](#firestore-data-architecture)
+6. [Component Architecture](#component-architecture)
+7. [Financial Calculations](#financial-calculations)
+8. [Testing Strategy](#testing-strategy)
+9. [Authentication & Security](#authentication--security)
+10. [Deployment & Environment Setup](#deployment--environment-setup)
+11. [Cross-Module Integration](#cross-module-integration)
+12. [Implementation Workflow](#implementation-workflow)
+13. [File Organization](#file-organization)
+14. [Implemented Modules](#implemented-modules)
+15. [Migration & Troubleshooting](#migration--troubleshooting-notes)
+16. [Best Practices Summary](#best-practices-summary)
+17. [Version History](#version-history)
 
-**Important**: When Claude Code makes any code changes, it should notify Cursor to update relevant documentation files to maintain consistency between code and documentation.
+## Documentation Philosophy
+
+- Documentation should be updated alongside code changes to maintain accuracy
+- All AI assistants (Claude Code, Cursor, etc.) are capable of updating documentation when making relevant changes
+- Keep documentation in sync with implementation to prevent drift
 
 ## Project Overview
 
@@ -159,7 +171,7 @@ All modules should follow this JSON blueprint format:
 - Fields: transactions, portfolioData, convertTickers, createdAt, updatedAt
 
 ### Naming Conventions
-- Use snake_case for collection names
+- Use camelCase for collection names (e.g., `pensionScenarios`, `savingsAccounts`, `mortgageScenarios`)
 - Use camelCase for field names within documents
 - Include `userId` reference for user-scoped data
 - Include `createdAt` and `updatedAt` timestamps on all documents
@@ -278,35 +290,412 @@ Examples:
 
 ## Testing Strategy
 
-### Financial Logic Testing
-- Unit tests for all calculation functions
-- Verify calculations match manual amortization schedules
-- Test edge cases and boundary conditions
-- Validate strategy comparisons (e.g., Avalanche minimizes interest vs Snowball)
+### Testing Framework & Tools
+
+**Primary Testing Stack**:
+- **Test Runner**: Jest (included with Create React App)
+- **React Testing**: React Testing Library
+- **Mocking**: Jest mocks for Firebase and external APIs
+- **Coverage**: Jest coverage reports (target: 80% for critical financial logic)
+
+**Test File Structure**:
+```
+src/
+  components/
+    Component.js
+    Component.test.js           # Co-located with component
+  modules/
+    utils/
+      mortgageUtils.js
+      mortgageUtils.test.js     # Co-located with utility
+  __tests__/
+    integration/                # Integration tests
+    e2e/                        # End-to-end tests (future)
+```
+
+**Running Tests**:
+```bash
+npm test                        # Run all tests in watch mode
+npm test -- --coverage          # Generate coverage report
+npm test -- Component.test.js  # Run specific test file
+```
+
+### Financial Logic Testing (Critical)
+- **Unit tests for all calculation functions**
+  - Pension projection calculations (compound growth, tax relief)
+  - Mortgage amortization schedules
+  - Income tax and National Insurance calculations
+  - ISA/LISA allowance tracking
+- **Verify calculations match manual calculations**
+  - Test against known scenarios with pre-calculated results
+  - Compare with HMRC examples where applicable
+- **Test edge cases and boundary conditions**
+  - Zero balances, negative values
+  - Maximum contribution limits (annual allowance, ISA limits)
+  - Minimum payment < interest accrual scenarios
+  - Date edge cases (tax year boundaries, leap years)
+- **Validate strategy comparisons**
+  - Avalanche vs Snowball debt repayment
+  - Salary sacrifice vs personal contribution
+  - Multiple interest rate scenarios
+
+**Example Test Structure**:
+```javascript
+// mortgageUtils.test.js
+import { calculateMonthlyPayment, generateAmortizationSchedule } from './mortgageUtils';
+
+describe('Mortgage Calculations', () => {
+  test('calculates correct monthly payment for fixed rate', () => {
+    const payment = calculateMonthlyPayment(200000, 2.5, 25);
+    expect(payment).toBeCloseTo(897.33, 2);
+  });
+
+  test('handles edge case: zero loan amount', () => {
+    const payment = calculateMonthlyPayment(0, 2.5, 25);
+    expect(payment).toBe(0);
+  });
+});
+```
+
+### Component Testing
+- **Input validation**: Test form validation logic
+- **User interactions**: Test button clicks, form submissions
+- **Conditional rendering**: Test component states (loading, error, success)
+- **Prop handling**: Test component behavior with different props
 
 ### Integration Testing
-- Test Firestore read/write operations
-- Verify authentication and user data isolation
-- Test cross-module data sharing
-- Validate Cloud Function triggers
+- **Firestore operations**
+  - Mock Firestore for consistent test data
+  - Test document read/write/update operations
+  - Verify data transformation and validation
+- **Authentication flow**
+  - Mock Firebase Auth
+  - Test protected route behavior
+  - Verify user data isolation
+- **Cross-module data sharing**
+  - Test data aggregation (net worth calculation)
+  - Verify data consistency across modules
+- **Cloud Function triggers** (when implemented)
+  - Test function invocation
+  - Verify calculations and data updates
 
 ### User Flow Testing
-- Test complete user journeys from data input to visualization
-- Verify real-time recalculation on input changes
-- Test CSV/file upload and parsing
-- Validate export functionality
+- **Complete user journeys**
+  - Upload file → map columns → validate data → visualize results
+  - Input pension details → calculate projections → view charts
+  - Configure mortgage → add overpayments → view savings
+- **Real-time recalculation**
+  - Test useEffect dependencies
+  - Verify debounced saving behavior
+  - Test state synchronization
+- **File upload and parsing**
+  - Test CSV parsing with various formats
+  - Test Excel file reading
+  - Test column detection and mapping
+  - Validate error handling for malformed files
+- **Export functionality** (when implemented)
+  - Test data export formats
+  - Verify exported data accuracy
+
+### Testing Best Practices
+- **Test file naming**: `ComponentName.test.js` or `utilityName.test.js`
+- **Mock external dependencies**: Firebase, APIs, file system
+- **Isolate tests**: Each test should be independent
+- **Descriptive test names**: Use clear, behavior-focused descriptions
+- **Arrange-Act-Assert pattern**: Structure tests consistently
+- **Coverage targets**:
+  - Financial calculations: 95%+ coverage required
+  - Business logic: 80%+ coverage
+  - UI components: 70%+ coverage
+  - Utility functions: 90%+ coverage
+
+### Continuous Integration (Future)
+- Run tests on every commit
+- Block merges if tests fail
+- Generate coverage reports
+- Automated deployment on passing tests
 
 ## Authentication & Security
 
-- Firebase Authentication required for all module access
-- User data isolated by `userId` in Firestore security rules
+### Authentication System
+
+**Current Implementation**:
+- **Provider**: Firebase Authentication
+- **Methods Supported**:
+  - Email/Password authentication
+  - Google Sign-In (OAuth)
+  - Email verification flow
+  - Password reset functionality
+- **Auth Context**: `src/contexts/AuthContext.js` provides centralized auth state management
+- **Protected Routes**: `ProtectedRoute.js` component wraps authenticated pages
+- **Auth Components**: Dedicated auth UI in `src/components/auth/`
+
+**Authentication Flow**:
+1. User accesses protected route
+2. `ProtectedRoute` checks auth state via `AuthContext`
+3. If unauthenticated, redirect to `/login`
+4. After successful login, redirect to intended destination
+5. Auth state persists across sessions (Firebase handles tokens)
+
+### Firestore Security Rules
+
+**Core Security Principles**:
+- All data scoped to authenticated users
+- Users can only read/write their own data
+- Document IDs use `userId` for user isolation
+- Server-side validation via Cloud Functions for critical operations
+
+**Example Security Rules**:
+```javascript
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper function to check authentication
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Helper function to check user owns document
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    // Pension Scenarios - user can only access their own data
+    match /pensionScenarios/{userId} {
+      allow read, write: if isAuthenticated() && isOwner(userId);
+    }
+
+    // Pension Pots - user can only access their own data
+    match /pensionPots/{userId} {
+      allow read, write: if isAuthenticated() && isOwner(userId);
+
+      // Historical positions subcollection
+      match /historical_positions/{positionId} {
+        allow read, write: if isAuthenticated() && isOwner(userId);
+      }
+    }
+
+    // Mortgage Scenarios
+    match /mortgageScenarios/{userId} {
+      allow read, write: if isAuthenticated() && isOwner(userId);
+    }
+
+    // Savings Accounts
+    match /savingsAccounts/{userId} {
+      allow read, write: if isAuthenticated() && isOwner(userId);
+
+      // Historical positions subcollection
+      match /historical_positions/{positionId} {
+        allow read, write: if isAuthenticated() && isOwner(userId);
+      }
+    }
+
+    // Trading 212 Portfolios
+    match /trading212Portfolios/{userId} {
+      allow read, write: if isAuthenticated() && isOwner(userId);
+    }
+
+    // Default: deny all other access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+```
+
+### Data Security Best Practices
+
+**Environment Variables**:
+- Firebase credentials stored in `.env` (not committed to git)
+- `.env.example` provides template
+- Different configs per environment (dev/staging/prod)
+- API keys restricted by HTTP referrer and app identifier
+
+**Client-Side Security**:
+- Never expose sensitive API keys in client code
+- Use environment variables for all credentials
+- Firebase security rules enforce server-side authorization
+- Validate all user inputs before Firestore writes
+
+**Server-Side Validation** (via Cloud Functions):
+- Critical calculations verified server-side
+- Input sanitization and validation
+- Rate limiting for expensive operations
+- Audit logging for sensitive actions
+
+**Data Privacy**:
+- User financial data is never shared between users
+- Aggregate analytics use anonymized data only
+- Peer comparison features use statistical ranges, not raw data
+- No personally identifiable information in error logs
+
+### Session Management
+
+- Firebase handles authentication tokens automatically
+- Tokens refresh automatically before expiration
+- "Remember Me" functionality persists sessions
+- Explicit logout clears all local auth state
+- Tokens stored in secure httpOnly cookies (Firebase default)
+
+### Security Checklist
+
+- ✅ Firebase Authentication implemented
+- ✅ Protected routes enforce authentication
+- ✅ User data isolated by `userId`
+- ✅ Environment variables for credentials
+- ✅ `.env` excluded from git
+- ⚠️ Firestore security rules (implement before production)
+- ⚠️ Cloud Functions input validation (implement as needed)
+- ⚠️ Rate limiting (implement before production)
+- ⚠️ Audit logging (implement for compliance)
+
+### Deployment Security
+
 - Deploy MVP to authenticated users only
-- Never expose sensitive financial data in client-side code
-- Validate all inputs server-side via Cloud Functions
+- Use Firebase Hosting with HTTPS enforced
+- Enable Firebase App Check for abuse prevention
+- Monitor authentication anomalies via Firebase Console
+- Implement security headers (CSP, HSTS, X-Frame-Options)
+
+## Deployment & Environment Setup
+
+### Environment Configuration
+
+**Required Environment Variables** (`.env`):
+```bash
+# Firebase Configuration
+REACT_APP_FIREBASE_API_KEY=your_api_key_here
+REACT_APP_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+REACT_APP_FIREBASE_PROJECT_ID=your_project_id
+REACT_APP_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
+REACT_APP_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+REACT_APP_FIREBASE_APP_ID=your_app_id
+REACT_APP_FIREBASE_MEASUREMENT_ID=your_measurement_id
+
+# Optional: External API Keys
+# REACT_APP_ALPHA_VANTAGE_API_KEY=your_alpha_vantage_key
+# REACT_APP_MARKET_STACK_API_KEY=your_market_stack_key
+```
+
+**Setup Steps**:
+1. Copy `.env.example` to `.env`
+2. Replace placeholder values with your Firebase project credentials
+3. Never commit `.env` to version control (already in `.gitignore`)
+4. Use different `.env` files for dev/staging/prod environments
+
+### Local Development
+
+**First-Time Setup**:
+```bash
+# Install dependencies
+npm install --legacy-peer-deps
+
+# Start development server
+npm start
+
+# App will open at http://localhost:3000
+```
+
+**Development Scripts**:
+```bash
+npm start              # Start dev server with hot reload
+npm test               # Run tests in watch mode
+npm run build          # Create production build
+npm run build:analyze  # Analyze bundle size (if configured)
+```
+
+**Troubleshooting**:
+- **Module resolution errors**: Clear webpack cache with `rm -rf node_modules/.cache && npm start`
+- **Peer dependency conflicts**: Use `--legacy-peer-deps` flag for npm install
+- **Firebase connection issues**: Verify `.env` variables are loaded correctly
+
+### Production Deployment
+
+**Recommended Platform**: Vercel or Firebase Hosting
+
+**Vercel Deployment**:
+1. Connect GitHub repository to Vercel
+2. Configure environment variables in Vercel dashboard
+3. Set build command: `npm run build`
+4. Set output directory: `build`
+5. Deploy automatically on git push to main branch
+
+**Firebase Hosting Deployment**:
+```bash
+# Install Firebase CLI
+npm install -g firebase-tools
+
+# Login to Firebase
+firebase login
+
+# Initialize Firebase Hosting
+firebase init hosting
+
+# Build production bundle
+npm run build
+
+# Deploy to Firebase Hosting
+firebase deploy --only hosting
+```
+
+**Build Configuration**:
+- React app uses Create React App build system
+- Production builds include optimization and minification
+- `.npmrc` configured with `legacy-peer-deps=true` for CI/CD
+- Source maps generated for debugging (configure for security)
+
+### Environment-Specific Configs
+
+**Development** (`.env.development`):
+- Local Firebase emulators (optional)
+- Verbose logging enabled
+- Source maps enabled
+- Hot module replacement
+
+**Production** (`.env.production`):
+- Production Firebase project
+- Error logging only
+- Source maps disabled or limited
+- Performance monitoring enabled
+
+### Performance Optimization
+
+**Current Optimizations**:
+- Debounced Firestore writes (500ms delay)
+- Lazy loading for route components (potential improvement)
+- Memoized calculations for expensive operations
+- Recharts with optimized re-rendering
+
+**Future Improvements**:
+- Code splitting by route
+- Image optimization for logos
+- Service worker for offline support
+- CDN for static assets
+
+### Monitoring & Analytics
+
+**Firebase Analytics** (configured):
+- User engagement tracking
+- Page view analytics
+- Error logging via Firebase Crashlytics
+- Performance monitoring
+
+**Custom Events** (implement as needed):
+- Module usage tracking
+- File upload success/failure rates
+- Calculation completion times
+- User journey funnel analysis
 
 ## Cross-Module Integration
 
-Money Moves modules should integrate where logical:
+### Implemented Integrations
+- **Landing Page ↔ All Modules**: Net worth aggregation and dashboard overview
+- **Pension Builder ↔ Pension Pots**: Current pot values feed into retirement projections
+- **Savings Tracker ↔ Mortgage Calculator**: Savings can be used for mortgage overpayments
+- **Trading 212 ↔ Landing Page**: Investment values contribute to net worth calculation
+- **All Modules ↔ Account Settings**: Centralized user preferences and data management
+
+### Planned Integrations (Future)
 - **DebtManager ↔ SavingsTracker**: Link debt payoff to savings goal milestones
 - **DebtManager ↔ PensionBuilder**: Show trade-offs between debt repayment and pension contributions
 - **DebtManager ↔ BudgetPlanner**: Pull monthly budget constraints from central budget module
@@ -355,67 +744,98 @@ When building a new module:
 Current project structure:
 ```
 /src
-  App.js
+  App.js                              # Main app component with routing
+  index.js                            # React entry point
+  firebase.js                         # Firebase configuration
+
   components/
-    alphavantage.env
-    AuthButtons.js
-    common/
+    auth/                             # Authentication components (NEW)
+      AuthStyles.css
+      ForgotPassword.js
+      Login.js
+      ProtectedRoute.js
+      Register.js
+    common/                           # Reusable UI library
       Button.js
       Card.js
-      index.js
       Input.js
       Modal.js
-    Navbar.css
+      index.js                        # Barrel export
+    AuthButtons.js
     Navbar.js
+    Navbar.css
     test.js
+
   context/
-    AuthProvider.js
-  firebase.js
-  functions/
-    index.js
+    AuthProvider.js                   # Legacy auth provider
+
+  contexts/
+    AuthContext.js                    # Current auth context (NEW)
+
   hooks/
-    useFirebaseCollection.js
-    useFirebaseDoc.js
-  index.js
-  modules/
+    useFirebaseCollection.js          # Collection CRUD hook
+    useFirebaseDoc.js                 # Document auto-save hook
+
+  functions/
+    index.js                          # Cloud Functions
+
+  modules/                            # Feature modules
+    # File upload & mapping components
+    FileUploader.js
+    FileUploaderStyles.css
+    IntelligentFileUploader.js        # AI-powered uploader (NEW)
+    IntelligentFileUploaderStyles.css
+    ColumnMapper.js
+    ColumnMapperStyles.css
+    MappingConfidenceBar.js           # Upload quality indicator (NEW)
+    MappingConfidenceBarStyles.css
+    MappingReviewModal.js             # Mapping review UI (NEW)
+    MappingReviewModalStyles.css
+    MappingReviewTable.js             # Mapping table UI (NEW)
+    MappingReviewTableStyles.css
+    UploadSummaryCard.js              # Upload summary (NEW)
+    UploadSummaryCardStyles.css
+
+    # Account management components
     AccountsTable.js
     AccountsTableStyles.css
+
+    # AI advisory components
     AIFinancialAdvisory.js
     AIFinancialAdvisoryStyles.css
     AISavingsAdvisory.js
-    archive/
-      MortgageCalc.js
-      MortgageCalcStyles.css
-    ColumnMapper.js
-    ColumnMapperStyles.css
-    fetchMarketStackDailySeries.js
-    FileUploader.js
-    FileUploaderStyles.css
+
+    # Income tax components
     IncomeTaxBreakdownTable.js
     IncomeTaxBreakdownTableStyles.css
     IncomeTaxInputs.js
     IncomeTaxInputsStyles.css
-    ISALISAUtilization.css
+    TakeHomeComparisonChart.js
+
+    # Savings-specific components
     ISALISAUtilization.js
-    login/
-      LoginScreen.css
-      LoginScreen.js
+    ISALISAUtilization.css
+    PremiumBondsAnalysis.js
+    PremiumBondsAnalysisStyles.css
+
+    # Chart components
     MonthlyBalanceChangeChart.js
     MonthlyPerformanceChart.js
-    mortgage/
-      MortgageChart.js
-      MortgageChartStyles.css
-      MortgageInputForm.js
-      MortgageSchedule.js
-      MortgageScheduleStyles.css
-      MortgageSummary.js
-      MortgageSummaryStyles.css
     NetWorthChart.js
     NetWorthChartStyles.css
+    PortfolioValueChart.js
+    SavingsChart.js
+    SavingsChart.css
+    StackedBarChart.css
+    TimeframeTabs.js
+    TimeframeTabs.css
+    TreemapChart.js
+
+    # Pension components
     PensionAccountsTable.js
     PensionAccountsTableStyles.css
-    PensionAllowanceChart.css
     PensionAllowanceChart.js
+    PensionAllowanceChart.css
     PensionColumnMapper.js
     PensionGrowthChart.js
     PensionGrowthChartStyles.css
@@ -429,21 +849,39 @@ Current project structure:
     PensionReturnsChartStyles.css
     PensionUploader.js
     PensionUploaderStyles.css
+
+    # Investment components
     PortfolioBuilder.js
-    PortfolioValueChart.js
-    PremiumBondsAnalysis.js
-    PremiumBondsAnalysisStyles.css
-    SavingsChart.css
-    SavingsChart.js
-    StackedBarChart.css
-    TakeHomeComparisonChart.js
-    tickerMapping.js
-    TimeframeTabs.css
-    TimeframeTabs.js
     Trading212Parser.js
     Trading212Uploader.js
-    TreemapChart.js
+    tickerMapping.js
+
+    # Mortgage components subfolder
+    mortgage/
+      MortgageChart.js
+      MortgageChartStyles.css
+      MortgageInputForm.js
+      MortgageSchedule.js
+      MortgageScheduleStyles.css
+      MortgageSummary.js
+      MortgageSummaryStyles.css
+
+    # Legacy/archived components
+    archive/
+      MortgageCalc.js                 # Legacy mortgage calculator
+      MortgageCalcStyles.css
+    login/
+      LoginScreen.js                  # Legacy login (replaced by auth/)
+      LoginScreen.css
+
+    # Utility modules
+    fetchMarketStackDailySeries.js    # Market data API
+    utils.js                          # Legacy utilities
     utils/
+      AutoMapper.js                   # AI column mapping (NEW)
+      ContextSchemas.js               # Upload context schemas (NEW)
+      PatternDetector.js              # Pattern detection (NEW)
+      TemplateTrainer.js              # Template learning (NEW)
       columnDetection.js
       dataParser.js
       dataValidation.js
@@ -452,13 +890,14 @@ Current project structure:
       parseNumber.js
       pensionColumnDetection.js
       pensionContributionParser.js
+      pensionDataProcessor.js         # Pension data processing (NEW)
       premiumBondsParser.js
-    utils.js
-  pages/
+
+  pages/                              # Route-level page components
     AccountSettings.js
     AccountSettingsStyles.css
-    LandingPage.css
     LandingPage.js
+    LandingPage.css
     MortgageCalcNEW.js
     MortgageCalcNEWStyles.css
     PensionBuilderNEW.js
@@ -467,13 +906,17 @@ Current project structure:
     PensionPotsStyles.css
     SavingsTracker.js
     SavingsTrackerStyles.css
-    Trading212Dashboard.css
     Trading212Dashboard.js
+    Trading212Dashboard.css
+
   styles/
-    SharedStyles.css
-  utils/
+    SharedStyles.css                  # Global shared styles
+    variables.css                     # CSS variables (NEW)
+
+  utils/                              # Global utilities
     dateUtils.js
     formatters.js
+
 /public
   index.html
   moneymoves-logo-inverted.png
@@ -481,11 +924,22 @@ Current project structure:
   moneymoves-logo2.png
 ```
 
-Notes:
-- Route-level pages live in `/src/pages` (Phase 3)
-- Feature modules remain in `/src/modules`
-- Reusable UI components live in `/src/components/common`
-- Shared global styles in `/src/styles/SharedStyles.css`
+### Organizational Notes
+- **Route-level pages**: `/src/pages` - Main application screens
+- **Feature modules**: `/src/modules` - Reusable business logic components
+- **UI components**: `/src/components/common` - Design system components
+- **Auth components**: `/src/components/auth` - Authentication flow (NEW)
+- **Global styles**: `/src/styles` - Shared CSS and variables
+- **Custom hooks**: `/src/hooks` - Firebase data management hooks
+- **Utilities**: `/src/utils` - Global helper functions
+- **Module utilities**: `/src/modules/utils` - Feature-specific utilities
+
+### Recent Additions
+- Authentication system with dedicated `/components/auth` folder
+- Intelligent file upload system with AI-powered column mapping
+- Mapping review and confidence scoring components
+- CSS variables file for design token management
+- Context schemas and pattern detection for smart uploads
 
 ## Implemented Modules
 
@@ -625,20 +1079,108 @@ Money Moves modules integrate seamlessly:
 
 ## Best Practices Summary
 
+### Development Principles
 - Always prioritize user understanding over technical complexity
 - Maintain visual and structural consistency across all modules
-- Document financial calculations with clear assumptions
-- Test edge cases thoroughly
-- Use real-time updates for better UX with debounced saving
-- Provide comprehensive file upload and data import capabilities
-- Implement AI-powered advisory features for enhanced user guidance
-- Align all tax/financial rules with current HMRC guidance
 - Build incrementally — MVP first, then enhance
-- **Update all .md documentation files when implementing new features** (README, PROJECT_STATUS, feature-specific docs)
+- Test edge cases thoroughly
+- Implement comprehensive error handling and data validation
+
+### Financial Accuracy
+- Document financial calculations with clear assumptions
+- Align all tax/financial rules with current HMRC guidance (2025/26 tax year)
 - Store monetary values in pounds with proper precision handling
+- Maintain UK-specific financial compliance across all modules
+- Test financial calculations against manual examples and HMRC guidance
+
+### Data Management
+- Use Firebase Authentication for secure user data management
 - Use subcollections for time-series data (historical_positions, payment_history, monthly_schedules)
 - Implement real-time recalculation with useEffect for dynamic user interactions
-- Use Firebase Authentication for secure user data management
-- Implement comprehensive error handling and data validation
+- Use debounced saving (500ms) to prevent excessive Firestore writes
+- Validate all user inputs before Firestore writes
+
+### User Experience
+- Provide comprehensive file upload and data import capabilities
+- Implement AI-powered advisory features for enhanced user guidance
+- Use real-time updates for better UX with immediate feedback
 - Provide clear visual feedback for user actions and data processing
-- Maintain UK-specific financial compliance across all modules
+- Use plain, human-readable language in UI (avoid jargon)
+
+### Code Quality
+- Follow component single-responsibility principle
+- Use custom hooks (useFirebaseDoc, useFirebaseCollection) for data operations
+- Maintain consistent naming conventions (camelCase for collections and fields)
+- Co-locate component styles with components
+- Use shared styles from `/src/styles/SharedStyles.css` for consistency
+
+### Documentation
+- Update documentation alongside code changes
+- Keep CLAUDE.md in sync with implementation
+- Document new features in README and PROJECT_STATUS files
+- Include version numbers and last updated dates
+- Use clear, descriptive commit messages
+
+### Security
+- Never commit sensitive credentials (use .env)
+- Implement Firestore security rules before production
+- Validate inputs server-side via Cloud Functions for critical operations
+- Use environment variables for all API keys
+- Isolate user data by userId
+
+## Version History
+
+### Version 2.0 - October 2025 (Current)
+**Major Documentation Overhaul**
+
+**Added**:
+- Table of contents for easier navigation
+- Comprehensive testing strategy section with Jest/React Testing Library
+- Expanded authentication & security section with example Firestore rules
+- Deployment & environment setup section with detailed instructions
+- Version tracking and last updated metadata
+- Documentation philosophy section
+- Updated file organization tree reflecting current structure
+- New authentication components (`/src/components/auth`)
+- Intelligent file upload system with AI mapping
+- CSS variables file for design tokens
+- Cross-module integration split into Implemented vs Planned
+
+**Fixed**:
+- Corrected Firestore naming convention from snake_case to camelCase
+- Removed reference to deleted `alphavantage.env` file
+- Verified React Router version (v7 confirmed)
+- Updated organizational notes to reflect new auth structure
+
+**Improved**:
+- Restructured for better readability
+- Added code examples for testing and security rules
+- Clarified environment variable setup process
+- Enhanced security documentation with detailed examples
+- Better organization of cross-module integrations
+
+### Version 1.0 - Initial Release
+**Foundation Documentation**
+
+- Initial project overview and mission statement
+- Tech stack documentation (React 19, Firebase 11, Recharts 3)
+- Development philosophy and core principles
+- Module design process with AI Product Team personas
+- Firestore data architecture for all modules
+- Component architecture patterns
+- Financial calculation requirements
+- User experience patterns and microcopy guidelines
+- Implementation workflow (6-phase approach)
+- File organization structure
+- Documentation of 6 implemented modules:
+  - Pension Builder
+  - Pension Pots
+  - Mortgage Calculator
+  - Savings Tracker
+  - Trading 212 Dashboard
+  - Account Settings
+- Best practices summary
+
+---
+
+**End of CLAUDE.md** - Last updated: October 2025
