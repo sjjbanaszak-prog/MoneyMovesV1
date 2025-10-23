@@ -13,19 +13,19 @@ import PensionAccountsTable from "../modules/PensionAccountsTable";
 import IntelligentFileUploader from "../modules/IntelligentFileUploader";
 import MappingReviewModal from "../modules/MappingReviewModal";
 import { processPensionUpload } from "../modules/utils/pensionDataProcessor";
-import PensionAllowanceChart from "../modules/PensionAllowanceChart";
 import PensionMetricCards from "../modules/PensionMetricCards";
 import PensionGrowthChart from "../modules/PensionGrowthChart";
 import PensionPeerComparison from "../modules/PensionPeerComparison";
 import AIFinancialAdvisory from "../modules/AIFinancialAdvisory";
+import PensionAllowanceUtilization from "../modules/PensionAllowanceUtilization";
 
 const DEFAULT_MODULE_ORDER = [
   "uploader",
   "ai-advisory",
   "overview",
-  "peer-comparison",
   "accounts-table",
-  "allowance-chart",
+  "allowance-utilization",
+  "peer-comparison",
 ];
 
 const DEFAULT_VISIBLE_MODULES = [...DEFAULT_MODULE_ORDER];
@@ -52,9 +52,9 @@ const MODULE_CONFIG = {
     name: "Pension Accounts",
     description: "Detailed provider information",
   },
-  "allowance-chart": {
-    name: "Annual Allowance",
-    description: "Track allowance usage",
+  "allowance-utilization": {
+    name: "Allowance Utilization",
+    description: "Track annual allowance usage",
   },
 };
 
@@ -133,22 +133,55 @@ export default function PensionPots() {
         if (dashboardPrefSnap.exists()) {
           const savedPreferences = dashboardPrefSnap.data();
 
-          // Ensure we have valid moduleOrder and visibleModules
-          const validModuleOrder = savedPreferences.moduleOrder?.every((id) =>
-            Object.keys(MODULE_CONFIG).includes(id)
-          )
-            ? savedPreferences.moduleOrder
-            : DEFAULT_MODULE_ORDER;
+          // Get all current module IDs from MODULE_CONFIG
+          const allModuleIds = Object.keys(MODULE_CONFIG);
 
-          const validVisibleModules =
-            savedPreferences.visibleModules?.filter((id) =>
-              Object.keys(MODULE_CONFIG).includes(id)
-            ) || DEFAULT_VISIBLE_MODULES;
+          // Start with saved moduleOrder or default
+          let moduleOrder = savedPreferences.moduleOrder || DEFAULT_MODULE_ORDER;
+
+          // MIGRATION: Replace old "allowance-chart" with new "allowance-utilization"
+          moduleOrder = moduleOrder.map(id =>
+            id === "allowance-chart" ? "allowance-utilization" : id
+          );
+
+          // MIGRATION: Move "allowance-utilization" to be right after "accounts-table"
+          const allowanceUtilIndex = moduleOrder.indexOf("allowance-utilization");
+          const accountsTableIndex = moduleOrder.indexOf("accounts-table");
+
+          if (allowanceUtilIndex !== -1 && accountsTableIndex !== -1 && allowanceUtilIndex !== accountsTableIndex + 1) {
+            // Remove from current position
+            moduleOrder = moduleOrder.filter(id => id !== "allowance-utilization");
+            // Insert right after accounts-table
+            moduleOrder.splice(accountsTableIndex + 1, 0, "allowance-utilization");
+          }
+
+          console.log("After migration, moduleOrder:", moduleOrder);
+
+          // Add any new modules that exist in MODULE_CONFIG but not in saved preferences
+          const newModules = allModuleIds.filter(id => !moduleOrder.includes(id));
+          if (newModules.length > 0) {
+            console.log("Adding new modules to user preferences:", newModules);
+            moduleOrder = [...moduleOrder, ...newModules];
+          }
+
+          // Ensure visibleModules includes all valid modules (including new ones)
+          let visibleModules = savedPreferences.visibleModules || DEFAULT_VISIBLE_MODULES;
+
+          // MIGRATION: Replace old "allowance-chart" with new "allowance-utilization" in visible modules
+          visibleModules = visibleModules.map(id =>
+            id === "allowance-chart" ? "allowance-utilization" : id
+          );
+
+          const newVisibleModules = allModuleIds.filter(id => !visibleModules.includes(id));
+          if (newVisibleModules.length > 0) {
+            console.log("Adding new modules to visible modules:", newVisibleModules);
+            visibleModules = [...visibleModules, ...newVisibleModules];
+          }
 
           setDashboardPreferences({
-            moduleOrder: validModuleOrder,
-            visibleModules: validVisibleModules,
-            ...savedPreferences, // Include any other saved preferences
+            ...savedPreferences, // Include any other saved preferences first
+            moduleOrder, // Then override with migrated values
+            visibleModules,
           });
         }
       } catch (error) {
@@ -587,19 +620,30 @@ export default function PensionPots() {
         }
         return null;
 
-      case "allowance-chart":
+      case "allowance-utilization":
+        console.log("allowance-utilization case hit!");
+        console.log("yearlyTotals:", yearlyTotals);
+        console.log("yearlyTotals keys length:", Object.keys(yearlyTotals).length);
+        console.log("isModuleVisible:", isModuleVisible("allowance-utilization"));
+        console.log("shouldShowModule result:", shouldShowModule(
+          "allowance-utilization",
+          Object.keys(yearlyTotals).length > 0
+        ));
+
         if (
           shouldShowModule(
-            "allowance-chart",
+            "allowance-utilization",
             Object.keys(yearlyTotals).length > 0
           )
         ) {
+          console.log("✅ RENDERING ALLOWANCE UTILIZATION");
           return (
             <div className="full-width-card">
-              <PensionAllowanceChart yearlyTotals={yearlyTotals} />
+              <PensionAllowanceUtilization yearlyTotals={yearlyTotals} />
             </div>
           );
         }
+        console.log("❌ NOT RENDERING - condition failed");
         return null;
 
       default:
@@ -718,21 +762,25 @@ export default function PensionPots() {
       )}
 
       <div className="dashboard-modules">
-        {dashboardPreferences.moduleOrder.map((moduleId) => (
-          <div
-            key={moduleId}
-            className={`module-wrapper ${
-              draggedModule === moduleId ? "dragging" : ""
-            } ${MODULE_CONFIG[moduleId]?.alwaysVisible ? "non-draggable" : ""}`}
-            draggable={!MODULE_CONFIG[moduleId]?.alwaysVisible}
-            onDragStart={(e) => handleDragStart(e, moduleId)}
-            onDragOver={handleDragOver}
-            onDrop={(e) => handleDrop(e, moduleId)}
-            onDragEnd={handleDragEnd}
-          >
-            {renderModule(moduleId)}
-          </div>
-        ))}
+        {console.log("Rendering modules with moduleOrder:", dashboardPreferences.moduleOrder)}
+        {dashboardPreferences.moduleOrder.map((moduleId) => {
+          console.log("Rendering module:", moduleId);
+          return (
+            <div
+              key={moduleId}
+              className={`module-wrapper ${
+                draggedModule === moduleId ? "dragging" : ""
+              } ${MODULE_CONFIG[moduleId]?.alwaysVisible ? "non-draggable" : ""}`}
+              draggable={!MODULE_CONFIG[moduleId]?.alwaysVisible}
+              onDragStart={(e) => handleDragStart(e, moduleId)}
+              onDragOver={handleDragOver}
+              onDrop={(e) => handleDrop(e, moduleId)}
+              onDragEnd={handleDragEnd}
+            >
+              {renderModule(moduleId)}
+            </div>
+          );
+        })}
       </div>
 
       {pensions.length === 0 && !showUploadModal && !showReviewModal && (

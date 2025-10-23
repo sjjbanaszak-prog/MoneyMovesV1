@@ -1,0 +1,318 @@
+/* Pension Allowance Utilization - MoneyMoves Styled */
+
+/* Card Container - MoneyMoves colors */
+.cf-card {
+  background-color: #1f2937;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  margin: 0;
+  width: 100%;
+  max-width: 100%;
+}
+
+.cf-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.cf-card-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #f3f4f6;
+  margin: 0;
+}
+
+/* Carry Forward Chart - Original colors preserved */
+.cf-chart {
+  min-height: 250px;
+  position: relative;
+}
+
+.cf-bars-container {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-around;
+  height: 220px;
+  gap: 12px;
+  margin-bottom: 20px;
+  position: relative;
+}
+
+.cf-bar-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  max-width: 120px;
+  cursor: pointer;
+  transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  height: 100%;
+  justify-content: flex-end;
+  position: relative;
+}
+
+.cf-bar-wrapper:hover .cf-bar-stack {
+  transform: translateY(-4px);
+}
+
+/* Animation states for bars */
+.cf-bar-wrapper.animating {
+  transition: all 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.cf-bar-wrapper.animate-from-center {
+  transform: translateX(var(--start-offset));
+  opacity: 1;
+}
+
+.cf-bar-wrapper.animate-to-position {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+.cf-bar-wrapper.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.cf-bar-stack {
+  width: 100%;
+  display: flex;
+  flex-direction: column-reverse;
+  border-radius: 8px 8px 0 0;
+  overflow: visible;
+  transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  min-height: 10px;
+}
+
+.cf-bar-segment {
+  width: 100%;
+  transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  min-height: 5px;
+  cursor: help;
+}
+
+/* Bar Colors - Original colors preserved */
+.cf-bar-segment.current-year {
+  background: linear-gradient(180deg, #6366f1 0%, #4f46e5 100%);
+  border-radius: 0;
+}
+
+.cf-bar-segment.carry-forward {
+  background: linear-gradient(180deg, #8b5cf6 0%, #7c3aed 100%);
+  border-radius: 0;
+}
+
+.cf-bar-segment.unused {
+  background: linear-gradient(
+    180deg,
+    rgba(99, 102, 241, 0.2) 0%,
+    rgba(79, 70, 229, 0.15) 100%
+  );
+  border: 1px dashed rgba(99, 102, 241, 0.4);
+  border-radius: 0;
+}
+
+.cf-bar-segment.lost {
+  background: linear-gradient(
+    180deg,
+    rgba(239, 68, 68, 0.2) 0%,
+    rgba(220, 38, 38, 0.15) 100%
+  );
+  border: 1px dashed rgba(239, 68, 68, 0.4);
+  border-radius: 0;
+}
+
+/* Bottom of stack (first in reverse order = current year) gets rounded bottom */
+.cf-bar-segment:first-child {
+  border-radius: 0 0 0 0;
+}
+
+/* Top of stack (last in reverse order = unused) gets rounded top */
+.cf-bar-segment:last-child {
+  border-radius: 8px 8px 0 0;
+}
+
+/* Animation states */
+.cf-bar-wrapper.animating .cf-bar-segment {
+  transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.cf-bar-wrapper.splitting .cf-bar-stack {
+  gap: 12px;
+}
+
+/* Individual bar segments that will be extracted and moved */
+.cf-bar-extracted {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  transition: all 1s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 10;
+}
+
+.cf-bar-extracted .cf-bar-stack {
+  border-radius: 8px 8px 0 0;
+}
+
+.cf-bar-extracted .cf-bar-segment {
+  border-radius: 8px 8px 0 0 !important;
+}
+
+/* Labels - Original colors preserved */
+.cf-year-label {
+  font-size: 13px;
+  color: #9ca3af;
+  margin-top: 8px;
+  font-weight: 500;
+  transition: opacity 0.4s ease-in-out;
+}
+
+.cf-amount-label {
+  font-size: 12px;
+  color: #e4e6eb;
+  font-weight: 600;
+  transition: opacity 0.4s ease-in-out;
+}
+
+.cf-usage-label {
+  font-size: 11px;
+  color: #6b7280;
+  transition: opacity 0.4s ease-in-out;
+}
+
+/* Fade animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.6s ease-out forwards;
+  opacity: 0;
+}
+
+.fade-out {
+  opacity: 0;
+  transition: opacity 0.3s ease-out;
+}
+
+.text-hidden {
+  opacity: 0;
+}
+
+/* Back Button */
+.cf-back-btn {
+  padding: 6px 12px;
+  background: #374151;
+  border: 1px solid #4b5563;
+  border-radius: 6px;
+  color: #e4e6eb;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cf-back-btn:hover {
+  background: #4b5563;
+}
+
+/* Legend - Original colors preserved */
+.cf-legend {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #374151;
+}
+
+.cf-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.cf-legend-color {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+}
+
+/* Drilldown Info */
+.cf-drilldown-info {
+  background: #374151;
+  border: 1px solid #4b5563;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 16px;
+  font-size: 13px;
+}
+
+.cf-drilldown-title {
+  font-weight: 600;
+  color: #e4e6eb;
+  margin-bottom: 8px;
+}
+
+.cf-drilldown-detail {
+  color: #9ca3af;
+  margin-bottom: 4px;
+}
+
+.cf-highlight {
+  color: #6366f1;
+  font-weight: 600;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .cf-card {
+    padding: 16px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .cf-bars-container {
+    gap: 8px;
+    height: 180px;
+  }
+
+  .cf-bar-wrapper {
+    max-width: 80px;
+  }
+
+  .cf-year-label {
+    font-size: 11px;
+  }
+
+  .cf-amount-label {
+    font-size: 10px;
+  }
+
+  .cf-legend {
+    gap: 12px;
+  }
+
+  .cf-legend-item {
+    font-size: 11px;
+  }
+}
