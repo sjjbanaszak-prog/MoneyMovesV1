@@ -27,7 +27,7 @@
     rgba(168, 85, 247, 0.2),
     rgba(139, 92, 246, 0.15)
   );
-  padding: 20px 24px;
+  padding: 24px 24px 24px 24px;
   border-bottom: 1px solid rgba(168, 85, 247, 0.2);
   display: flex !important;
   align-items: center !important;
@@ -73,9 +73,10 @@
 }
 
 .ai-title {
-  font-size: var(--text-xl, 20px);
+  font-size: 18px;
   font-weight: var(--font-semibold, 600);
-  color: #f1f5f9;
+  color: #f3f4f6;
+  margin: 0;
 }
 
 .ai-subtitle {
@@ -378,7 +379,7 @@
   }
 
   .ai-title {
-    font-size: var(--text-lg, 18px);
+    font-size: 16px;
   }
 
   .collapse-btn {

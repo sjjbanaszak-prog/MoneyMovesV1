@@ -293,6 +293,10 @@
   gap: 16px;
 }
 
+.dashboard-modules .full-width-card {
+  margin-bottom: 0 !important;
+}
+
 .module-wrapper {
   position: relative;
   border: 2px dashed transparent;
@@ -300,6 +304,7 @@
   transition: all 0.2s;
 }
 
+/* ARCHIVED - Drag and drop customization removed
 .module-wrapper[draggable="true"] {
   cursor: move;
 }
@@ -315,6 +320,7 @@
 .module-wrapper[draggable="true"]:active {
   cursor: grabbing;
 }
+*/
 
 /* Grid layout for pie chart and growth chart - responsive side-by-side */
 .pension-overview-grid {
@@ -348,13 +354,13 @@
 }
 
 .chart-header {
-  margin-bottom: 1rem;
+  margin-bottom: 24px;
 }
 
 .chart-heading {
-  font-size: 1.2rem;
+  font-size: 18px;
   margin: 0;
-  color: #fff;
+  color: #f3f4f6;
   font-weight: 600;
 }
 
@@ -406,7 +412,7 @@
   }
 
   .pension-overview-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr !important;
     gap: 1rem;
   }
 
@@ -414,29 +420,26 @@
   .growth-chart-container {
     min-height: auto;
     max-width: 100%;
+    width: 100%;
   }
 
   .module-toggles-grid {
     grid-template-columns: 1fr;
   }
 
+  .chart-heading {
+    font-size: 16px;
+  }
+
+  /* ARCHIVED - Drag and drop customization removed
   .module-wrapper[draggable="true"] {
     cursor: default;
   }
+  */
 }
 
-/* Stack overview modules when both would be at minimum width (equal size) */
-@media (max-width: 720px) {
-  .pension-overview-grid {
-    grid-template-columns: 1fr;
-    gap: 16px;
-  }
-
-  .pie-chart-container,
-  .growth-chart-container {
-    max-width: 100%;
-  }
-}
+/* Stack overview modules on mobile - merged with main mobile breakpoint */
+/* Moved to @media (max-width: 768px) section above for consistency */
 
 /* Tablet responsive */
 @media (max-width: 1024px) and (min-width: 769px) {

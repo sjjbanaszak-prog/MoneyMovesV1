@@ -16,10 +16,11 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
+  min-height: 28px; /* Fixed height to prevent shifting when button appears */
 }
 
 .cf-card-title {
-  font-size: 1.25rem;
+  font-size: 18px;
   font-weight: 600;
   color: #f3f4f6;
   margin: 0;
@@ -37,7 +38,7 @@
   justify-content: space-around;
   height: 220px;
   gap: 12px;
-  margin-bottom: 20px;
+  margin-bottom: 1px;
   position: relative;
 }
 
@@ -46,7 +47,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
   max-width: 120px;
   cursor: pointer;
   transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
@@ -181,6 +182,11 @@
   color: #e4e6eb;
   font-weight: 600;
   transition: opacity 0.4s ease-in-out;
+  min-height: 32px; /* Reserve space for potential +£ label */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
 }
 
 .cf-usage-label {
@@ -217,7 +223,7 @@
 
 /* Back Button */
 .cf-back-btn {
-  padding: 6px 12px;
+  padding: 4px 12px;
   background: #374151;
   border: 1px solid #4b5563;
   border-radius: 6px;
@@ -225,6 +231,7 @@
   font-size: 13px;
   cursor: pointer;
   transition: all 0.2s;
+  line-height: 1.4;
 }
 
 .cf-back-btn:hover {
@@ -284,6 +291,10 @@
 
 /* Mobile Responsive */
 @media (max-width: 768px) {
+  .cf-card-title {
+    font-size: 16px;
+  }
+
   .cf-card {
     padding: 16px;
     width: 100%;

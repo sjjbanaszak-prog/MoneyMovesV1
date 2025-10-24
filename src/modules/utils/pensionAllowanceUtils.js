@@ -8,7 +8,8 @@
  * @returns {Object} Formatted carry forward data for visualization
  */
 export function calculateCarryForwardData(yearlyTotals) {
-  console.log("calculateCarryForwardData called with:", yearlyTotals);
+  console.log("=== calculateCarryForwardData called ===");
+  console.log("Input yearlyTotals:", yearlyTotals);
 
   if (!yearlyTotals || Object.keys(yearlyTotals).length === 0) {
     console.log("No yearlyTotals data");
@@ -59,8 +60,13 @@ export function calculateCarryForwardData(yearlyTotals) {
       const excessContribution = used - allowance;
       let remainingExcess = excessContribution;
 
+      console.log(`\n${formatTaxYear(year)}: Used ${used} > Allowance ${allowance}`);
+      console.log(`  Excess: £${excessContribution}`);
+
       // Look back up to 3 years for unused allowance
-      for (let i = 1; i <= 3 && i <= index && remainingExcess > 0; i++) {
+      // IMPORTANT: Process in reverse order (oldest first) to comply with HMRC FIFO rules
+      // i=3 means 3 years back (oldest), i=2 means 2 years back, i=1 means 1 year back (newest)
+      for (let i = Math.min(3, index); i >= 1 && remainingExcess > 0; i--) {
         const pastYearIndex = index - i;
         const pastYear = sortedYears[pastYearIndex];
         const pastYearUsed = yearlyTotals[pastYear] || 0;
@@ -95,12 +101,19 @@ export function calculateCarryForwardData(yearlyTotals) {
         const availableFromPastYear = Math.max(0, pastYearUnused - alreadyUsedFromPastYear);
         const amountFromThisYear = Math.min(remainingExcess, availableFromPastYear);
 
+        console.log(`  Looking back ${i} year(s) to ${formatTaxYear(pastYear)}:`);
+        console.log(`    Past year unused: £${pastYearUnused}`);
+        console.log(`    Already used by intermediate years: £${alreadyUsedFromPastYear}`);
+        console.log(`    Available: £${availableFromPastYear}`);
+        console.log(`    Using: £${amountFromThisYear}`);
+
         if (amountFromThisYear > 0) {
           breakdown.carryForward.push({
             fromYear: formatTaxYear(pastYear),
             amount: amountFromThisYear,
           });
           remainingExcess -= amountFromThisYear;
+          console.log(`    Remaining excess: £${remainingExcess}`);
         }
       }
     }

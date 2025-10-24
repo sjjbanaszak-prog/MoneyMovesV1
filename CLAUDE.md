@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-**Version**: 2.0
+**Version**: 2.1
 **Last Updated**: October 2025
 **Status**: Active Development
 
@@ -205,10 +205,13 @@ Components are organized by module and follow single-responsibility principle:
 - Example: `IncomeTaxInputs.js`, `FileUploader.js`, `ColumnMapper.js`, `MortgageInputForm.js`
 
 **Display Components**: Show data in structured views
-- Example: `AccountsTable.js`, `PensionAccountsTable.js`, `IncomeTaxBreakdownTable.js`
+- Example: `AccountsTable.js`, `PensionAccountsTable.js`, `PensionAccountsTableV2.js`, `IncomeTaxBreakdownTable.js`
 
 **Visualization Components**: Render charts and graphs using Recharts
-- Example: `PensionReturnsChart.js`, `MortgageChart.js`, `SavingsChart.js`, `NetWorthChart.js`, `TreemapChart.js`, `MonthlyPerformanceChart.js`
+- Example: `PensionReturnsChart.js`, `PensionAllowanceUtilization.js`, `MortgageChart.js`, `SavingsChart.js`, `NetWorthChart.js`, `TreemapChart.js`, `MonthlyPerformanceChart.js`
+
+**Analytics Components**: Advanced financial analysis and calculations
+- Example: `PensionAllowanceUtilization.js` - Interactive allowance tracking with carry forward calculations
 
 **Control Components**: Enable user interactions and strategy selection
 - Example: `TimeframeTabs.js`, `PensionColumnMapper.js`, `ISALISAUtilization.js`
@@ -267,6 +270,60 @@ Components are organized by module and follow single-responsibility principle:
 - Test edge cases (zero balance, minimum payment < interest accrual, etc.)
 - Document assumptions clearly (e.g., "assumes monthly compounding")
 - Provide transparency in how numbers are derived
+
+### Pension Allowance Calculations (PensionAllowanceUtilization)
+
+**HMRC Rules Implemented**:
+- Annual allowance: £40,000 (2019-2023), £60,000 (2023/24 onwards)
+- Carry forward: Up to 3 previous tax years of unused allowance
+- FIFO ordering: Oldest unused allowance must be used first
+- Tax year: April 6 to April 5 of following year
+
+**Calculation Logic** (`/src/modules/utils/pensionAllowanceUtils.js`):
+
+1. **Yearly Totals Calculation**: Aggregate all pension contributions by tax year
+   - Uses payment history from all pension accounts
+   - Applies UK tax year cutoff (April 6)
+   - Example: Payment on April 5, 2024 → 2023/24 tax year; April 6, 2024 → 2024/25
+
+2. **Carry Forward Breakdown** (`calculateCarryForwardData`):
+   - For each tax year with contributions exceeding current year allowance:
+     - Calculate excess: `used - allowance`
+     - Look back up to 3 years for unused allowance (FIFO order)
+     - Track how much of each past year's unused allowance was consumed by intermediate years
+     - Allocate excess to available carry forward amounts
+
+3. **Consumed by Future Years**:
+   - For each year, check all future years to see if they used this year's unused allowance
+   - Sum up all carry forward usage from this specific year
+   - Display as "+£X" label to show lifetime utilization impact
+
+4. **Lost Allowance Detection**:
+   - Unused allowance older than 3 years from current tax year is marked as "lost"
+   - Visual distinction: Lost allowance shown with red dashed border
+
+**Example Scenario**:
+```
+2022/23: £20k used, £20k unused (£40k allowance)
+2023/24: £30k used, £30k unused (£60k allowance)
+2024/25: £80k used (£60k allowance)
+  - £60k from current year allowance
+  - £20k from 2022/23 carry forward (FIFO - oldest first)
+
+Display for 2024/25:
+  Main amount: £80,000
+  Carry forward label: -£20,000 (from previous years)
+
+Display for 2022/23:
+  Main amount: £20,000
+  Future consumption label: +£20,000 (used by 2024/25)
+```
+
+**Visual Design**:
+- Stacked bar chart with segments: current year (indigo), carry forward (purple), consumed by future (indigo), unused (dashed indigo), lost (dashed red)
+- Interactive drill-down on years with carry forward usage
+- Mobile-responsive: Shows 4 years at a time with year-shifting on selection
+- Animations: Smooth transitions on drill-down/reset using CSS transitions and DOM manipulation
 
 ## User Experience Patterns
 
@@ -959,16 +1016,38 @@ Current project structure:
 - **Data Storage**: `pensionScenarios` collection with user-specific pension planning data
 
 ### Pension Pots (✅ Complete)
-- **Purpose**: Track and manage multiple pension accounts with upload functionality
-- **Key Components**: PensionPots, PensionUploader, PensionColumnMapper, PensionAccountsTable
-- **Features**: 
-  - CSV/Excel file upload for pension statements
-  - Automatic column detection and mapping
-  - Multiple pension account management
+- **Purpose**: Track and manage multiple pension accounts with upload functionality and advanced analytics
+- **Key Components**:
+  - Core: PensionPots, IntelligentFileUploader, MappingReviewModal
+  - Tables: PensionAccountsTable (original), PensionAccountsTableV2 (modern design)
+  - Analytics: PensionAllowanceUtilization, PensionGrowthChart, PensionPotPie, PensionMetricCards
+  - AI: AIFinancialAdvisory
+- **Features**:
+  - CSV/Excel file upload for pension statements with intelligent column detection
+  - Automatic column mapping with review modal for validation
+  - Multiple pension account management with selection/deselection
   - Account type classification (Workplace, Personal, SIPP, etc.)
-  - Historical balance tracking
-  - Account performance analysis
-- **Data Storage**: `pensionPots` collection with account details and historical data
+  - Historical balance tracking and payment history
+  - IRR (Internal Rate of Return) calculation per provider
+  - Account performance analysis with growth tracking
+  - **NEW: Pension Allowance Utilization Chart**
+    - Visual representation of annual allowance usage across tax years
+    - HMRC carry forward calculations (3-year lookback, FIFO rules)
+    - Interactive drill-down showing carry forward breakdown
+    - Mobile-responsive with year-shifting functionality
+    - Shows current year contributions, carry forward usage, consumed by future years, and unused/lost allowance
+    - Color-coded segments (current year: indigo, carry forward: purple, unused: dashed indigo, lost: dashed red)
+    - Dynamic labels showing contribution amounts with +/- indicators for future consumption and carry forward usage
+  - **Two Table Designs**:
+    - PensionAccountsTableV2: Modern, clean design with sortable columns, search, and inverse selection highlighting (deselected rows grayed out)
+    - PensionAccountsTable: Original design with expandable rows and traditional selection highlighting (selected rows normal, deselected rows grayed out)
+  - Dashboard customization with drag-and-drop module ordering
+  - AI-powered financial advisory based on pension data
+- **Data Storage**:
+  - `pensionPots` collection: account details, payment history, yearly totals
+  - `dashboardPreferences` collection: module visibility and ordering
+  - `userPreferences` collection: AI advisory preferences
+- **UK-Specific**: Annual allowance (£40k pre-2023, £60k from 2023/24), carry forward rules, tax year calculations (April 6 cutoff)
 
 ### Mortgage Calculator (✅ Complete)
 - **Purpose**: Advanced mortgage calculations with overpayment scenarios and savings analysis
@@ -1130,7 +1209,31 @@ Money Moves modules integrate seamlessly:
 
 ## Version History
 
-### Version 2.0 - October 2025 (Current)
+### Version 2.1 - October 2025 (Current)
+**Pension Allowance Utilization & UI Improvements**
+
+**Added**:
+- **PensionAllowanceUtilization Component**: Interactive visualization of HMRC annual allowance usage
+  - HMRC carry forward calculations with 3-year lookback and FIFO ordering
+  - Visual breakdown showing current year contributions, carry forward usage, future consumption, and lost allowance
+  - Interactive drill-down functionality for detailed carry forward analysis
+  - Mobile-responsive design with year-shifting for better UX on small screens
+  - Dynamic labels with +/- indicators for clarity
+- **PensionAccountsTableV2**: Modern table design with inverse selection highlighting
+  - Sortable columns with clean visual design
+  - Search functionality for filtering providers
+  - Deselected rows grayed out (inverse of original table)
+  - IRR (Internal Rate of Return) calculations per provider
+- **Pension Allowance Utils** (`/src/modules/utils/pensionAllowanceUtils.js`): Financial calculation engine for allowance tracking
+- Dashboard module ordering migration system for existing users
+- Comprehensive documentation of allowance calculations and HMRC rules
+
+**Changed**:
+- Updated Pension Pots module documentation with new features
+- Reordered default module layout: PensionAccountsTableV2 now appears before original table
+- Enhanced component architecture documentation with Analytics Components category
+
+### Version 2.0 - October 2025
 **Major Documentation Overhaul**
 
 **Added**:

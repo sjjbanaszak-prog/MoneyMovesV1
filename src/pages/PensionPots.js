@@ -5,17 +5,18 @@ import { auth, db } from "../firebase";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import debounce from "lodash.debounce";
-import { Settings, X } from "lucide-react";
+// import { Settings, X } from "lucide-react"; // ARCHIVED - customization UI removed
 import "./PensionPotsStyles.css";
 import "./SavingsTrackerStyles.css";
 import PensionPotPie from "../modules/PensionPotPie";
 import PensionAccountsTable from "../modules/PensionAccountsTable";
+import PensionAccountsTableV2 from "../modules/PensionAccountsTableV2";
 import IntelligentFileUploader from "../modules/IntelligentFileUploader";
 import MappingReviewModal from "../modules/MappingReviewModal";
 import { processPensionUpload } from "../modules/utils/pensionDataProcessor";
 import PensionMetricCards from "../modules/PensionMetricCards";
 import PensionGrowthChart from "../modules/PensionGrowthChart";
-import PensionPeerComparison from "../modules/PensionPeerComparison";
+// import PensionPeerComparison from "../modules/PensionPeerComparison"; // ARCHIVED
 import AIFinancialAdvisory from "../modules/AIFinancialAdvisory";
 import PensionAllowanceUtilization from "../modules/PensionAllowanceUtilization";
 
@@ -23,9 +24,10 @@ const DEFAULT_MODULE_ORDER = [
   "uploader",
   "ai-advisory",
   "overview",
-  "accounts-table",
+  "accounts-table-v2",
   "allowance-utilization",
-  "peer-comparison",
+  "accounts-table",
+  // "peer-comparison", // ARCHIVED
 ];
 
 const DEFAULT_VISIBLE_MODULES = [...DEFAULT_MODULE_ORDER];
@@ -44,13 +46,17 @@ const MODULE_CONFIG = {
     name: "Overview",
     description: "Pie Chart & Deposit History",
   },
-  "peer-comparison": {
-    name: "Peer Comparison",
-    description: "Compare to your age group",
-  },
+  // "peer-comparison": { // ARCHIVED
+  //   name: "Peer Comparison",
+  //   description: "Compare to your age group",
+  // },
   "accounts-table": {
     name: "Pension Accounts",
     description: "Detailed provider information",
+  },
+  "accounts-table-v2": {
+    name: "Pension Accounts V2",
+    description: "Clean table design (NEW)",
   },
   "allowance-utilization": {
     name: "Allowance Utilization",
@@ -144,15 +150,27 @@ export default function PensionPots() {
             id === "allowance-chart" ? "allowance-utilization" : id
           );
 
-          // MIGRATION: Move "allowance-utilization" to be right after "accounts-table"
-          const allowanceUtilIndex = moduleOrder.indexOf("allowance-utilization");
-          const accountsTableIndex = moduleOrder.indexOf("accounts-table");
+          // MIGRATION: Reorder modules to match new DEFAULT_MODULE_ORDER
+          // New order: uploader, ai-advisory, overview, accounts-table-v2, allowance-utilization, accounts-table
+          const tableV2Index = moduleOrder.indexOf("accounts-table-v2");
+          const tableIndex = moduleOrder.indexOf("accounts-table");
+          const allowanceIndex = moduleOrder.indexOf("allowance-utilization");
 
-          if (allowanceUtilIndex !== -1 && accountsTableIndex !== -1 && allowanceUtilIndex !== accountsTableIndex + 1) {
-            // Remove from current position
-            moduleOrder = moduleOrder.filter(id => id !== "allowance-utilization");
-            // Insert right after accounts-table
-            moduleOrder.splice(accountsTableIndex + 1, 0, "allowance-utilization");
+          // If all three modules exist and need reordering
+          if (tableV2Index !== -1 && tableIndex !== -1 && allowanceIndex !== -1) {
+            // Remove all three from their current positions
+            moduleOrder = moduleOrder.filter(id =>
+              id !== "accounts-table-v2" &&
+              id !== "accounts-table" &&
+              id !== "allowance-utilization"
+            );
+
+            // Find where to insert them (after "overview" if it exists, otherwise at the end)
+            const overviewIndex = moduleOrder.indexOf("overview");
+            const insertIndex = overviewIndex !== -1 ? overviewIndex + 1 : moduleOrder.length;
+
+            // Insert in the new order: V2, then allowance, then original table
+            moduleOrder.splice(insertIndex, 0, "accounts-table-v2", "allowance-utilization", "accounts-table");
           }
 
           console.log("After migration, moduleOrder:", moduleOrder);
@@ -586,22 +604,22 @@ export default function PensionPots() {
         }
         return null;
 
-      case "peer-comparison":
-        if (
-          shouldShowModule(
-            "peer-comparison",
-            pensions.length > 0 &&
-              pensionBuilderData &&
-              pensionBuilderData.currentPot > 0
-          )
-        ) {
-          return (
-            <div className="full-width-card">
-              <PensionPeerComparison pensionBuilderData={pensionBuilderData} />
-            </div>
-          );
-        }
-        return null;
+      // case "peer-comparison": // ARCHIVED
+      //   if (
+      //     shouldShowModule(
+      //       "peer-comparison",
+      //       pensions.length > 0 &&
+      //         pensionBuilderData &&
+      //         pensionBuilderData.currentPot > 0
+      //     )
+      //   ) {
+      //     return (
+      //       <div className="full-width-card">
+      //         <PensionPeerComparison pensionBuilderData={pensionBuilderData} />
+      //       </div>
+      //     );
+      //   }
+      //   return null;
 
       case "accounts-table":
         if (shouldShowModule("accounts-table", pensions.length > 0)) {
@@ -616,6 +634,20 @@ export default function PensionPots() {
                 onUpdatePensions={handleUpdatePensions}
               />
             </div>
+          );
+        }
+        return null;
+
+      case "accounts-table-v2":
+        if (shouldShowModule("accounts-table-v2", pensions.length > 0)) {
+          return (
+            <PensionAccountsTableV2
+              pensions={pensions}
+              selectedPensions={selectedPensions}
+              onToggle={toggleSelectedPension}
+              onRemove={removePension}
+              onUpdateValue={updatePensionValue}
+            />
           );
         }
         return null;
@@ -680,77 +712,7 @@ export default function PensionPots() {
         </button>
       </div> */}
 
-      {showCustomizePanel && (
-        <div className="modal-overlay" onClick={() => setShowCustomizePanel(false)}>
-          <div className="modal-content-box" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <div>
-                <h2 className="modal-title">Configure</h2>
-              </div>
-              <button
-                onClick={() => setShowCustomizePanel(false)}
-                className="modal-close"
-              >
-                <X size={24} />
-              </button>
-            </div>
-
-            <div className="modal-body modal-body-scrollable">
-              <p className="configure-description">
-                Toggle modules on/off and drag to reorder them. Changes are saved
-                automatically.
-              </p>
-
-              <div className="module-toggles-grid">
-                {dashboardPreferences.moduleOrder.map((moduleId) => {
-                  const config = MODULE_CONFIG[moduleId];
-                  const isVisible =
-                    dashboardPreferences.visibleModules.includes(moduleId);
-
-                  return (
-                    <div
-                      key={moduleId}
-                      className={`module-toggle-card ${isVisible ? "active" : ""} ${
-                        config.alwaysVisible ? "always-visible" : ""
-                      }`}
-                      onClick={() => toggleModuleVisibility(moduleId)}
-                    >
-                      <div className="module-toggle-info">
-                        <span className="module-emoji">{config.icon}</span>
-                        <div>
-                          <div className="module-toggle-name">{config.name}</div>
-                          <div className="module-toggle-desc">
-                            {config.description}
-                          </div>
-                        </div>
-                      </div>
-                      <div
-                        className={`toggle-switch ${isVisible ? "on" : "off"} ${
-                          config.alwaysVisible ? "disabled" : ""
-                        }`}
-                      >
-                        <div className="toggle-slider"></div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="modal-footer">
-              <button className="modal-btn modal-btn-secondary" onClick={resetDashboard}>
-                Reset to Default
-              </button>
-              <button
-                className="modal-btn modal-btn-primary"
-                onClick={() => setShowCustomizePanel(false)}
-              >
-                Done
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* ARCHIVED - Dashboard Customization Panel has been removed */}
 
       {/* Pension Metric Cards - Always displayed at the top when pensions exist */}
       {pensions.length > 0 && selectedPensions.length > 0 && (
@@ -768,14 +730,16 @@ export default function PensionPots() {
           return (
             <div
               key={moduleId}
-              className={`module-wrapper ${
-                draggedModule === moduleId ? "dragging" : ""
-              } ${MODULE_CONFIG[moduleId]?.alwaysVisible ? "non-draggable" : ""}`}
-              draggable={!MODULE_CONFIG[moduleId]?.alwaysVisible}
-              onDragStart={(e) => handleDragStart(e, moduleId)}
-              onDragOver={handleDragOver}
-              onDrop={(e) => handleDrop(e, moduleId)}
-              onDragEnd={handleDragEnd}
+              className="module-wrapper"
+              // ARCHIVED - Drag and drop customization removed
+              // className={`module-wrapper ${
+              //   draggedModule === moduleId ? "dragging" : ""
+              // } ${MODULE_CONFIG[moduleId]?.alwaysVisible ? "non-draggable" : ""}`}
+              // draggable={!MODULE_CONFIG[moduleId]?.alwaysVisible}
+              // onDragStart={(e) => handleDragStart(e, moduleId)}
+              // onDragOver={handleDragOver}
+              // onDrop={(e) => handleDrop(e, moduleId)}
+              // onDragEnd={handleDragEnd}
             >
               {renderModule(moduleId)}
             </div>
