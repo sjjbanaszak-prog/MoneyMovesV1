@@ -1,6 +1,10 @@
 import React, { useState, useCallback } from "react";
+import dayjs from "dayjs";
+import customParseFormat from "dayjs/plugin/customParseFormat";
 import { parsePensionDocument, previewExtractedData } from "./utils/pensionPdfParser";
 import "./IntelligentFileUploaderStyles.css";
+
+dayjs.extend(customParseFormat);
 
 /**
  * PdfPensionUploader - PDF/Image upload modal for pension statements
@@ -93,15 +97,43 @@ export default function PdfPensionUploader({ onFileParsed, onClose }) {
         setProgress(null);
 
         // Transform to match expected format for MappingReviewModal
-        // The parser returns structured data, so we create a compatible format
-        const transformedData = parsedData.rows.map((row) => ({
-          date: row.date,
-          amount: row.amount,
-          provider: row.provider,
-          description: row.rawText || "",
-        }));
+        // The parser returns dates normalized to YYYY-MM-DD, but we need to convert them back
+        // to the original format for display to the user
+        const originalFormat = parsedData.originalDateFormat || 'DD/MM/YYYY';
+        console.log('📅 Original format detected:', originalFormat);
+        console.log('📅 Sample row before conversion:', parsedData.rows[0]);
 
-        const headers = ["date", "amount", "provider", "description"];
+        const transformedData = parsedData.rows.map((row, index) => {
+          // Convert dates from YYYY-MM-DD back to original format for user display
+          const paidDate = row.paidDate || row.date;
+          const dueDate = row.dueDate;
+
+          const convertedPaidDate = paidDate ? dayjs(paidDate, 'YYYY-MM-DD', true).format(originalFormat) : "";
+          const convertedDueDate = dueDate ? dayjs(dueDate, 'YYYY-MM-DD', true).format(originalFormat) : "";
+
+          if (index === 0) {
+            console.log('📅 Converting first row:');
+            console.log('  - paidDate input:', paidDate);
+            console.log('  - paidDate output:', convertedPaidDate);
+            console.log('  - dueDate input:', dueDate);
+            console.log('  - dueDate output:', convertedDueDate);
+          }
+
+          return {
+            description: row.description,
+            dueDate: convertedDueDate,
+            paidDate: convertedPaidDate,
+            memberAmount: row.memberAmount || "",
+            taxRelief: row.taxRelief || "",
+            employerAmount: row.employerAmount || "",
+            totalAmount: row.totalAmount || row.amount,
+            provider: row.provider,
+          };
+        });
+
+        console.log('📅 Transformed data sample:', transformedData[0]);
+
+        const headers = ["description", "dueDate", "paidDate", "memberAmount", "taxRelief", "employerAmount", "totalAmount", "provider"];
 
         // Pass data to parent with detection results
         if (onFileParsed) {
@@ -109,11 +141,11 @@ export default function PdfPensionUploader({ onFileParsed, onClose }) {
             rawData: transformedData,
             headers,
             initialMapping: {
-              date: "date",
-              amount: "amount",
+              date: "paidDate",
+              amount: "totalAmount",
               provider: "provider",
               description: "description",
-              dateFormat: "YYYY-MM-DD", // Parser normalizes to this
+              dateFormat: originalFormat, // Show user the original format they uploaded
             },
             fileName,
             detectedProvider: {
@@ -125,11 +157,13 @@ export default function PdfPensionUploader({ onFileParsed, onClose }) {
               date: { confidence: 1.0, source: "parser" },
               amount: { confidence: 1.0, source: "parser" },
               provider: { confidence: parsedData.quality / 100, source: "parser" },
+              description: { confidence: 1.0, source: "parser" },
             },
             confidenceScores: {
               date: 1.0,
               amount: 1.0,
               provider: parsedData.quality / 100,
+              description: 1.0,
             },
             aiMetadata: {
               mappingConfidence: parsedData.quality / 100,

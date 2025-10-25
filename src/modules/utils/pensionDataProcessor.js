@@ -11,7 +11,7 @@ dayjs.extend(customParseFormat);
  * @returns {Object} { yearlyTotals, providerData }
  */
 export function processPensionUpload(uploadResult) {
-  const { rawData, mapping, dateFormat, provider } = uploadResult;
+  const { rawData, mapping, dateFormat, provider, currentValue } = uploadResult;
 
   const yearlyTotals = {};
   const providerGroups = {};
@@ -94,6 +94,7 @@ export function processPensionUpload(uploadResult) {
   // Convert provider groups to array and add metadata
   const providerData = Object.values(providerGroups).map((provider) => ({
     ...provider,
+    currentValue: currentValue || 0, // Add current value from user input
     latestUpdate: new Date().toISOString(),
     // Sort payment history by date
     paymentHistory: provider.paymentHistory.sort((a, b) => a.date.localeCompare(b.date)),

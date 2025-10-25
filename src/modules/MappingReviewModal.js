@@ -30,11 +30,12 @@ export default function MappingReviewModal({
   const [mapping, setMapping] = useState(initialMapping);
   const [providerName, setProviderName] = useState(detectedProvider.name || "");
   const [dateFormat, setDateFormat] = useState(initialMapping.dateFormat || "DD/MM/YYYY");
+  const [currentValue, setCurrentValue] = useState("");
   const [confirming, setConfirming] = useState(false);
 
   // Check if required fields are mapped
   const requiredFields = schema.requiredFields.map((f) => f.key);
-  const allRequiredMapped = requiredFields.every((field) => mapping[field]) && providerName;
+  const allRequiredMapped = requiredFields.every((field) => mapping[field]) && providerName && currentValue && Number(currentValue) > 0;
 
   // Get sample data for preview
   const sampleRows = useMemo(() => rawData.slice(0, 5), [rawData]);
@@ -48,7 +49,7 @@ export default function MappingReviewModal({
 
   const handleConfirm = useCallback(async () => {
     if (!allRequiredMapped) {
-      alert("Please ensure all required fields are mapped and provider is set.");
+      alert("Please ensure all required fields are mapped, provider is set, and current value is entered.");
       return;
     }
 
@@ -76,6 +77,7 @@ export default function MappingReviewModal({
         mapping: { ...mapping, dateFormat },
         dateFormat,
         provider: providerName,
+        currentValue: Number(currentValue),
         fileName,
         aiMetadata: {
           ...aiMetadata,
@@ -89,6 +91,7 @@ export default function MappingReviewModal({
         mapping: { ...mapping, dateFormat },
         dateFormat,
         provider: providerName,
+        currentValue: Number(currentValue),
         fileName,
         aiMetadata,
       });
@@ -97,6 +100,7 @@ export default function MappingReviewModal({
     allRequiredMapped,
     currentUser,
     providerName,
+    currentValue,
     context,
     mapping,
     confidenceScores,
@@ -179,6 +183,25 @@ export default function MappingReviewModal({
               placeholder="e.g., Aviva, Scottish Widows, Nest"
               className="form-input-compact"
             />
+          </div>
+
+          {/* Current Value Input */}
+          <div className="provider-section-compact">
+            <label className="form-label-compact">
+              Current Value (£) <span className="required-star">*</span>
+            </label>
+            <input
+              type="number"
+              value={currentValue}
+              onChange={(e) => setCurrentValue(e.target.value)}
+              placeholder="e.g., 25000"
+              min="0"
+              step="0.01"
+              className="form-input-compact"
+            />
+            <p className="form-helper-text">
+              Enter the current total value of this pension pot
+            </p>
           </div>
 
           {/* Compact Column Mappings */}

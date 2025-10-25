@@ -260,9 +260,25 @@ function detectProviderFromFullDocument(text) {
  */
 function parseExtractedText(text, documentProvider) {
   console.log('Parsing extracted text...');
+  console.log('Text length:', text.length);
+  console.log('First 500 chars:', text.substring(0, 500));
 
   const lines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+  console.log('Total lines:', lines.length);
+
   const rows = [];
+
+  // Try to detect "Contributions Paid" section (Royal London format)
+  const contributionsPaidIndex = lines.findIndex(line =>
+    line.toLowerCase().includes('contributions paid')
+  );
+
+  console.log('Contributions Paid index:', contributionsPaidIndex);
+
+  if (contributionsPaidIndex >= 0) {
+    console.log('Found "Contributions Paid" section at line', contributionsPaidIndex, ':', lines[contributionsPaidIndex]);
+    return parseRoyalLondonContributions(lines, contributionsPaidIndex, documentProvider);
+  }
 
   // Try to detect table structure first
   const tableData = detectTableStructure(lines);
@@ -349,6 +365,124 @@ function detectTableStructure(lines) {
 }
 
 /**
+ * Parse Royal London "Contributions Paid" table format
+ */
+function parseRoyalLondonContributions(lines, startIndex, documentProvider) {
+  console.log('Parsing Royal London contributions table...');
+
+  const rows = [];
+
+  // The line containing "Contributions Paid" likely has all the data on one long line
+  // due to PDF text extraction joining everything together
+  for (let i = startIndex; i < Math.min(lines.length, startIndex + 5); i++) {
+    const line = lines[i];
+
+    // Check if this line contains the table header and data
+    if (line.toLowerCase().includes('paid') && line.toLowerCase().includes('total')) {
+      console.log('Found table header:', line.substring(0, 200));
+
+      // Extract all table rows using regex pattern matching
+      // Pattern: SP/RP followed by two dates, then amounts, ending with total
+      // Example: SP 20/03/2024 20/03/2024 3600.00 900.00 0 4500.00
+      const rowPattern = /(SP|RP)\s+(\d{2}\/\d{2}\/\d{4})\s+(\d{2}\/\d{2}\/\d{4})\s+([\d,]+\.\d{2})\s+([\d,]+\.\d{2})\s+([\d,]+(?:\.\d{2})?)\s+([\d,]+\.\d{2})/g;
+
+      let match;
+      while ((match = rowPattern.exec(line)) !== null) {
+        const contType = match[1]; // SP or RP
+        const dueDate = match[2];
+        const paidDate = match[3];
+        const memAmount = match[4];
+        const taxRelief = match[5];
+        const empAmount = match[6];
+        const totalAmount = match[7];
+
+        // Clean the total amount
+        const cleanAmount = totalAmount.replace(/,/g, '');
+        const numericAmount = parseFloat(cleanAmount);
+
+        // Validate it's a reasonable amount and not the "Total" summary row
+        if (numericAmount >= 1 && numericAmount <= 100000) {
+          const description = contType === 'SP' ? 'Single Payment' : contType === 'RP' ? 'Regular Payment' : '';
+
+          rows.push({
+            contType: contType,
+            dueDate: dueDate,
+            paidDate: paidDate,
+            memberAmount: memAmount.replace(/,/g, ''),
+            taxRelief: taxRelief.replace(/,/g, ''),
+            employerAmount: empAmount.replace(/,/g, ''),
+            totalAmount: cleanAmount,
+            date: paidDate,
+            amount: cleanAmount,
+            provider: documentProvider || 'Royal London',
+            description: description,
+            dateOriginal: paidDate
+          });
+        }
+      }
+
+      break; // Found and processed the table, exit loop
+    }
+  }
+
+  console.log(`Extracted ${rows.length} Royal London contribution rows`);
+
+  // Track detected date formats
+  const detectedFormats = {};
+
+  // Normalize dates
+  const normalizedRows = rows.map(row => {
+    const parsedDate = parseDate(row.date);
+    const parsedPaidDate = row.paidDate ? parseDate(row.paidDate) : null;
+    const parsedDueDate = row.dueDate ? parseDate(row.dueDate) : null;
+
+    // Track which format was detected
+    if (parsedDate.valid && parsedDate.detectedFormat) {
+      detectedFormats[parsedDate.detectedFormat] = (detectedFormats[parsedDate.detectedFormat] || 0) + 1;
+    }
+
+    return {
+      ...row,
+      date: parsedDate.formatted,
+      paidDate: parsedPaidDate ? parsedPaidDate.formatted : row.paidDate,
+      dueDate: parsedDueDate ? parsedDueDate.formatted : row.dueDate,
+      dateValid: parsedDate.valid,
+      detectedFormat: parsedDate.detectedFormat,
+      amount: parseFloat(row.amount)
+    };
+  });
+
+  // Filter valid rows
+  const validRows = normalizedRows.filter(row => row.dateValid && !isNaN(row.amount) && row.amount > 0);
+
+  // Determine the most common date format
+  let originalDateFormat = 'DD/MM/YYYY'; // Default for UK
+  let maxCount = 0;
+  for (const [format, count] of Object.entries(detectedFormats)) {
+    if (count > maxCount) {
+      maxCount = count;
+      originalDateFormat = format;
+    }
+  }
+
+  // Calculate quality
+  const quality = calculateDataQuality(validRows, rows.length);
+
+  return {
+    rows: validRows,
+    quality,
+    originalDateFormat, // The format dates were originally in
+    stats: {
+      totalExtracted: rows.length,
+      duplicatesRemoved: 0,
+      invalidRemoved: normalizedRows.length - validRows.length,
+      finalCount: validRows.length,
+      detectedFormats // Show all detected formats for debugging
+    }
+  };
+}
+
+/**
  * Parse table-structured data
  */
 function parseTableData(tableData, documentProvider) {
@@ -403,14 +537,24 @@ function validateAndCleanData(rows, documentProvider) {
     }
   }
 
+  // Track detected date formats
+  const detectedFormats = {};
+
   // Normalize dates
   const normalizedRows = uniqueRows.map(row => {
     const parsedDate = parseDate(row.date);
+
+    // Track which format was detected
+    if (parsedDate.valid && parsedDate.detectedFormat) {
+      detectedFormats[parsedDate.detectedFormat] = (detectedFormats[parsedDate.detectedFormat] || 0) + 1;
+    }
+
     return {
       ...row,
       date: parsedDate.formatted,
       dateOriginal: row.date,
       dateValid: parsedDate.valid,
+      detectedFormat: parsedDate.detectedFormat,
       amount: parseFloat(row.amount),
       provider: row.provider || documentProvider || 'Unknown Provider'
     };
@@ -419,17 +563,29 @@ function validateAndCleanData(rows, documentProvider) {
   // Filter out invalid dates or amounts
   const validRows = normalizedRows.filter(row => row.dateValid && !isNaN(row.amount) && row.amount > 0);
 
+  // Determine the most common date format
+  let originalDateFormat = 'DD/MM/YYYY'; // Default for UK
+  let maxCount = 0;
+  for (const [format, count] of Object.entries(detectedFormats)) {
+    if (count > maxCount) {
+      maxCount = count;
+      originalDateFormat = format;
+    }
+  }
+
   // Calculate data quality score
   const quality = calculateDataQuality(validRows, rows.length);
 
   return {
     rows: validRows,
     quality,
+    originalDateFormat, // The format dates were originally in
     stats: {
       totalExtracted: rows.length,
       duplicatesRemoved: rows.length - uniqueRows.length,
       invalidRemoved: normalizedRows.length - validRows.length,
-      finalCount: validRows.length
+      finalCount: validRows.length,
+      detectedFormats // Show all detected formats for debugging
     }
   };
 }

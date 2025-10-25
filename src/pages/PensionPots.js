@@ -362,11 +362,12 @@ export default function PensionPots() {
     setYearlyTotals(newYearlyTotals);
   };
 
-  // Step 1: Handle file parsed from IntelligentFileUploader
+  // Step 1: Handle file parsed from IntelligentFileUploader or PdfPensionUploader
   const handleFileParsed = (parsedResult) => {
     // Store the upload result and show review modal
     setUploadResult(parsedResult);
     setShowUploadModal(false);
+    setShowPdfUploadModal(false);
     setShowReviewModal(true);
   };
 
@@ -375,6 +376,9 @@ export default function PensionPots() {
     // Process the upload result using the pension data processor
     const { yearlyTotals: newYearlyTotals, providerData } =
       processPensionUpload(confirmedResult);
+
+    // Get the current value from the confirmed result
+    const userEnteredCurrentValue = confirmedResult.currentValue || 0;
 
     // Update pension providers
     if (providerData && Array.isArray(providerData)) {
@@ -410,12 +414,12 @@ export default function PensionPots() {
                   : newProvider.lastPayment,
               deposits: (existing.deposits || 0) + newProvider.deposits,
               latestUpdate: newProvider.latestUpdate,
-              currentValue: existing.currentValue || 0,
+              currentValue: userEnteredCurrentValue, // Use the value from the modal
             };
           } else {
             updatedPensions.push({
               ...newProvider,
-              currentValue: 0,
+              currentValue: userEnteredCurrentValue, // Use the value from the modal
             });
             setSelectedPensions((prev) => [...prev, newProvider.provider]);
           }

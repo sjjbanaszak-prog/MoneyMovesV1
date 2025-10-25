@@ -61,9 +61,42 @@
 
 /* Table Scroll Container - EXACT from pension-styles.css */
 .table-scroll-v2 {
-  overflow-x: auto; /* Horizontal scroll when needed */
+  overflow-x: scroll; /* Always show scrollbar */
+  overflow-y: hidden;
   width: 100%;
   max-width: 100%;
+  padding-bottom: 12px; /* Add space between last row and scrollbar */
+}
+
+/* Force scrollbar to always be visible - Chrome/Safari/Edge */
+.table-scroll-v2::-webkit-scrollbar {
+  -webkit-appearance: none;
+  height: 10px;
+  display: block; /* Force display */
+}
+
+.table-scroll-v2::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 5px;
+}
+
+.table-scroll-v2::-webkit-scrollbar-thumb {
+  background: #6b7280;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.table-scroll-v2::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+/* For Firefox - force always visible */
+@-moz-document url-prefix() {
+  .table-scroll-v2 {
+    scrollbar-width: thin;
+    scrollbar-color: #6b7280 rgba(0, 0, 0, 0.1);
+    overflow-x: scroll;
+  }
 }
 
 /* Table Base Styles */
@@ -96,6 +129,15 @@
   cursor: pointer;
   user-select: none;
   transition: color 0.2s;
+  /* Prevent iOS from rendering arrows as colorful emoji */
+  font-variant-emoji: text;
+  -webkit-text-size-adjust: none;
+  text-rendering: optimizeLegibility;
+}
+
+/* Force text-style rendering for arrows (not emoji) */
+.table-container-v2 th {
+  font-variant-emoji: text !important;
 }
 
 .sortable-v2:hover {
