@@ -203,10 +203,12 @@
   .pension-metrics-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 12px;
+    grid-auto-rows: 1fr;
   }
 
   .pension-metric-card {
     padding: 14px;
+    min-height: 0;
   }
 
   /* Ensure Current Value is top-left, Growth is top-right */
@@ -225,6 +227,10 @@
 
   .pension-metric-card:nth-child(4) {
     order: 4;
+  }
+
+  .pension-metric-label {
+    font-size: 0.8125rem;
   }
 
   .pension-metric-value {

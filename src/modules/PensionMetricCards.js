@@ -8,9 +8,7 @@ export default function PensionMetricCards({
   yearlyTotals,
 }) {
   const [showIRRTooltip, setShowIRRTooltip] = useState(false);
-  const [showCAGRTooltip, setShowCAGRTooltip] = useState(false);
   const [irrTooltipPosition, setIRRTooltipPosition] = useState("tooltip-center");
-  const [cagrTooltipPosition, setCAGRTooltipPosition] = useState("tooltip-center");
 
   // Calculate optimal tooltip position
   const calculateTooltipPosition = (event) => {
@@ -32,11 +30,6 @@ export default function PensionMetricCards({
   const handleIRRMouseEnter = (event) => {
     setIRRTooltipPosition(calculateTooltipPosition(event));
     setShowIRRTooltip(true);
-  };
-
-  const handleCAGRMouseEnter = (event) => {
-    setCAGRTooltipPosition(calculateTooltipPosition(event));
-    setShowCAGRTooltip(true);
   };
 
   // Calculate deposits
@@ -150,52 +143,33 @@ export default function PensionMetricCards({
     }
   }, [pensionAccounts, selectedPensions, totalValue]);
 
-  // Calculate number of years from yearlyTotals
-  const numberOfYears = useMemo(
-    () => Object.keys(yearlyTotals || {}).length,
-    [yearlyTotals]
-  );
+  // Calculate current tax year's allowance usage
+  const currentYearAllowanceData = useMemo(() => {
+    // Get current UK tax year (April 6 - April 5)
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const month = now.getMonth();
+    const day = now.getDate();
 
-  // Calculate CAGR (Compound Annual Growth Rate)
-  const cagr = useMemo(() => {
-    // Get selected accounts with payment history for more accurate timing
-    const selectedAccounts = pensionAccounts.filter(
-      (account) =>
-        selectedPensions.includes(account.provider) &&
-        account.paymentHistory &&
-        Array.isArray(account.paymentHistory)
-    );
+    // If we're before April 6, we're still in the previous tax year
+    const taxYear = (month > 3 || (month === 3 && day >= 6)) ? currentYear : currentYear - 1;
 
-    if (selectedAccounts.length > 0 && deposits > 0 && totalValue > 0) {
-      // Find the earliest payment date from selected accounts
-      let earliestDate = null;
-      selectedAccounts.forEach((account) => {
-        if (account.paymentHistory && account.paymentHistory.length > 0) {
-          const sortedPayments = [...account.paymentHistory].sort(
-            (a, b) => new Date(a.date) - new Date(b.date)
-          );
-          const firstPayment = new Date(sortedPayments[0].date);
-          if (!earliestDate || firstPayment < earliestDate) {
-            earliestDate = firstPayment;
-          }
-        }
-      });
+    // Get the annual allowance for this tax year (£60k from 2023/24 onwards, £40k before)
+    const annualAllowance = taxYear >= 2023 ? 60000 : 40000;
 
-      if (earliestDate) {
-        const yearsElapsed =
-          (new Date() - earliestDate) / (1000 * 60 * 60 * 24 * 365.25);
-        if (yearsElapsed > 0) {
-          return Math.pow(totalValue / deposits, 1 / yearsElapsed) - 1;
-        }
-      }
-    }
+    // Get the contributions for this tax year from yearlyTotals
+    const used = yearlyTotals?.[taxYear] || 0;
 
-    // Fallback to original calculation
-    if (deposits > 0 && numberOfYears > 0) {
-      return Math.pow(totalValue / deposits, 1 / numberOfYears) - 1;
-    }
-    return 0;
-  }, [deposits, totalValue, numberOfYears, pensionAccounts, selectedPensions]);
+    // Calculate percentage used
+    const percentUsed = annualAllowance > 0 ? (used / annualAllowance) * 100 : 0;
+
+    return {
+      taxYear,
+      used,
+      annualAllowance,
+      percentUsed,
+    };
+  }, [yearlyTotals]);
 
   const formatPercentage = (value) =>
     value.toFixed(2).toLocaleString(undefined, {
@@ -286,38 +260,14 @@ export default function PensionMetricCards({
           </div>
         </div>
 
-        {/* Card 4: CAGR */}
+        {/* Card 4: Annual Allowance Used */}
         <div className="pension-metric-card">
-          <div className="pension-metric-label">
-            CAGR
-            <span
-              className="info-icon-wrapper"
-              onMouseEnter={handleCAGRMouseEnter}
-              onMouseLeave={() => setShowCAGRTooltip(false)}
-            >
-              <AlertCircle className="info-icon-inline" />
-              {showCAGRTooltip && (
-                <div className={`info-tooltip ${cagrTooltipPosition}`}>
-                  <strong>Compound Annual Growth Rate (CAGR)</strong>
-                  <br />
-                  The average yearly return required to grow your deposits to
-                  the current value over {numberOfYears} year
-                  {numberOfYears !== 1 ? "s" : ""}.
-                </div>
-              )}
-            </span>
+          <div className="pension-metric-label">Annual Allowance Used</div>
+          <div className="pension-metric-value">
+            £{formatCurrency(currentYearAllowanceData.used)}
           </div>
-          <div
-            className="pension-metric-value"
-            style={{
-              color: !hasCurrentValue
-                ? "#fff"
-                : (cagr >= 0 ? "#10b981" : "#ef4444")
-            }}
-          >
-            {!hasCurrentValue
-              ? "-"
-              : `${cagr >= 0 ? "+" : ""}${formatPercentage(cagr * 100)}%`}
+          <div className="pension-metric-subtitle">
+            {currentYearAllowanceData.percentUsed.toFixed(1)}% of £{formatCurrency(currentYearAllowanceData.annualAllowance)}
           </div>
         </div>
       </div>

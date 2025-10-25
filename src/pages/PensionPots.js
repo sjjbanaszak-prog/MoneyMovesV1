@@ -9,7 +9,7 @@ import debounce from "lodash.debounce";
 import "./PensionPotsStyles.css";
 import "./SavingsTrackerStyles.css";
 import PensionPotPie from "../modules/PensionPotPie";
-import PensionAccountsTable from "../modules/PensionAccountsTable";
+// import PensionAccountsTable from "../modules/PensionAccountsTable"; // ARCHIVED
 import PensionAccountsTableV2 from "../modules/PensionAccountsTableV2";
 import IntelligentFileUploader from "../modules/IntelligentFileUploader";
 import PdfPensionUploader from "../modules/PdfPensionUploader";
@@ -24,11 +24,11 @@ import PensionAllowanceUtilization from "../modules/PensionAllowanceUtilization"
 
 const DEFAULT_MODULE_ORDER = [
   "uploader",
+  "accounts-table-v2",
   "ai-advisory",
   "overview",
-  "accounts-table-v2",
   "allowance-utilization",
-  "accounts-table",
+  // "accounts-table", // ARCHIVED
   // "peer-comparison", // ARCHIVED
 ];
 
@@ -52,10 +52,10 @@ const MODULE_CONFIG = {
   //   name: "Peer Comparison",
   //   description: "Compare to your age group",
   // },
-  "accounts-table": {
-    name: "Pension Accounts",
-    description: "Detailed provider information",
-  },
+  // "accounts-table": { // ARCHIVED
+  //   name: "Pension Accounts",
+  //   description: "Detailed provider information",
+  // },
   "accounts-table-v2": {
     name: "Pension Accounts V2",
     description: "Clean table design (NEW)",
@@ -157,27 +157,35 @@ export default function PensionPots() {
           );
 
           // MIGRATION: Reorder modules to match new DEFAULT_MODULE_ORDER
-          // New order: uploader, ai-advisory, overview, accounts-table-v2, allowance-utilization, accounts-table
+          // New order: uploader, accounts-table-v2, ai-advisory, overview, allowance-utilization, accounts-table
           const tableV2Index = moduleOrder.indexOf("accounts-table-v2");
+          const aiAdvisoryIndex = moduleOrder.indexOf("ai-advisory");
           const tableIndex = moduleOrder.indexOf("accounts-table");
           const allowanceIndex = moduleOrder.indexOf("allowance-utilization");
+          const overviewIndex = moduleOrder.indexOf("overview");
 
-          // If all three modules exist and need reordering
-          if (tableV2Index !== -1 && tableIndex !== -1 && allowanceIndex !== -1) {
-            // Remove all three from their current positions
-            moduleOrder = moduleOrder.filter(id =>
-              id !== "accounts-table-v2" &&
-              id !== "accounts-table" &&
-              id !== "allowance-utilization"
-            );
+          // Remove these modules from their current positions
+          moduleOrder = moduleOrder.filter(id =>
+            id !== "accounts-table-v2" &&
+            id !== "ai-advisory" &&
+            id !== "overview" &&
+            id !== "accounts-table" &&
+            id !== "allowance-utilization"
+          );
 
-            // Find where to insert them (after "overview" if it exists, otherwise at the end)
-            const overviewIndex = moduleOrder.indexOf("overview");
-            const insertIndex = overviewIndex !== -1 ? overviewIndex + 1 : moduleOrder.length;
+          // Find where to insert them (after "uploader" if it exists, otherwise at start)
+          const uploaderIndex = moduleOrder.indexOf("uploader");
+          const insertIndex = uploaderIndex !== -1 ? uploaderIndex + 1 : 0;
 
-            // Insert in the new order: V2, then allowance, then original table
-            moduleOrder.splice(insertIndex, 0, "accounts-table-v2", "allowance-utilization", "accounts-table");
-          }
+          // Insert in the new order: accounts-table-v2, ai-advisory, overview, allowance-utilization, accounts-table
+          const newOrder = [];
+          if (tableV2Index !== -1) newOrder.push("accounts-table-v2");
+          if (aiAdvisoryIndex !== -1) newOrder.push("ai-advisory");
+          if (overviewIndex !== -1) newOrder.push("overview");
+          if (allowanceIndex !== -1) newOrder.push("allowance-utilization");
+          if (tableIndex !== -1) newOrder.push("accounts-table");
+
+          moduleOrder.splice(insertIndex, 0, ...newOrder);
 
           console.log("After migration, moduleOrder:", moduleOrder);
 
@@ -377,9 +385,14 @@ export default function PensionPots() {
 
   // Step 2: Handle confirmed mapping from MappingReviewModal
   const handleMappingConfirmed = (confirmedResult) => {
-    // Process the upload result using the pension data processor
-    const { yearlyTotals: newYearlyTotals, providerData } =
-      processPensionUpload(confirmedResult);
+    console.log("PensionPots: handleMappingConfirmed called", confirmedResult);
+
+    try {
+      // Process the upload result using the pension data processor
+      const { yearlyTotals: newYearlyTotals, providerData } =
+        processPensionUpload(confirmedResult);
+
+      console.log("PensionPots: Processed upload - yearlyTotals:", newYearlyTotals, "providerData:", providerData);
 
     // Get the current value from the confirmed result
     const userEnteredCurrentValue = confirmedResult.currentValue || 0;
@@ -453,8 +466,16 @@ export default function PensionPots() {
     }
 
     // Close the review modal and clear upload result
+    console.log("PensionPots: Closing review modal and clearing upload result");
     setShowReviewModal(false);
     setUploadResult(null);
+    console.log("PensionPots: handleMappingConfirmed completed successfully");
+    } catch (error) {
+      console.error("PensionPots: Error in handleMappingConfirmed:", error);
+      // Still close the modal even if there's an error
+      setShowReviewModal(false);
+      setUploadResult(null);
+    }
   };
 
   // Handle review modal cancel
@@ -548,24 +569,28 @@ export default function PensionPots() {
   const renderModule = (moduleId) => {
     switch (moduleId) {
       case "uploader":
-        return (
-          <div className="full-width-card">
-            <div className="file-uploader-container dark-mode">
-              <button
-                onClick={() => setShowUnifiedUploader(true)}
-                className="upload-trigger-button"
-              >
-                <span className="upload-icon">📁</span>
-                <div className="upload-trigger-content">
-                  <h3 className="upload-trigger-title">Upload Pension Data</h3>
-                  <p className="upload-trigger-description">
-                    Import from CSV, Excel, PDF, or photo
-                  </p>
-                </div>
-              </button>
+        // Only show big upload button if user has no pension data
+        if (pensions.length === 0) {
+          return (
+            <div className="full-width-card">
+              <div className="file-uploader-container dark-mode">
+                <button
+                  onClick={() => setShowUnifiedUploader(true)}
+                  className="upload-trigger-button"
+                >
+                  <span className="upload-icon">📁</span>
+                  <div className="upload-trigger-content">
+                    <h3 className="upload-trigger-title">Upload Pension Data</h3>
+                    <p className="upload-trigger-description">
+                      Import from CSV, Excel, PDF, or photo
+                    </p>
+                  </div>
+                </button>
+              </div>
             </div>
-          </div>
-        );
+          );
+        }
+        return null;
 
       case "ai-advisory":
         if (
@@ -632,22 +657,22 @@ export default function PensionPots() {
       //   }
       //   return null;
 
-      case "accounts-table":
-        if (shouldShowModule("accounts-table", pensions.length > 0)) {
-          return (
-            <div className="full-width-card">
-              <PensionAccountsTable
-                pensions={pensions}
-                selectedPensions={selectedPensions}
-                onToggle={toggleSelectedPension}
-                onRemove={removePension}
-                onUpdateValue={updatePensionValue}
-                onUpdatePensions={handleUpdatePensions}
-              />
-            </div>
-          );
-        }
-        return null;
+      // case "accounts-table": // ARCHIVED
+      //   if (shouldShowModule("accounts-table", pensions.length > 0)) {
+      //     return (
+      //       <div className="full-width-card">
+      //         <PensionAccountsTable
+      //           pensions={pensions}
+      //           selectedPensions={selectedPensions}
+      //           onToggle={toggleSelectedPension}
+      //           onRemove={removePension}
+      //           onUpdateValue={updatePensionValue}
+      //           onUpdatePensions={handleUpdatePensions}
+      //         />
+      //       </div>
+      //     );
+      //   }
+      //   return null;
 
       case "accounts-table-v2":
         if (shouldShowModule("accounts-table-v2", pensions.length > 0)) {
@@ -658,6 +683,9 @@ export default function PensionPots() {
               onToggle={toggleSelectedPension}
               onRemove={removePension}
               onUpdateValue={updatePensionValue}
+              onUpdatePensions={handleUpdatePensions}
+              onFileParsed={handleFileParsed}
+              onMappingConfirmed={handleMappingConfirmed}
             />
           );
         }
