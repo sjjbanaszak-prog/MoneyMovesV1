@@ -13,6 +13,7 @@ import PensionAccountsTable from "../modules/PensionAccountsTable";
 import PensionAccountsTableV2 from "../modules/PensionAccountsTableV2";
 import IntelligentFileUploader from "../modules/IntelligentFileUploader";
 import PdfPensionUploader from "../modules/PdfPensionUploader";
+import UnifiedPensionUploader from "../modules/UnifiedPensionUploader";
 import MappingReviewModal from "../modules/MappingReviewModal";
 import { processPensionUpload } from "../modules/utils/pensionDataProcessor";
 import PensionMetricCards from "../modules/PensionMetricCards";
@@ -89,8 +90,10 @@ export default function PensionPots() {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showPdfUploadModal, setShowPdfUploadModal] = useState(false);
   const [showFileTypeSelector, setShowFileTypeSelector] = useState(false);
+  const [showUnifiedUploader, setShowUnifiedUploader] = useState(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [uploadResult, setUploadResult] = useState(null);
+  const [selectedFile, setSelectedFile] = useState(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
@@ -362,12 +365,13 @@ export default function PensionPots() {
     setYearlyTotals(newYearlyTotals);
   };
 
-  // Step 1: Handle file parsed from IntelligentFileUploader or PdfPensionUploader
+  // Step 1: Handle file parsed from IntelligentFileUploader, PdfPensionUploader, or UnifiedPensionUploader
   const handleFileParsed = (parsedResult) => {
     // Store the upload result and show review modal
     setUploadResult(parsedResult);
     setShowUploadModal(false);
     setShowPdfUploadModal(false);
+    setShowUnifiedUploader(false);
     setShowReviewModal(true);
   };
 
@@ -457,9 +461,12 @@ export default function PensionPots() {
   const handleReviewCancel = () => {
     setShowReviewModal(false);
     setUploadResult(null);
-    // Optionally reopen upload modal to let user upload again
-    setShowUploadModal(true);
+    // Reopen unified uploader to let user upload again
+    setShowUnifiedUploader(true);
   };
+
+  // Unified uploader directly calls handleFileParsed after processing
+  // No need for intermediate file selection handler
 
   const toggleModuleVisibility = (moduleId) => {
     if (MODULE_CONFIG[moduleId]?.alwaysVisible) return;
@@ -545,10 +552,7 @@ export default function PensionPots() {
           <div className="full-width-card">
             <div className="file-uploader-container dark-mode">
               <button
-                onClick={() => {
-                  console.log("Upload button clicked, setting showFileTypeSelector to true");
-                  setShowFileTypeSelector(true);
-                }}
+                onClick={() => setShowUnifiedUploader(true)}
                 className="upload-trigger-button"
               >
                 <span className="upload-icon">📁</span>
@@ -864,6 +868,14 @@ export default function PensionPots() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Unified Upload Modal */}
+      {showUnifiedUploader && (
+        <UnifiedPensionUploader
+          onFileParsed={handleFileParsed}
+          onClose={() => setShowUnifiedUploader(false)}
+        />
       )}
 
       {/* CSV/Excel Upload Modal */}

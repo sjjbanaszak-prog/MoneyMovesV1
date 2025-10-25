@@ -21,14 +21,14 @@ export const CONTEXT_SCHEMAS = {
     requiredFields: [
       {
         key: "date",
-        label: "Date Column",
+        label: "Date",
         description: "Date when the pension contribution was made",
         type: "date",
         examples: ["01/04/2024", "2024-04-01", "1 Apr 2024"],
       },
       {
         key: "amount",
-        label: "Amount Column",
+        label: "Amount",
         description: "Total contribution amount (£)",
         type: "currency",
         examples: ["£250.00", "250", "250.00"],
@@ -37,7 +37,7 @@ export const CONTEXT_SCHEMAS = {
     optionalFields: [
       {
         key: "description",
-        label: "Description Column",
+        label: "Description",
         description: "Optional description or reference for the contribution",
         type: "text",
       },

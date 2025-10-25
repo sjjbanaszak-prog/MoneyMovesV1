@@ -1,7 +1,7 @@
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 dayjs.extend(customParseFormat);
-import { parseNumber } from "./utils/parseNumber";
+import { parseNumber } from "./parseNumber";
 
 export function parseToSeries(uploads, selectedIndexes = null) {
   const combined = {};
