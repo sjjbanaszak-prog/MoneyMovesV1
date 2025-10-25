@@ -16,7 +16,7 @@
 /* Modal Container - More Compact */
 .mapper-modal-container {
   background-color: #1f2937;
-  border-radius: 12px;
+  border-radius: 16px;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
   max-width: 900px;
   width: 100%;
@@ -59,11 +59,18 @@
 .form-label-compact {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 6px;
   font-size: 0.8125rem;
   font-weight: 600;
   color: #e5e7eb;
   margin-bottom: 6px;
+}
+
+.form-label-text {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .required-star {
@@ -294,7 +301,7 @@
 @media (max-width: 768px) {
   .mapper-modal-container {
     max-width: 100%;
-    border-radius: 0;
+    border-radius: 16px;
     margin: 0;
   }
 
@@ -307,7 +314,7 @@
   }
 
   .mapping-section-compact {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
     gap: 10px;
   }
 

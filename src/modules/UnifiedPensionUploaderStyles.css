@@ -1,0 +1,256 @@
+/* Unified Pension Uploader - Money Moves Theme */
+
+/* Overlay */
+.unified-upload-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+/* Modal Container */
+.unified-upload-modal {
+  background: #1f2937;
+  border-radius: 16px;
+  max-width: 500px;
+  width: 100%;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+  animation: modalSlideIn 0.3s ease-out;
+  position: relative;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Content */
+.unified-upload-content {
+  padding: 2rem;
+}
+
+/* Close Button */
+.unified-upload-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: transparent;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s;
+  border-radius: 6px;
+}
+
+.unified-upload-close:hover {
+  color: #f3f4f6;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.unified-upload-close svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Header */
+.unified-upload-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.unified-upload-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #f3f4f6;
+  margin: 0 0 0.5rem 0;
+}
+
+.unified-upload-subtitle {
+  font-size: 0.9375rem;
+  color: #9ca3af;
+  margin: 0;
+}
+
+/* Error Message */
+.unified-upload-error {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+}
+
+.unified-upload-error span {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.unified-upload-error p {
+  margin: 0;
+  color: #fca5a5;
+  font-size: 0.875rem;
+}
+
+/* Drop Zone */
+.unified-upload-dropzone {
+  border: 2px dashed #4b5563;
+  border-radius: 12px;
+  padding: 3rem 2rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: #111827;
+}
+
+.unified-upload-dropzone:hover {
+  border-color: #6366f1;
+  background: rgba(99, 102, 241, 0.05);
+}
+
+.unified-upload-dropzone.dragging {
+  border-color: #6366f1;
+  background: rgba(99, 102, 241, 0.1);
+}
+
+.unified-upload-dropzone.uploading {
+  cursor: default;
+  border-color: #6366f1;
+}
+
+.unified-upload-dropzone.uploading:hover {
+  background: #111827;
+}
+
+/* Upload Icon */
+.unified-upload-icon {
+  margin: 0 auto 1.5rem;
+  width: 48px;
+  height: 48px;
+  color: #6366f1;
+}
+
+/* Drop Zone Text */
+.unified-upload-dropzone-text {
+  font-size: 0.9375rem;
+  color: #d1d5db;
+  margin: 0;
+}
+
+.unified-upload-browse {
+  color: inherit;
+}
+
+/* File Info */
+.unified-upload-info {
+  text-align: center;
+  margin-top: 1.5rem;
+}
+
+.unified-upload-info p {
+  margin: 0.5rem 0;
+  font-size: 0.875rem;
+}
+
+.unified-upload-formats {
+  color: #9ca3af;
+}
+
+.unified-upload-filesize {
+  color: #9ca3af;
+}
+
+.unified-upload-auto {
+  color: #6b7280;
+  font-size: 0.8125rem !important;
+}
+
+/* Processing State */
+.unified-upload-processing {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.unified-upload-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(99, 102, 241, 0.2);
+  border-top-color: #6366f1;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.unified-upload-processing-text {
+  color: #d1d5db;
+  font-size: 0.9375rem;
+  margin: 0;
+  font-weight: 500;
+}
+
+.unified-upload-filename {
+  color: #9ca3af;
+  font-size: 0.8125rem;
+  margin: 0;
+}
+
+/* Mobile Responsive */
+@media (max-width: 640px) {
+  .unified-upload-overlay {
+    padding: 0.5rem;
+  }
+
+  .unified-upload-modal {
+    border-radius: 16px;
+    max-width: 100%;
+  }
+
+  .unified-upload-content {
+    padding: 1.5rem;
+    width: 100%;
+  }
+
+  .unified-upload-title {
+    font-size: 1.25rem;
+  }
+
+  .unified-upload-dropzone {
+    padding: 2rem 1.5rem;
+  }
+
+  .unified-upload-icon {
+    width: 40px;
+    height: 40px;
+    margin-bottom: 1rem;
+  }
+
+  .unified-upload-dropzone-text {
+    font-size: 0.875rem;
+  }
+}

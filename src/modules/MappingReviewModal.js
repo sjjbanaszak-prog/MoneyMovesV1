@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo, useEffect } from "react";
 import { saveTemplate } from "./utils/TemplateTrainer";
 import { getContextSchema } from "./utils/ContextSchemas";
 import { auth } from "../firebase";
@@ -32,6 +32,14 @@ export default function MappingReviewModal({
   const [dateFormat, setDateFormat] = useState(initialMapping.dateFormat || "DD/MM/YYYY");
   const [currentValue, setCurrentValue] = useState("");
   const [confirming, setConfirming] = useState(false);
+
+  // Lock body scroll when modal is open
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, []);
 
   // Check if required fields are mapped
   const requiredFields = schema.requiredFields.map((f) => f.key);
@@ -151,7 +159,7 @@ export default function MappingReviewModal({
             <div>
               <h2 className="mapper-title-compact">Confirm Column Mapping</h2>
               <div className="mapper-file-info-compact">
-                <span>📄 {fileName}</span>
+                <span>📄 {fileName.length > 25 ? fileName.substring(0, 25) + '...' : fileName}</span>
                 <span>•</span>
                 <span>{rawData.length} rows</span>
               </div>
@@ -210,7 +218,9 @@ export default function MappingReviewModal({
             {schema.requiredFields.map((fieldDef) => (
               <div key={fieldDef.key} className="mapping-field-compact">
                 <label className="form-label-compact">
-                  {fieldDef.label} <span className="required-star">*</span>
+                  <span className="form-label-text">
+                    {fieldDef.label} <span className="required-star">*</span>
+                  </span>
                   {getConfidenceBadge(fieldDef.key)}
                 </label>
                 <select
@@ -232,7 +242,9 @@ export default function MappingReviewModal({
             {schema.optionalFields.map((fieldDef) => (
               <div key={fieldDef.key} className="mapping-field-compact">
                 <label className="form-label-compact">
-                  {fieldDef.label}
+                  <span className="form-label-text">
+                    {fieldDef.label}
+                  </span>
                   {getConfidenceBadge(fieldDef.key)}
                 </label>
                 <select
@@ -253,7 +265,9 @@ export default function MappingReviewModal({
             {/* Date Format */}
             <div className="mapping-field-compact">
               <label className="form-label-compact">
-                Date Format
+                <span className="form-label-text">
+                  Date Format
+                </span>
                 {aiMetadata?.dateFormatConfidence > 0 && (
                   <span
                     className={`confidence-badge ${
@@ -278,12 +292,12 @@ export default function MappingReviewModal({
                 onChange={(e) => setDateFormat(e.target.value)}
                 className="form-select-compact"
               >
-                <option value="DD/MM/YYYY">DD/MM/YYYY (31/12/2024)</option>
-                <option value="MM/DD/YYYY">MM/DD/YYYY (12/31/2024)</option>
-                <option value="YYYY-MM-DD">YYYY-MM-DD (2024-12-31)</option>
-                <option value="DD-MM-YYYY">DD-MM-YYYY (31-12-2024)</option>
-                <option value="DD MMM YYYY">DD MMM YYYY (31 Dec 2024)</option>
-                <option value="DD/MM/YY">DD/MM/YY (31/12/24)</option>
+                <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+                <option value="MM/DD/YYYY">MM/DD/YYYY</option>
+                <option value="YYYY-MM-DD">YYYY-MM-DD</option>
+                <option value="DD-MM-YYYY">DD-MM-YYYY</option>
+                <option value="DD MMM YYYY">DD MMM YYYY</option>
+                <option value="DD/MM/YY">DD/MM/YY</option>
               </select>
             </div>
           </div>
