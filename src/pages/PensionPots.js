@@ -12,6 +12,7 @@ import PensionPotPie from "../modules/PensionPotPie";
 import PensionAccountsTable from "../modules/PensionAccountsTable";
 import PensionAccountsTableV2 from "../modules/PensionAccountsTableV2";
 import IntelligentFileUploader from "../modules/IntelligentFileUploader";
+import PdfPensionUploader from "../modules/PdfPensionUploader";
 import MappingReviewModal from "../modules/MappingReviewModal";
 import { processPensionUpload } from "../modules/utils/pensionDataProcessor";
 import PensionMetricCards from "../modules/PensionMetricCards";
@@ -86,6 +87,8 @@ export default function PensionPots() {
   });
 
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [showPdfUploadModal, setShowPdfUploadModal] = useState(false);
+  const [showFileTypeSelector, setShowFileTypeSelector] = useState(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [uploadResult, setUploadResult] = useState(null);
 
@@ -539,8 +542,8 @@ export default function PensionPots() {
             <div className="file-uploader-container dark-mode">
               <button
                 onClick={() => {
-                  console.log("Upload button clicked, setting showUploadModal to true");
-                  setShowUploadModal(true);
+                  console.log("Upload button clicked, setting showFileTypeSelector to true");
+                  setShowFileTypeSelector(true);
                 }}
                 className="upload-trigger-button"
               >
@@ -548,7 +551,7 @@ export default function PensionPots() {
                 <div className="upload-trigger-content">
                   <h3 className="upload-trigger-title">Upload Pension Data</h3>
                   <p className="upload-trigger-description">
-                    Import contributions from CSV or Excel files
+                    Import from CSV, Excel, PDF, or photo
                   </p>
                 </div>
               </button>
@@ -747,7 +750,7 @@ export default function PensionPots() {
         })}
       </div>
 
-      {pensions.length === 0 && !showUploadModal && !showReviewModal && (
+      {pensions.length === 0 && !showUploadModal && !showPdfUploadModal && !showFileTypeSelector && !showReviewModal && (
         <div className="empty-state">
           <div className="empty-state-icon">💼</div>
           <h3>No pension data uploaded yet</h3>
@@ -758,7 +761,108 @@ export default function PensionPots() {
         </div>
       )}
 
-      {/* Upload Modal */}
+      {/* File Type Selector Modal */}
+      {showFileTypeSelector && (
+        <div className="upload-modal-overlay">
+          <div className="upload-modal-container" style={{ maxWidth: "600px" }}>
+            <div className="upload-modal-content">
+              <div className="upload-modal-header">
+                <div>
+                  <h2 className="upload-modal-title">Choose Upload Method</h2>
+                  <p className="upload-modal-subtitle">
+                    Select the type of file you want to upload
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowFileTypeSelector(false)}
+                  className="upload-modal-close"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <div style={{ display: "grid", gap: "16px" }}>
+                <button
+                  onClick={() => {
+                    setShowFileTypeSelector(false);
+                    setShowUploadModal(true);
+                  }}
+                  style={{
+                    padding: "24px",
+                    background: "rgba(99, 102, 241, 0.1)",
+                    border: "2px solid rgba(99, 102, 241, 0.3)",
+                    borderRadius: "12px",
+                    cursor: "pointer",
+                    transition: "all 0.3s ease",
+                    textAlign: "left",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "rgba(99, 102, 241, 0.15)";
+                    e.currentTarget.style.borderColor = "#6366f1";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "rgba(99, 102, 241, 0.1)";
+                    e.currentTarget.style.borderColor = "rgba(99, 102, 241, 0.3)";
+                  }}
+                >
+                  <div style={{ fontSize: "2rem", marginBottom: "12px" }}>📊</div>
+                  <h3 style={{ margin: "0 0 8px 0", color: "var(--text-primary)", fontSize: "1.125rem", fontWeight: 600 }}>
+                    CSV or Excel File
+                  </h3>
+                  <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: "0.9375rem" }}>
+                    Upload structured data from spreadsheets (.csv, .xls, .xlsx)
+                  </p>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setShowFileTypeSelector(false);
+                    setShowPdfUploadModal(true);
+                  }}
+                  style={{
+                    padding: "24px",
+                    background: "rgba(139, 92, 246, 0.1)",
+                    border: "2px solid rgba(139, 92, 246, 0.3)",
+                    borderRadius: "12px",
+                    cursor: "pointer",
+                    transition: "all 0.3s ease",
+                    textAlign: "left",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "rgba(139, 92, 246, 0.15)";
+                    e.currentTarget.style.borderColor = "#8b5cf6";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "rgba(139, 92, 246, 0.1)";
+                    e.currentTarget.style.borderColor = "rgba(139, 92, 246, 0.3)";
+                  }}
+                >
+                  <div style={{ fontSize: "2rem", marginBottom: "12px" }}>📄</div>
+                  <h3 style={{ margin: "0 0 8px 0", color: "var(--text-primary)", fontSize: "1.125rem", fontWeight: 600 }}>
+                    PDF or Photo
+                  </h3>
+                  <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: "0.9375rem" }}>
+                    Upload pension statements as PDF files or photos (AI extraction)
+                  </p>
+                </button>
+              </div>
+
+              <div className="upload-modal-actions">
+                <button
+                  onClick={() => setShowFileTypeSelector(false)}
+                  className="upload-cancel-button"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CSV/Excel Upload Modal */}
       {showUploadModal && (
         <>
           {console.log("Rendering IntelligentFileUploader modal")}
@@ -766,6 +870,17 @@ export default function PensionPots() {
             context="pensions"
             onFileParsed={handleFileParsed}
             onClose={() => setShowUploadModal(false)}
+          />
+        </>
+      )}
+
+      {/* PDF/Image Upload Modal */}
+      {showPdfUploadModal && (
+        <>
+          {console.log("Rendering PdfPensionUploader modal")}
+          <PdfPensionUploader
+            onFileParsed={handleFileParsed}
+            onClose={() => setShowPdfUploadModal(false)}
           />
         </>
       )}
