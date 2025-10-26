@@ -1,37 +1,39 @@
 import React, { useState, useCallback, useMemo, useEffect } from "react";
-import { saveTemplate } from "./utils/TemplateTrainer";
-import { getContextSchema } from "./utils/ContextSchemas";
-import { auth } from "../firebase";
+import { detectAccountType } from "./utils/columnDetection";
+import { detectDateFormat } from "./utils/detectDateFormat";
 import "./MappingReviewModalStyles.css";
 
 /**
- * MappingReviewModal - Compact review modal for column mapping
+ * SavingsColumnMapperNew - Matches pension MappingReviewModal layout exactly
  */
 
-export default function MappingReviewModal({
-  uploadResult,
-  context = "pensions",
+export default function SavingsColumnMapperNew({
+  data,
+  initialMapping,
   onConfirm,
   onCancel,
+  fileName,
+  totalRows,
+  detectedBank,
+  confidenceScores,
+  aiMetadata,
 }) {
-  const currentUser = auth.currentUser;
-  const schema = getContextSchema(context);
-  const {
-    rawData,
-    headers,
-    initialMapping,
-    fileName,
-    detectedProvider,
-    suggestions,
-    confidenceScores,
-    aiMetadata,
-  } = uploadResult;
-
-  const [mapping, setMapping] = useState(initialMapping);
-  const [providerName, setProviderName] = useState(detectedProvider.name || "");
-  const [dateFormat, setDateFormat] = useState(initialMapping.dateFormat || "DD/MM/YYYY");
-  const [currentValue, setCurrentValue] = useState("");
+  const [mapping, setMapping] = useState(initialMapping || {});
+  const [bankName, setBankName] = useState(detectedBank || "");
+  const [accountName, setAccountName] = useState(detectedBank || "");
+  const [accountType, setAccountType] = useState("");
+  const [dateFormat, setDateFormat] = useState(initialMapping?.dateFormat || "DD/MM/YYYY");
   const [confirming, setConfirming] = useState(false);
+
+  // Auto-detect account type on mount
+  useEffect(() => {
+    if (data && data.length > 0 && mapping.description) {
+      const detected = detectAccountType(data, mapping);
+      if (detected) {
+        setAccountType(detected);
+      }
+    }
+  }, [data, mapping.description]);
 
   // Lock body scroll when modal is open
   useEffect(() => {
@@ -41,12 +43,31 @@ export default function MappingReviewModal({
     };
   }, []);
 
+  const headers = Object.keys(data[0]);
+
+  // Schema for savings accounts - matches pension format
+  const schema = {
+    requiredFields: [
+      { key: 'date', label: 'Date' },
+    ],
+    optionalFields: [
+      { key: 'description', label: 'Description' },
+      { key: 'balance', label: 'Balance' },
+      { key: 'amount', label: 'Amount' },
+    ]
+  };
+
   // Check if required fields are mapped
-  const requiredFields = schema.requiredFields.map((f) => f.key);
-  const allRequiredMapped = requiredFields.every((field) => mapping[field]) && providerName && currentValue && Number(currentValue) > 0;
+  // Either balance OR amount must be mapped (but not both required)
+  const hasBalanceOrAmount = mapping.balance || mapping.amount;
+  const allRequiredMapped = mapping.date &&
+    bankName.trim() !== "" &&
+    accountName.trim() !== "" &&
+    accountType !== "" &&
+    hasBalanceOrAmount;
 
   // Get sample data for preview
-  const sampleRows = useMemo(() => rawData.slice(0, 5), [rawData]);
+  const sampleRows = useMemo(() => data.slice(0, 5), [data]);
 
   const handleMappingChange = useCallback((field, columnName) => {
     setMapping((prev) => ({
@@ -56,85 +77,121 @@ export default function MappingReviewModal({
   }, []);
 
   const handleConfirm = useCallback(async () => {
-    if (!allRequiredMapped) {
-      alert("Please ensure all required fields are mapped, provider is set, and current value is entered.");
+    console.log("=== SAVINGS CONFIRM BUTTON CLICKED ===");
+    console.log("Current mapping:", mapping);
+    console.log("Bank name:", bankName);
+    console.log("Account name:", accountName);
+    console.log("Account type:", accountType);
+    console.log("Selected date format:", dateFormat);
+
+    // Basic validation
+    if (!mapping.date) {
+      alert("Please map the Date field.");
+      return;
+    }
+
+    if (!mapping.balance && !mapping.amount) {
+      alert("Please map either the Balance field or the Amount field.");
+      return;
+    }
+
+    if (!bankName || bankName.trim() === "") {
+      alert("Please enter a bank name.");
+      return;
+    }
+
+    if (!accountName || accountName.trim() === "") {
+      alert("Please enter an account name.");
+      return;
+    }
+
+    if (!accountType || accountType === "") {
+      alert("Please select an account type.");
       return;
     }
 
     setConfirming(true);
 
     try {
-      // Save template for future uploads
-      if (currentUser && providerName && providerName !== "Unknown Provider") {
-        await saveTemplate(
-          currentUser.uid,
-          providerName,
-          context,
-          mapping,
-          confidenceScores,
-          dateFormat,
-          aiMetadata.frequency,
-          headers
-        );
-        console.log("✅ Template saved successfully for", providerName);
+      let finalDateFormat = dateFormat;
+
+      // Try to detect date format if not manually selected
+      if (!finalDateFormat || finalDateFormat === "DD/MM/YYYY") {
+        console.log("Attempting to detect date format...");
+        const dateValues = data
+          .slice(0, 20)
+          .map((row) => row[mapping.date])
+          .filter(Boolean);
+
+        console.log("Sample date values:", dateValues);
+        const detected = detectDateFormat(dateValues);
+        if (detected) {
+          finalDateFormat = detected;
+          console.log("Detected date format:", finalDateFormat);
+        }
       }
 
-      // Pass confirmed data back to parent
-      onConfirm({
-        rawData,
-        mapping: { ...mapping, dateFormat },
-        dateFormat,
-        provider: providerName,
-        currentValue: Number(currentValue),
-        fileName,
-        aiMetadata: {
-          ...aiMetadata,
-          templateSaved: Boolean(currentUser && providerName),
-        },
+      if (!finalDateFormat) {
+        console.warn("No date format detected or selected");
+        alert("Could not detect a valid date format. Please select one manually.");
+        setConfirming(false);
+        return;
+      }
+
+      console.log("About to call onConfirm with:", {
+        mapping,
+        dateFormat: finalDateFormat,
+        bankName,
+        accountName,
+        accountType,
       });
-    } catch (error) {
-      console.error("Error saving template:", error);
-      onConfirm({
-        rawData,
-        mapping: { ...mapping, dateFormat },
-        dateFormat,
-        provider: providerName,
-        currentValue: Number(currentValue),
-        fileName,
-        aiMetadata,
-      });
+
+      // Call the parent's onConfirm callback
+      if (typeof onConfirm === "function") {
+        onConfirm(
+          { ...mapping, dateFormat: finalDateFormat },
+          bankName.trim(),
+          accountName.trim(),
+          accountType
+        );
+        console.log("onConfirm called successfully");
+      } else {
+        console.error("onConfirm is not a function:", onConfirm);
+        alert("Configuration error: onConfirm callback is not available");
+        setConfirming(false);
+      }
+    } catch (err) {
+      console.error("Error in handleConfirm:", err);
+      alert(`An error occurred during confirmation: ${err.message}`);
+      setConfirming(false);
     }
   }, [
-    allRequiredMapped,
-    currentUser,
-    providerName,
-    currentValue,
-    context,
     mapping,
-    confidenceScores,
+    bankName,
+    accountName,
+    accountType,
     dateFormat,
-    aiMetadata,
-    headers,
-    rawData,
-    fileName,
+    data,
     onConfirm,
   ]);
 
   const getConfidenceBadge = (field) => {
-    if (!suggestions || !suggestions[field]) return null;
+    if (!confidenceScores) return null;
 
-    const suggestion = suggestions[field];
-    const percentage = Math.min(100, Math.round((suggestion.confidence || 0) * 100));
+    const percentage = confidenceScores[field] || 0;
 
     let badgeClass = "confidence-badge-low";
     let icon = "🔍";
 
-    if (suggestion.source === "learned") {
-      badgeClass = "confidence-badge-learned";
-      icon = "🧠";
+    if (aiMetadata?.source === "pdf-parser" && percentage >= 85) {
+      badgeClass = "confidence-badge-high";
+      icon = "✓";
     } else if (percentage >= 80) {
       badgeClass = "confidence-badge-high";
       icon = "✓";
+    } else if (percentage >= 65) {
+      badgeClass = "confidence-badge-medium";
+      icon = "🔍";
     }
 
     return (
@@ -144,11 +201,8 @@ export default function MappingReviewModal({
     );
   };
 
-  // Provider confidence badge
-  const providerConfidencePercent = Math.min(
-    100,
-    Math.round((detectedProvider.confidence || 0) * 100)
-  );
+  // Bank confidence badge
+  const bankConfidencePercent = confidenceScores?.overall || 90;
 
   return (
     <div className="mapper-modal-overlay">
@@ -161,62 +215,86 @@ export default function MappingReviewModal({
               <div className="mapper-file-info-compact">
                 <span>📄 {fileName.length > 25 ? fileName.substring(0, 25) + '...' : fileName}</span>
                 <span>•</span>
-                <span>{rawData.length} rows</span>
+                <span>{data.length} rows</span>
               </div>
             </div>
           </div>
 
-          {/* Provider Name with Auto-Detection */}
+          {/* Bank Name with Auto-Detection */}
           <div className="provider-section-compact">
             <label className="form-label-compact">
               <span className="form-label-text">
-                Pension Provider <span className="required-star">*</span>
+                Bank <span className="required-star">*</span>
               </span>
-              {detectedProvider && detectedProvider.confidence > 0 && (
+              {detectedBank && bankConfidencePercent > 0 && (
                 <span
                   className={`confidence-badge ${
-                    providerConfidencePercent >= 80
+                    bankConfidencePercent >= 80
                       ? "confidence-badge-high"
-                      : providerConfidencePercent >= 50
+                      : bankConfidencePercent >= 50
                       ? "confidence-badge-medium"
                       : "confidence-badge-low"
                   }`}
                 >
-                  {providerConfidencePercent >= 80 ? "✓" : "🔍"} {providerConfidencePercent}%
+                  {bankConfidencePercent >= 80 ? "✓" : "🔍"} {bankConfidencePercent}%
                 </span>
               )}
             </label>
             <input
               type="text"
-              value={providerName}
-              onChange={(e) => setProviderName(e.target.value)}
-              placeholder="e.g., Aviva, Scottish Widows, Nest"
-              className="form-input-compact"
-            />
-          </div>
-
-          {/* Current Value Input */}
-          <div className="provider-section-compact">
-            <label className="form-label-compact">
-              <span className="form-label-text">
-                Current Value (£) <span className="required-star">*</span>
-              </span>
-            </label>
-            <input
-              type="number"
-              value={currentValue}
-              onChange={(e) => setCurrentValue(e.target.value)}
-              placeholder="e.g., 25000"
-              min="0"
-              step="0.01"
+              value={bankName}
+              onChange={(e) => setBankName(e.target.value)}
+              placeholder="e.g., Santander, Barclays, HSBC"
               className="form-input-compact"
             />
             <p className="form-helper-text">
-              Enter the current total value of this pension pot
+              Enter the bank or financial institution name
             </p>
           </div>
 
-          {/* Compact Column Mappings */}
+          {/* Account Type Selection */}
+          <div className="provider-section-compact">
+            <label className="form-label-compact">
+              <span className="form-label-text">
+                Account Type <span className="required-star">*</span>
+              </span>
+            </label>
+            <select
+              value={accountType}
+              onChange={(e) => setAccountType(e.target.value)}
+              className="form-input-compact"
+            >
+              <option value="">Select account type...</option>
+              <option value="Current Account">Current Account</option>
+              <option value="Savings">Savings Account</option>
+              <option value="ISA">ISA</option>
+              <option value="LISA">LISA</option>
+              <option value="Premium Bonds">Premium Bonds</option>
+            </select>
+            <p className="form-helper-text">
+              Select the type of account being uploaded
+            </p>
+          </div>
+
+          {/* Account Name */}
+          <div className="provider-section-compact">
+            <label className="form-label-compact">
+              <span className="form-label-text">
+                Account Name <span className="required-star">*</span>
+              </span>
+            </label>
+            <input
+              type="text"
+              value={accountName}
+              onChange={(e) => setAccountName(e.target.value)}
+              placeholder="e.g., Santander ISA, Main Savings"
+              className="form-input-compact"
+            />
+            <p className="form-helper-text">
+              Enter a friendly name to identify this account
+            </p>
+          </div>
+
           {/* Compact Column Mappings - Custom Order */}
           <div className="mapping-section-compact">
             {/* Top Row: Date, Date Format */}
@@ -279,7 +357,7 @@ export default function MappingReviewModal({
               </select>
             </div>
 
-            {/* Bottom Row: Description, Amount */}
+            {/* Bottom Row: Description, Balance, Amount (3 columns) */}
             <div className="mapping-field-compact">
               <label className="form-label-compact">
                 <span className="form-label-text">
@@ -304,7 +382,28 @@ export default function MappingReviewModal({
             <div className="mapping-field-compact">
               <label className="form-label-compact">
                 <span className="form-label-text">
-                  Amount <span className="required-star">*</span>
+                  Balance
+                </span>
+                {getConfidenceBadge('balance')}
+              </label>
+              <select
+                value={mapping.balance || ""}
+                onChange={(e) => handleMappingChange('balance', e.target.value)}
+                className="form-select-compact"
+              >
+                <option value="">Select column...</option>
+                {headers.map((header) => (
+                  <option key={header} value={header}>
+                    {header}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="mapping-field-compact">
+              <label className="form-label-compact">
+                <span className="form-label-text">
+                  Amount
                 </span>
                 {getConfidenceBadge('amount')}
               </label>
@@ -322,6 +421,11 @@ export default function MappingReviewModal({
               </select>
             </div>
           </div>
+
+          {/* Helper text for Balance vs Amount */}
+          <p className="form-helper-text" style={{ marginTop: '8px' }}>
+            Map either Balance (running balance) or Amount (transaction amount), or both if available
+          </p>
 
           {/* Compact Data Preview */}
           <div className="preview-section-compact">
@@ -361,26 +465,23 @@ export default function MappingReviewModal({
             </div>
           </div>
 
-          {/* Modal Footer - Matches AccountSettings */}
+          {/* Modal Footer - Matches pension mapper */}
           <div className="modal-footer">
-            <button onClick={onCancel} className="modal-btn modal-btn-secondary" disabled={confirming}>
+            <button
+              onClick={onCancel}
+              className="modal-btn modal-btn-secondary"
+              disabled={confirming}
+              type="button"
+            >
               Cancel
             </button>
             <button
               onClick={handleConfirm}
+              className={`modal-btn modal-btn-primary ${!allRequiredMapped ? 'modal-btn-disabled' : ''}`}
               disabled={!allRequiredMapped || confirming}
-              className="modal-btn modal-btn-primary"
+              type="button"
             >
-              {confirming ? (
-                <>
-                  <span className="btn-spinner"></span>
-                  Confirming...
-                </>
-              ) : allRequiredMapped ? (
-                "Confirm Mapping"
-              ) : (
-                "⚠️ Complete Required Fields"
-              )}
+              {confirming ? 'Confirming...' : 'Confirm Mapping'}
             </button>
           </div>
         </div>

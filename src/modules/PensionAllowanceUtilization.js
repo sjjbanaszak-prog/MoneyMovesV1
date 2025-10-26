@@ -644,6 +644,105 @@ export default function PensionAllowanceUtilization({ yearlyTotals }) {
             <span>Lost Allowance</span>
           </div>
         </div>
+
+        {/* Summary Stats */}
+        <div className="cf-summary">
+          <div className="cf-summary-stat">
+            <span className="cf-summary-stat-label">Total Contributed</span>
+            <span className="cf-summary-stat-value">
+              £{Math.round(carryForwardData.years.reduce((sum, y) => sum + y.used, 0)).toLocaleString()}
+            </span>
+          </div>
+          <div className="cf-summary-stat">
+            <span className="cf-summary-stat-label">Total Allowance</span>
+            <span className="cf-summary-stat-value">
+              £{carryForwardData.years.reduce((sum, y) => sum + y.allowance, 0).toLocaleString()}
+            </span>
+          </div>
+          <div className="cf-summary-stat">
+            <span className="cf-summary-stat-label">Total Unused Allowance</span>
+            <span className="cf-summary-stat-value cf-summary-stat-available">
+              £{(() => {
+                const currentYearIndex = carryForwardData.years.length - 1;
+
+                // Calculate consumed by future for each year
+                const consumedByFuture = carryForwardData.years.map((yearData, index) => {
+                  let consumed = 0;
+                  for (let futureIndex = index + 1; futureIndex < carryForwardData.years.length; futureIndex++) {
+                    const futureYear = carryForwardData.years[futureIndex];
+                    const usedFromThisYear = futureYear.breakdown.carryForward.find(
+                      cf => cf.fromYear === yearData.year
+                    );
+                    if (usedFromThisYear) {
+                      consumed += usedFromThisYear.amount;
+                    }
+                  }
+                  return consumed;
+                });
+
+                // Calculate available allowance = remaining current year + carry forward from previous 3 years
+                const currentYear = carryForwardData.years[currentYearIndex];
+                const remainingCurrentYear = Math.max(0, currentYear.allowance - currentYear.used);
+
+                // Calculate available carry forward from previous 3 years
+                let availableCarryForward = 0;
+                for (let i = 1; i <= 3 && (currentYearIndex - i) >= 0; i++) {
+                  const yearIndex = currentYearIndex - i;
+                  const yearData = carryForwardData.years[yearIndex];
+                  const remainingFromYear = Math.max(
+                    0,
+                    yearData.allowance - yearData.used - consumedByFuture[yearIndex]
+                  );
+                  availableCarryForward += remainingFromYear;
+                }
+
+                const totalAvailable = remainingCurrentYear + availableCarryForward;
+                return Math.round(totalAvailable).toLocaleString();
+              })()}
+            </span>
+          </div>
+          <div className="cf-summary-stat">
+            <span className="cf-summary-stat-label">Total Lost</span>
+            <span className="cf-summary-stat-value cf-summary-stat-lost">
+              £{(() => {
+                const currentYearIndex = carryForwardData.years.length - 1;
+
+                // Calculate consumed by future for each year
+                const consumedByFuture = carryForwardData.years.map((yearData, index) => {
+                  let consumed = 0;
+                  for (let futureIndex = index + 1; futureIndex < carryForwardData.years.length; futureIndex++) {
+                    const futureYear = carryForwardData.years[futureIndex];
+                    const usedFromThisYear = futureYear.breakdown.carryForward.find(
+                      cf => cf.fromYear === yearData.year
+                    );
+                    if (usedFromThisYear) {
+                      consumed += usedFromThisYear.amount;
+                    }
+                  }
+                  return consumed;
+                });
+
+                // Calculate total lost allowance
+                const totalLost = carryForwardData.years.reduce((sum, yearData, index) => {
+                  const yearsAfterThisYear = currentYearIndex - index;
+                  const isLostAllowance = yearsAfterThisYear > 3;
+
+                  if (isLostAllowance) {
+                    const totalUsedInYear = yearData.used;
+                    const consumedFromThisYear = consumedByFuture[index];
+                    const totalLifetimeUtilization = totalUsedInYear + consumedFromThisYear;
+                    const remainingUnused = Math.max(0, yearData.allowance - totalLifetimeUtilization);
+                    return sum + remainingUnused;
+                  }
+
+                  return sum;
+                }, 0);
+
+                return Math.round(totalLost).toLocaleString();
+              })()}
+            </span>
+          </div>
+        </div>
       </div>
     </div>
   );

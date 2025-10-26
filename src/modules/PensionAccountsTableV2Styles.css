@@ -662,6 +662,7 @@
 .history-table-v2 {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed;
 }
 
 .history-table-v2 thead {
@@ -682,9 +683,17 @@
   border-bottom: 1px solid #2d3139;
 }
 
+/* Fixed column widths for consistency */
+.history-table-v2 th:nth-child(1) { width: 32%; } /* Description */
+.history-table-v2 th:nth-child(2) { width: 11%; } /* Date */
+.history-table-v2 th:nth-child(3) { width: 9%; }  /* FY */
+.history-table-v2 th:nth-child(4) { width: 13%; } /* Amount */
+.history-table-v2 th:nth-child(5) { width: 12%; } /* Source */
+.history-table-v2 th:nth-child(6) { width: 23%; } /* Actions */
+
 .history-table-v2 td {
   padding: 12px 16px !important;
-  font-size: 13px !important;
+  font-size: 12px !important;
   color: #e4e6eb !important;
   border-bottom: 1px solid #2d3139;
 }
@@ -1053,6 +1062,6 @@
 
   .history-table-v2 td {
     padding: 8px 12px !important;
-    font-size: 11px !important;
+    font-size: 10px !important;
   }
 }

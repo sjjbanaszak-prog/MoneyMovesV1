@@ -1,19 +1,13 @@
-import React, { useState, useEffect, useRef } from "react";
-import FileUploader from "../modules/FileUploader";
-import ColumnMapper from "../modules/ColumnMapper";
-import SavingsChart from "../modules/SavingsChart";
+import React, { useState, useEffect } from "react";
+import UnifiedSavingsUploader from "../modules/UnifiedSavingsUploader";
+import SavingsColumnMapperNew from "../modules/SavingsColumnMapperNew";
+import SavingsChartV2 from "../modules/SavingsChartV2";
 import SavingsAccountsTable from "../modules/SavingsAccountsTable";
 import SavingsMetricCards from "../modules/SavingsMetricCards";
 import MonthlyBalanceChangeChart from "../modules/MonthlyBalanceChangeChart";
-import ISALISAUtilization from "../modules/ISALISAUtilization";
+import ISAUtilizationChart from "../modules/ISAUtilizationChart";
 import PremiumBondsAnalysis from "../modules/PremiumBondsAnalysis";
 import AISavingsAdvisory from "../modules/AISavingsAdvisory";
-import {
-  autoDetectColumns,
-  detectAccountType,
-  detectBank,
-} from "../modules/utils/columnDetection";
-import { detectDateFormat } from "../modules/utils/detectDateFormat";
 import { accountTypeTransformers } from "../modules/utils/premiumBondsParser";
 import { calculateDataQualityScore } from "../modules/utils/dataValidation";
 import { auth, db } from "../firebase";
@@ -40,16 +34,15 @@ export default function SavingsTracker() {
   const [uploads, setUploads] = useState([]);
   const [selectedAccounts, setSelectedAccounts] = useState([]);
   const [user, setUser] = useState(null);
+  const [showUploadModal, setShowUploadModal] = useState(false);
   const [showColumnMapper, setShowColumnMapper] = useState(false);
   const [rawData, setRawData] = useState([]);
   const [initialMapping, setInitialMapping] = useState(null);
   const [fileName, setFileName] = useState("");
-  const [processingFile, setProcessingFile] = useState(false);
-  const [autoDetectionResults, setAutoDetectionResults] = useState(null);
+  const [detectedBank, setDetectedBank] = useState("");
   const [isInitialLoadComplete, setIsInitialLoadComplete] = useState(false);
-
-  // Ref for FileUploader section
-  const fileUploaderRef = useRef(null);
+  const [confidenceScores, setConfidenceScores] = useState(null);
+  const [aiMetadata, setAiMetadata] = useState(null);
 
   // User preferences for AI Advisory
   const [userPreferences, setUserPreferences] = useState({
@@ -171,67 +164,24 @@ export default function SavingsTracker() {
     }));
   };
 
-  const handleFileParsed = async (parsedData, uploadedFileName) => {
-    setProcessingFile(true);
+  const handleFileParsed = (parsedData, uploadedFileName, detectionResults) => {
+    console.log("File parsed:", {
+      rows: parsedData.length,
+      fileName: uploadedFileName,
+      detectionResults,
+    });
 
-    try {
-      const suggestedMapping = autoDetectColumns(parsedData);
-      const detectedBank = detectBank(
-        parsedData,
-        suggestedMapping,
-        uploadedFileName
-      );
-      const detectedAccountType = detectAccountType(
-        parsedData,
-        suggestedMapping
-      );
-      const detectedDateFormat = suggestedMapping.date
-        ? detectDateFormat(
-            parsedData
-              .slice(0, 10)
-              .map((row) => row[suggestedMapping.date])
-              .filter(Boolean)
-          )
-        : null;
-
-      const autoDetection = {
-        mapping: suggestedMapping,
-        bank: detectedBank,
-        accountType: detectedAccountType,
-        dateFormat: detectedDateFormat,
-        confidence: calculateConfidence(
-          suggestedMapping,
-          detectedBank,
-          detectedAccountType
-        ),
-      };
-
-      setRawData(parsedData);
-      setInitialMapping({
-        ...suggestedMapping,
-        dateFormat: detectedDateFormat,
-      });
-      setFileName(uploadedFileName);
-      setAutoDetectionResults(autoDetection);
-      setShowColumnMapper(true);
-    } catch (error) {
-      console.error("Error processing file:", error);
-      alert(
-        "Error processing file. Please check the file format and try again."
-      );
-    } finally {
-      setProcessingFile(false);
-    }
+    // Close upload modal and open column mapper
+    setShowUploadModal(false);
+    setRawData(parsedData);
+    setFileName(uploadedFileName);
+    setInitialMapping(detectionResults.initialMapping);
+    setDetectedBank(detectionResults.detectedBank || "");
+    setConfidenceScores(detectionResults.confidenceScores || null);
+    setAiMetadata(detectionResults.aiMetadata || null);
+    setShowColumnMapper(true);
   };
 
-  const calculateConfidence = (mapping, bank, accountType) => {
-    let score = 0;
-    if (mapping.date) score += 25;
-    if (mapping.balance || mapping.amount) score += 25;
-    if (bank) score += 25;
-    if (accountType) score += 25;
-    return score;
-  };
 
   const handleConfirmMapping = (
     updatedMapping,
@@ -255,41 +205,103 @@ export default function SavingsTracker() {
         updatedMapping.dateFormat
       );
 
-      const upload = {
-        rawData: processedData,
-        mapping: updatedMapping,
-        bank,
-        accountName,
-        accountType,
-        confirmed: true,
-        dateFormat: updatedMapping.dateFormat,
-        uploadDate: new Date().toISOString(),
-        fileName: fileName,
-        autoDetectionUsed: autoDetectionResults?.confidence > 75,
-        dataQualityScore: qualityScore.score,
-      };
+      // Check if an account with this exact name already exists
+      const existingUploadIndex = uploads.findIndex(
+        (u) => u.accountName === accountName
+      );
 
-      // Determine final account name (check for duplicates)
-      const existingNames = uploads.map((u) => u.accountName);
-      let finalAccountName = accountName;
-      let counter = 1;
+      if (existingUploadIndex !== -1) {
+        // Account exists - merge transactions
+        console.log(`Merging transactions for existing account: ${accountName}`);
 
-      while (existingNames.includes(finalAccountName)) {
-        finalAccountName = `${accountName} (${counter})`;
-        counter++;
+        const existingUpload = uploads[existingUploadIndex];
+        const existingTransactions = existingUpload.rawData;
+        const newTransactions = processedData;
+
+        // Create unique transaction IDs for deduplication
+        const createTransactionId = (row, mapping) => {
+          const date = row[mapping.date] || "";
+          const amount = row[mapping.amount] || row[mapping.balance] || "";
+          const description = row[mapping.description] || "";
+          return `${date}_${amount}_${description}`.toLowerCase().trim();
+        };
+
+        // Build Set of existing transaction IDs
+        const existingIds = new Set(
+          existingTransactions.map((row) =>
+            createTransactionId(row, existingUpload.mapping)
+          )
+        );
+
+        // Filter out duplicate transactions from new data
+        const uniqueNewTransactions = newTransactions.filter((row) => {
+          const txnId = createTransactionId(row, updatedMapping);
+          return !existingIds.has(txnId);
+        });
+
+        console.log(`Found ${uniqueNewTransactions.length} new transactions out of ${newTransactions.length} total`);
+
+        if (uniqueNewTransactions.length === 0) {
+          alert(`No new transactions found. All ${newTransactions.length} transactions already exist in ${accountName}.`);
+          setShowColumnMapper(false);
+          setRawData([]);
+          setInitialMapping(null);
+          setFileName("");
+          setDetectedBank("");
+          return;
+        }
+
+        // Merge transactions (new transactions added to existing)
+        const mergedTransactions = [...existingTransactions, ...uniqueNewTransactions];
+
+        // Update the existing upload with merged data
+        const updatedUpload = {
+          ...existingUpload,
+          rawData: mergedTransactions,
+          // Keep original metadata but update last modified info
+          lastUpdated: new Date().toISOString(),
+          lastFileName: fileName,
+        };
+
+        // Replace the existing upload in the array
+        setUploads((prev) => {
+          const updated = [...prev];
+          updated[existingUploadIndex] = updatedUpload;
+          return updated;
+        });
+
+        alert(`Successfully added ${uniqueNewTransactions.length} new transaction${uniqueNewTransactions.length !== 1 ? 's' : ''} to ${accountName}`);
+
+        setShowColumnMapper(false);
+        setRawData([]);
+        setInitialMapping(null);
+        setFileName("");
+        setDetectedBank("");
+      } else {
+        // New account - create new upload
+        const upload = {
+          rawData: processedData,
+          mapping: updatedMapping,
+          bank,
+          accountName,
+          accountType,
+          confirmed: true,
+          dateFormat: updatedMapping.dateFormat,
+          uploadDate: new Date().toISOString(),
+          fileName: fileName,
+          dataQualityScore: qualityScore.score,
+        };
+
+        // Update both states at the same level (not nested) to prevent duplicate saves
+        setUploads((prev) => [...prev, upload]);
+        setSelectedAccounts((prev) => [...prev, accountName]);
+
+        setShowColumnMapper(false);
+        setRawData([]);
+        setInitialMapping(null);
+        setFileName("");
+        setDetectedBank("");
       }
-
-      upload.accountName = finalAccountName;
-
-      // Update both states at the same level (not nested) to prevent duplicate saves
-      setUploads((prev) => [...prev, upload]);
-      setSelectedAccounts((prev) => [...prev, finalAccountName]);
-
-      setShowColumnMapper(false);
-      setRawData([]);
-      setInitialMapping(null);
-      setFileName("");
-      setAutoDetectionResults(null);
     } catch (error) {
       console.error("Error confirming mapping:", error);
       alert("Error processing the upload. Please try again.");
@@ -298,10 +310,11 @@ export default function SavingsTracker() {
 
   const handleCancelUpload = () => {
     setShowColumnMapper(false);
+    setShowUploadModal(false);
     setRawData([]);
     setInitialMapping(null);
     setFileName("");
-    setAutoDetectionResults(null);
+    setDetectedBank("");
   };
 
   const handleAccountToggle = (accountName) => {
@@ -333,9 +346,7 @@ export default function SavingsTracker() {
   };
 
   const handleAddSavingData = () => {
-    if (fileUploaderRef.current) {
-      fileUploaderRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
+    setShowUploadModal(true);
   };
 
   const hasISAorLISA = uploads.some(
@@ -369,32 +380,26 @@ export default function SavingsTracker() {
         </div>
       )}
 
-      <div className="full-width-card" ref={fileUploaderRef}>
-        <FileUploader onDataParsed={handleFileParsed} />
-        {processingFile && (
-          <div className="processing-indicator">
-            <div className="spinner"></div>
-            <span>Processing file and detecting account details...</span>
-          </div>
-        )}
-      </div>
+      {/* Upload Modal */}
+      {showUploadModal && (
+        <UnifiedSavingsUploader
+          onFileParsed={handleFileParsed}
+          onClose={() => setShowUploadModal(false)}
+        />
+      )}
 
       {showColumnMapper && initialMapping && (
-        <div
-          className="modal-overlay"
-          onClick={(e) => e.target === e.currentTarget && handleCancelUpload()}
-        >
-          <div className="mapping-modal-overlay">
-            <ColumnMapper
-              data={rawData}
-              initialMapping={initialMapping}
-              onConfirm={handleConfirmMapping}
-              onCancel={handleCancelUpload}
-              fileName={fileName}
-              totalRows={rawData.length}
-            />
-          </div>
-        </div>
+        <SavingsColumnMapperNew
+          data={rawData}
+          initialMapping={initialMapping}
+          onConfirm={handleConfirmMapping}
+          onCancel={handleCancelUpload}
+          fileName={fileName}
+          totalRows={rawData.length}
+          detectedBank={detectedBank}
+          confidenceScores={confidenceScores}
+          aiMetadata={aiMetadata}
+        />
       )}
 
       {uploads.length > 0 && (
@@ -414,7 +419,7 @@ export default function SavingsTracker() {
           )}
 
           <div className="full-width-card">
-            <SavingsChart
+            <SavingsChartV2
               uploads={uploads}
               selectedAccounts={selectedAccounts}
             />
@@ -422,7 +427,7 @@ export default function SavingsTracker() {
 
           {hasISAorLISA && (
             <div className="full-width-card">
-              <ISALISAUtilization uploads={uploads} />
+              <ISAUtilizationChart uploads={uploads} />
             </div>
           )}
 

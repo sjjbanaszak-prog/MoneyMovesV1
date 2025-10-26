@@ -954,7 +954,11 @@ export default function PensionAccountsTableV2({
                                             onClick={(e) => e.stopPropagation()}
                                           />
                                         ) : (
-                                          payment.description || "-"
+                                          payment.description
+                                            ? payment.description.length > 25
+                                              ? `${payment.description.substring(0, 25)}...`
+                                              : payment.description
+                                            : "-"
                                         )}
                                       </td>
                                       <td>

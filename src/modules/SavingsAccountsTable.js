@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Download } from "lucide-react";
 import dayjs from "dayjs";
 import { parseNumber } from "./utils/parseNumber";
 import "./SavingsAccountsTableStyles.css";
@@ -128,8 +128,33 @@ export default function SavingsAccountsTable({
     const startRow = sorted[0];
     const endRow = sorted[sorted.length - 1];
 
-    const startValue = mapping.balance ? parseNumber(startRow[mapping.balance]) : 0;
-    const currentValue = mapping.balance ? parseNumber(endRow[mapping.balance]) : 0;
+    // Calculate starting and current values
+    let startValue = 0;
+    let currentValue = 0;
+
+    if (mapping.balance) {
+      // Use balance column if available
+      startValue = parseNumber(startRow[mapping.balance]);
+      currentValue = parseNumber(endRow[mapping.balance]);
+    } else if (mapping.amount) {
+      // Calculate running balance from amounts if no balance column
+      // For Trading212 and similar files where only amounts are provided
+      let runningBalance = 0;
+      sorted.forEach((row, index) => {
+        const amount = parseNumber(row[mapping.amount]);
+        runningBalance += amount;
+
+        // First transaction sets starting value
+        if (index === 0) {
+          startValue = amount;
+        }
+
+        // Last transaction sets current value
+        if (index === sorted.length - 1) {
+          currentValue = runningBalance;
+        }
+      });
+    }
 
     // Calculate true growth (interest/prizes only, excluding deposits/withdrawals)
     let totalDeposits = 0;
@@ -138,6 +163,13 @@ export default function SavingsAccountsTable({
 
     sorted.forEach((row) => {
       const description = mapping.description ? String(row[mapping.description] || row.Description || "").toLowerCase() : "";
+
+      // Skip transfer transactions from growth calculation
+      const isTransfer = description.includes("transfer");
+
+      if (isTransfer) {
+        console.log(`[${accountName}] Excluding transfer transaction:`, description);
+      }
 
       if (accountType === "Premium Bonds") {
         const amountValue = parseNumber(
@@ -166,55 +198,83 @@ export default function SavingsAccountsTable({
                          description.includes("int pmt") ||
                          description.match(/\bint\b/);
 
+        const isDividend = description.includes("dividend") ||
+                         description.includes("div paid") ||
+                         description.includes("div credit");
+
         if (mapping.credit) {
           const creditAmount = parseNumber(row[mapping.credit]);
-          if (creditAmount > 0 && !isInterest) {
+          if (creditAmount > 0 && !isInterest && !isDividend && !isTransfer) {
             totalDeposits += creditAmount;
           }
-          if (creditAmount > 0 && isInterest) {
+          if (creditAmount > 0 && (isInterest || isDividend)) {
             totalPrizes += creditAmount;
           }
         } else if (mapping.amount) {
           const amount = parseNumber(row[mapping.amount]);
-          if (amount > 0 && !isInterest) {
+          if (amount > 0 && !isInterest && !isDividend && !isTransfer) {
             totalDeposits += amount;
           }
-          if (amount > 0 && isInterest) {
+          if (amount > 0 && (isInterest || isDividend)) {
             totalPrizes += amount;
           }
         }
 
         if (mapping.debit) {
           const debitAmount = parseNumber(row[mapping.debit]);
-          if (debitAmount > 0) {
+          if (debitAmount > 0 && !isTransfer) {
             totalWithdrawals += debitAmount;
           }
         } else if (mapping.amount) {
           const amount = parseNumber(row[mapping.amount]);
-          if (amount < 0) {
+          if (amount < 0 && !isTransfer) {
             totalWithdrawals += Math.abs(amount);
           }
         }
       }
     });
 
-    // Growth calculation (matching SavingsMetricCards logic)
-    let growth;
-    if (accountType === "Premium Bonds") {
-      growth = totalPrizes;
-    } else {
-      growth = currentValue - totalDeposits + totalWithdrawals;
-    }
+    // Growth calculation
+    // For all account types: Growth = Interest/Dividends/Prizes (already calculated in totalPrizes)
+    const growth = totalPrizes;
+
+    console.log(`[${accountName}] Growth calc: Current=${currentValue}, Start=${startValue}, Deposits=${totalDeposits}, Withdrawals=${totalWithdrawals}, Interest/Dividends/Prizes=${totalPrizes}, Growth=${growth}`);
 
     // Build transaction history
-    const transactions = sorted.map((row) => ({
-      date: row[mapping.date],
-      description: mapping.description ? row[mapping.description] : "",
-      debit: mapping.debit ? parseNumber(row[mapping.debit]) : null,
-      credit: mapping.credit ? parseNumber(row[mapping.credit]) : null,
-      balance: mapping.balance ? parseNumber(row[mapping.balance]) : null,
-      amount: mapping.amount ? parseNumber(row[mapping.amount]) : null,
-    }));
+    const transactions = sorted.map((row) => {
+      // Check if we have Type and Amount fields from PDF/TXT parser
+      const hasTypeField = row.Type !== undefined;
+      const hasAmountField = row.Amount !== undefined;
+
+      let debit = null;
+      let credit = null;
+      let amount = null;
+
+      if (hasTypeField && hasAmountField) {
+        // Use calculated Type and Amount from parser
+        const amountValue = parseNumber(row.Amount);
+        if (row.Type === 'Debit') {
+          debit = amountValue;
+        } else if (row.Type === 'Credit') {
+          credit = amountValue;
+        }
+        amount = row.Type === 'Debit' ? -amountValue : amountValue;
+      } else {
+        // Fallback to original mapping logic
+        debit = mapping.debit ? parseNumber(row[mapping.debit]) : null;
+        credit = mapping.credit ? parseNumber(row[mapping.credit]) : null;
+        amount = mapping.amount ? parseNumber(row[mapping.amount]) : null;
+      }
+
+      return {
+        date: row[mapping.date],
+        description: mapping.description ? row[mapping.description] : (row.Description || ""),
+        debit,
+        credit,
+        balance: mapping.balance ? parseNumber(row[mapping.balance]) : null,
+        amount,
+      };
+    });
 
     return {
       accountName,
@@ -225,6 +285,8 @@ export default function SavingsAccountsTable({
       startValue,
       currentValue,
       growth,
+      totalDeposits,
+      totalWithdrawals,
       transactionCount: sorted.length,
       transactions,
       isValid: true,
@@ -319,6 +381,42 @@ export default function SavingsAccountsTable({
   const handleRemove = (accountName, e) => {
     e.stopPropagation();
     onRemove(accountName);
+  };
+
+  // Handle export transactions to CSV
+  const handleExportTransactions = (account, e) => {
+    e.stopPropagation();
+
+    // Create CSV header
+    const headers = ["Date", "Description", "Debit", "Credit", "Balance", "Amount"];
+
+    // Create CSV rows
+    const rows = account.transactions.map((txn) => {
+      return [
+        txn.date || "",
+        `"${(txn.description || "").replace(/"/g, '""')}"`, // Escape quotes in description
+        txn.debit !== null ? txn.debit.toFixed(2) : "",
+        txn.credit !== null ? txn.credit.toFixed(2) : "",
+        txn.balance !== null ? txn.balance.toFixed(2) : "",
+        txn.amount !== null ? txn.amount.toFixed(2) : "",
+      ].join(",");
+    });
+
+    // Combine header and rows
+    const csvContent = [headers.join(","), ...rows].join("\n");
+
+    // Create blob and download
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+
+    link.setAttribute("href", url);
+    link.setAttribute("download", `${account.accountName.replace(/[^a-z0-9]/gi, '_')}_transactions.csv`);
+    link.style.visibility = "hidden";
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (
@@ -441,18 +539,31 @@ export default function SavingsAccountsTable({
                     </td>
                     <td className="savings-text-right-v2">{formatCurrency(account.currentValue)}</td>
                     <td className="savings-text-right-v2">
-                      <span className={account.growth >= 0 ? "savings-positive-v2" : "savings-negative-v2"}>
-                        {account.growth >= 0 ? "+" : "-"}{formatCurrency(Math.abs(account.growth))}
-                      </span>
+                      {account.growth === 0 ? (
+                        <span>{formatCurrency(0)}</span>
+                      ) : (
+                        <span className={account.growth > 0 ? "savings-positive-v2" : "savings-negative-v2"}>
+                          {account.growth > 0 ? "+" : "-"}{formatCurrency(Math.abs(account.growth))}
+                        </span>
+                      )}
                     </td>
                     <td className="savings-text-center-v2">
-                      <button
-                        className="savings-remove-button-v2"
-                        onClick={(e) => handleRemove(account.accountName, e)}
-                        title="Remove account"
-                      >
-                        <Trash2 size={14} />
-                      </button>
+                      <div style={{ display: "flex", gap: "0.5rem", justifyContent: "center" }}>
+                        <button
+                          className="savings-export-button-v2"
+                          onClick={(e) => handleExportTransactions(account, e)}
+                          title="Export transactions to CSV"
+                        >
+                          <Download size={14} />
+                        </button>
+                        <button
+                          className="savings-remove-button-v2"
+                          onClick={(e) => handleRemove(account.accountName, e)}
+                          title="Remove account"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
 
@@ -464,8 +575,8 @@ export default function SavingsAccountsTable({
                           {/* Summary Statistics */}
                           <div className="savings-history-stats-grid-v2">
                             <div className="savings-stat-card-v2">
-                              <div className="savings-stat-card-label-v2">Starting Balance</div>
-                              <div className="savings-stat-card-value-v2">{formatCurrency(account.startValue)}</div>
+                              <div className="savings-stat-card-label-v2">Net Deposits</div>
+                              <div className="savings-stat-card-value-v2">{formatCurrency(account.totalDeposits - account.totalWithdrawals)}</div>
                             </div>
                             <div className="savings-stat-card-v2">
                               <div className="savings-stat-card-label-v2">Current Balance</div>
@@ -474,9 +585,9 @@ export default function SavingsAccountsTable({
                             <div className="savings-stat-card-v2">
                               <div className="savings-stat-card-label-v2">Net Growth</div>
                               <div className="savings-stat-card-value-v2" style={{
-                                color: account.growth >= 0 ? '#10b981' : '#ef4444'
+                                color: account.growth === 0 ? '#e4e6eb' : (account.growth > 0 ? '#10b981' : '#ef4444')
                               }}>
-                                {account.growth >= 0 ? '+' : ''}{formatCurrency(account.growth)}
+                                {account.growth === 0 ? formatCurrency(0) : `${account.growth > 0 ? '+' : ''}${formatCurrency(account.growth)}`}
                               </div>
                             </div>
                             <div className="savings-stat-card-v2">
@@ -512,7 +623,13 @@ export default function SavingsAccountsTable({
 
                                     return (
                                       <tr key={tIdx}>
-                                        <td className="savings-description-cell-v2">{transaction.description || "-"}</td>
+                                        <td className="savings-description-cell-v2">
+                                          {transaction.description
+                                            ? transaction.description.length > 25
+                                              ? `${transaction.description.substring(0, 25)}...`
+                                              : transaction.description
+                                            : "-"}
+                                        </td>
                                         <td>{formatDate(transaction.date, account.dateFormat)}</td>
                                         <td>{getFinancialYear(transaction.date, account.dateFormat)}</td>
                                         <td>

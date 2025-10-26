@@ -1,0 +1,386 @@
+/* ISA Utilization Chart - Matching PensionAllowanceUtilization styling */
+
+/* Card Container */
+.isa-utilization-container {
+  background-color: #1f2937;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  margin: 0;
+  width: 100%;
+  max-width: 100%;
+}
+
+/* Header */
+.isa-utilization-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  min-height: 28px;
+}
+
+.isa-utilization-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #f3f4f6;
+  margin: 0;
+}
+
+.isa-utilization-subtitle {
+  font-size: 13px;
+  color: #9ca3af;
+  margin: 8px 0 0 0;
+  line-height: 1.4;
+}
+
+/* Empty State */
+.isa-utilization-empty {
+  text-align: center;
+  padding: 2rem;
+  color: #9ca3af;
+  font-size: 13px;
+}
+
+/* Mobile Navigation */
+.isa-utilization-mobile-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding: 12px;
+  background: #374151;
+  border: 1px solid #4b5563;
+  border-radius: 8px;
+}
+
+.isa-utilization-nav-btn {
+  padding: 4px 12px;
+  background: #374151;
+  border: 1px solid #4b5563;
+  border-radius: 6px;
+  color: #e4e6eb;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+  line-height: 1.4;
+}
+
+.isa-utilization-nav-btn:hover:not(:disabled) {
+  background: #4b5563;
+}
+
+.isa-utilization-nav-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.isa-utilization-nav-info {
+  font-size: 13px;
+  color: #9ca3af;
+}
+
+/* Chart Container */
+.isa-utilization-chart {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-around;
+  height: 220px;
+  gap: 12px;
+  margin-bottom: 0px;
+  position: relative;
+}
+
+/* Year Column */
+.isa-utilization-year-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  max-width: 160px;
+  cursor: pointer;
+  transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  height: 100%;
+  justify-content: flex-end;
+  position: relative;
+}
+
+.isa-utilization-year-column:hover .isa-utilization-bar-container {
+  transform: translateY(-4px);
+}
+
+/* Bar Container */
+.isa-utilization-bar-container {
+  width: 100%;
+  height: 170px;
+  display: flex;
+  flex-direction: column-reverse;
+  border-radius: 8px 8px 0 0;
+  overflow: visible;
+  transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  min-height: 10px;
+}
+
+/* Segments */
+.isa-utilization-segment {
+  width: 100%;
+  transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  min-height: 5px;
+  cursor: help;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Used Allowance (Indigo gradient - matching pension current year) */
+.isa-utilization-used {
+  background: linear-gradient(180deg, #6366f1 0%, #4f46e5 100%);
+  border-radius: 0;
+}
+
+/* Unused Allowance (Current year - indigo dashed) */
+.isa-utilization-unused {
+  background: linear-gradient(
+    180deg,
+    rgba(99, 102, 241, 0.2) 0%,
+    rgba(79, 70, 229, 0.15) 100%
+  );
+  border: 1px dashed rgba(99, 102, 241, 0.4);
+  border-radius: 0;
+}
+
+/* Lost Allowance (Past years - red dashed) */
+.isa-utilization-lost {
+  background: linear-gradient(
+    180deg,
+    rgba(239, 68, 68, 0.2) 0%,
+    rgba(220, 38, 38, 0.15) 100%
+  );
+  border: 1px dashed rgba(239, 68, 68, 0.4);
+  border-radius: 0;
+}
+
+/* Top of stack gets rounded top */
+.isa-utilization-segment:last-child {
+  border-radius: 8px 8px 0 0;
+}
+
+/* Segment Labels */
+.isa-utilization-segment-label {
+  font-size: 12px;
+  color: #e4e6eb;
+  font-weight: 600;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  z-index: 1;
+}
+
+.isa-utilization-unused-label {
+  color: #ef4444;
+  text-shadow: none;
+}
+
+/* Warning for over-utilization */
+.isa-utilization-warning {
+  position: absolute;
+  top: -24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #ef4444;
+  color: white;
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+/* Year Label */
+.isa-utilization-year-label {
+  font-size: 13px;
+  color: #9ca3af;
+  margin-top: 8px;
+  font-weight: 500;
+  transition: opacity 0.4s ease-in-out;
+}
+
+/* Amount Label */
+.isa-utilization-amount-label {
+  font-size: 12px;
+  color: #e4e6eb;
+  font-weight: 600;
+  transition: opacity 0.4s ease-in-out;
+  min-height: 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+/* Legend */
+.isa-utilization-legend {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 0px;
+  padding-top: 16px;
+  border-top: 1px solid #374151;
+}
+
+.isa-utilization-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.isa-utilization-legend-box {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+}
+
+.isa-utilization-legend-used {
+  background: linear-gradient(180deg, #6366f1 0%, #4f46e5 100%);
+}
+
+.isa-utilization-legend-unused {
+  background: linear-gradient(
+    180deg,
+    rgba(99, 102, 241, 0.2) 0%,
+    rgba(79, 70, 229, 0.15) 100%
+  );
+  border: 1px dashed rgba(99, 102, 241, 0.4);
+}
+
+.isa-utilization-legend-lost {
+  background: linear-gradient(
+    180deg,
+    rgba(239, 68, 68, 0.2) 0%,
+    rgba(220, 38, 38, 0.15) 100%
+  );
+  border: 1px dashed rgba(239, 68, 68, 0.4);
+}
+
+/* Summary Stats */
+.isa-utilization-summary {
+  display: flex;
+  justify-content: space-around;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #374151;
+}
+
+.isa-utilization-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.isa-utilization-stat-label {
+  font-size: 12px;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 500;
+}
+
+.isa-utilization-stat-value {
+  font-size: 16px;
+  font-weight: 600;
+  color: #e4e6eb;
+}
+
+.isa-utilization-stat-lost {
+  color: #ef4444;
+}
+
+/* Fade animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.6s ease-out forwards;
+  opacity: 0;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .isa-utilization-container {
+    padding: 16px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .isa-utilization-title {
+    font-size: 16px;
+  }
+
+  .isa-utilization-subtitle {
+    font-size: 12px;
+  }
+
+  .isa-utilization-chart {
+    gap: 8px;
+    height: 180px;
+  }
+
+  .isa-utilization-bar-container {
+    height: 130px;
+  }
+
+  .isa-utilization-year-column {
+    max-width: 100px;
+  }
+
+  .isa-utilization-year-label {
+    font-size: 11px;
+  }
+
+  .isa-utilization-amount-label {
+    font-size: 10px;
+  }
+
+  .isa-utilization-segment-label {
+    font-size: 10px;
+  }
+
+  .isa-utilization-legend {
+    gap: 12px;
+  }
+
+  .isa-utilization-legend-item {
+    font-size: 11px;
+  }
+
+  .isa-utilization-summary {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .isa-utilization-stat {
+    flex-direction: row;
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .isa-utilization-stat-value {
+    font-size: 14px;
+  }
+}

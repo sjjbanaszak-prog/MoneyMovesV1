@@ -187,6 +187,7 @@
   font-size: 12px !important;
   font-weight: 500 !important;
   display: inline-block;
+  white-space: nowrap;
 }
 
 /* Account type specific colors */
@@ -434,6 +435,7 @@
 .savings-history-table-v2 {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed;
 }
 
 .savings-history-table-v2 thead {
@@ -454,9 +456,18 @@
   border-bottom: 1px solid #2d3139;
 }
 
+/* Fixed column widths for consistency */
+.savings-history-table-v2 th:nth-child(1) { width: 30%; } /* Description */
+.savings-history-table-v2 th:nth-child(2) { width: 11%; } /* Date */
+.savings-history-table-v2 th:nth-child(3) { width: 9%; }  /* FY */
+.savings-history-table-v2 th:nth-child(4) { width: 11%; } /* Type */
+.savings-history-table-v2 th:nth-child(5) { width: 13%; } /* Amount */
+.savings-history-table-v2 th:nth-child(6) { width: 13%; } /* Balance */
+.savings-history-table-v2 th:nth-child(7) { width: 13%; } /* Actions */
+
 .savings-history-table-v2 td {
   padding: 12px 16px !important;
-  font-size: 13px !important;
+  font-size: 12px !important;
   color: #e4e6eb !important;
   border-bottom: 1px solid #2d3139;
 }
@@ -507,6 +518,24 @@
 }
 
 /* Action Buttons */
+.savings-export-button-v2 {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #9ca3af;
+  transition: all 0.2s ease;
+  border-radius: 4px;
+}
+
+.savings-export-button-v2:hover {
+  background: rgba(99, 102, 241, 0.1);
+  color: #6366f1;
+}
+
 .savings-remove-button-v2 {
   background: transparent;
   border: none;
@@ -650,7 +679,7 @@
 
   .savings-history-table-v2 td {
     padding: 8px 12px !important;
-    font-size: 11px !important;
+    font-size: 10px !important;
   }
 
   .savings-history-stats-v2 {

@@ -263,6 +263,50 @@
   border-radius: 4px;
 }
 
+/* Summary Stats */
+.cf-summary {
+  display: flex;
+  justify-content: space-around;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #374151;
+}
+
+.cf-summary-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.cf-summary-stat-label {
+  font-size: 12px;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 500;
+}
+
+.cf-summary-stat-value {
+  font-size: 16px;
+  font-weight: 600;
+  color: #e4e6eb;
+}
+
+.cf-summary-stat-carry-forward {
+  color: #8b5cf6;
+}
+
+.cf-summary-stat-available {
+  color: #10b981;
+}
+
+.cf-summary-stat-lost {
+  color: #ef4444;
+}
+
 /* Drilldown Info */
 .cf-drilldown-info {
   background: #374151;
@@ -325,5 +369,20 @@
 
   .cf-legend-item {
     font-size: 11px;
+  }
+
+  .cf-summary {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .cf-summary-stat {
+    flex-direction: row;
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .cf-summary-stat-value {
+    font-size: 14px;
   }
 }

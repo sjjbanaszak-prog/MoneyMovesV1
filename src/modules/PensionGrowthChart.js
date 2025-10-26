@@ -117,6 +117,15 @@ const generateChartDataFromPayments = (pensionAccounts) => {
     return DUMMY_DATA;
   }
 
+  // Get all unique providers across all accounts
+  const allProviders = new Set();
+  pensionAccounts.forEach((account) => {
+    if (account.provider) {
+      allProviders.add(account.provider);
+    }
+  });
+  console.log("All providers:", Array.from(allProviders));
+
   // Get all years we need to show
   const allYears = new Set();
   pensionAccounts.forEach((account) => {
@@ -144,6 +153,13 @@ const generateChartDataFromPayments = (pensionAccounts) => {
   const result = sortedYears.map((year) => {
     const yearData = { year };
 
+    // Initialize all providers to 0 for this year
+    // This ensures proper stacking in the chart
+    allProviders.forEach((provider) => {
+      yearData[`${provider}_contributions`] = 0;
+      yearData[`${provider}_total`] = 0;
+    });
+
     // Process each account independently
     pensionAccounts.forEach((account) => {
       const providerName = account.provider;
@@ -159,7 +175,7 @@ const generateChartDataFromPayments = (pensionAccounts) => {
         providerStartYear = new Date(account.firstPayment).getFullYear();
       }
 
-      // Only add data for this provider if we're at or after their start year
+      // Only calculate actual data for this provider if we're at or after their start year
       if (providerStartYear && year >= providerStartYear) {
         // Sum up all payments for THIS account up to this year
         if (account.paymentHistory && account.paymentHistory.length > 0) {
@@ -194,15 +210,11 @@ const generateChartDataFromPayments = (pensionAccounts) => {
           totalValue = account.currentValue;
         }
 
-        // Only add fields for years when provider has contributions
+        // Update the initialized values with actual data
         yearData[`${providerName}_contributions`] = Math.round(contributions);
         yearData[`${providerName}_total`] = Math.round(totalValue);
       }
-      // For gap fix: explicitly set 0 for the year before provider starts
-      else if (providerStartYear && year === providerStartYear - 1) {
-        yearData[`${providerName}_contributions`] = 0;
-        yearData[`${providerName}_total`] = 0;
-      }
+      // For years before provider starts, values remain at 0 (already initialized)
     });
 
     return yearData;

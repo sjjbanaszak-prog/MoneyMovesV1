@@ -40,7 +40,21 @@ export default function SavingsMetricCards({ uploads, selectedAccounts }) {
         }
 
         const endRow = sorted[sorted.length - 1];
-        const currentValue = mapping.balance ? parseNumber(endRow[mapping.balance]) : 0;
+
+        // Calculate current value
+        let currentValue = 0;
+        if (mapping.balance) {
+          // Use balance column if available
+          currentValue = parseNumber(endRow[mapping.balance]);
+        } else if (mapping.amount) {
+          // Calculate running balance from amounts if no balance column
+          let runningBalance = 0;
+          sorted.forEach((row) => {
+            const amount = parseNumber(row[mapping.amount]);
+            runningBalance += amount;
+          });
+          currentValue = runningBalance;
+        }
 
         // Calculate total deposits (sum of credit transactions excluding interest/prizes)
         // and total withdrawals (sum of debit transactions)
@@ -51,6 +65,9 @@ export default function SavingsMetricCards({ uploads, selectedAccounts }) {
         sorted.forEach((row) => {
           // Get description to check transaction type
           const description = mapping.description ? String(row[mapping.description] || row.Description || "").toLowerCase() : "";
+
+          // Skip transfer transactions from growth calculation
+          const isTransfer = description.includes("transfer");
 
           if (accountType === "Premium Bonds") {
             // Premium Bonds logic - matches PremiumBondsAnalysis.js exactly
@@ -82,41 +99,45 @@ export default function SavingsMetricCards({ uploads, selectedAccounts }) {
                              description.includes("int pmt") ||
                              description.match(/\bint\b/);
 
-            // Calculate deposits (credits excluding interest)
+            const isDividend = description.includes("dividend") ||
+                             description.includes("div paid") ||
+                             description.includes("div credit");
+
+            // Calculate deposits (credits excluding interest, dividends, and transfers)
             if (mapping.credit) {
               const creditAmount = parseNumber(row[mapping.credit]);
-              if (creditAmount > 0 && !isInterest) {
+              if (creditAmount > 0 && !isInterest && !isDividend && !isTransfer) {
                 totalDeposits += creditAmount;
               }
             } else if (mapping.amount) {
               const amount = parseNumber(row[mapping.amount]);
-              if (amount > 0 && !isInterest) {
+              if (amount > 0 && !isInterest && !isDividend && !isTransfer) {
                 totalDeposits += amount;
               }
             }
 
-            // Calculate interest as growth
+            // Calculate interest and dividends as growth
             if (mapping.credit) {
               const creditAmount = parseNumber(row[mapping.credit]);
-              if (creditAmount > 0 && isInterest) {
+              if (creditAmount > 0 && (isInterest || isDividend)) {
                 totalPrizes += creditAmount;
               }
             } else if (mapping.amount) {
               const amount = parseNumber(row[mapping.amount]);
-              if (amount > 0 && isInterest) {
+              if (amount > 0 && (isInterest || isDividend)) {
                 totalPrizes += amount;
               }
             }
 
-            // Calculate withdrawals
+            // Calculate withdrawals (excluding transfers)
             if (mapping.debit) {
               const debitAmount = parseNumber(row[mapping.debit]);
-              if (debitAmount > 0) {
+              if (debitAmount > 0 && !isTransfer) {
                 totalWithdrawals += debitAmount;
               }
             } else if (mapping.amount) {
               const amount = parseNumber(row[mapping.amount]);
-              if (amount < 0) {
+              if (amount < 0 && !isTransfer) {
                 totalWithdrawals += Math.abs(amount);
               }
             }
@@ -124,17 +145,12 @@ export default function SavingsMetricCards({ uploads, selectedAccounts }) {
         });
 
         // Growth calculation:
-        // - For Premium Bonds: Growth = Total Prizes Won
-        // - For other accounts: Growth = Current Value - Deposits + Withdrawals
-        let growth;
-        if (accountType === "Premium Bonds") {
-          growth = totalPrizes;
-        } else {
-          growth = currentValue - totalDeposits + totalWithdrawals;
-        }
+        // For all accounts: Growth = Interest/Dividends/Prizes (already calculated in totalPrizes)
+        // This works because we exclude transfers and only count actual interest/dividends as "prizes"
+        const growth = totalPrizes;
 
         // Debug logging
-        console.log(`[${accountName}] Type: ${accountType}, Current: £${currentValue}, Deposits: £${totalDeposits}, Withdrawals: £${totalWithdrawals}, Prizes: £${totalPrizes}, Growth: £${growth}`);
+        console.log(`[${accountName}] Type: ${accountType}, Current: £${currentValue}, Deposits: £${totalDeposits}, Withdrawals: £${totalWithdrawals}, Interest/Dividends/Prizes: £${totalPrizes}, Growth: £${growth}`);
 
         return {
           accountName,
@@ -189,31 +205,94 @@ export default function SavingsMetricCards({ uploads, selectedAccounts }) {
     // If we're before April 6, we're still in the previous tax year
     const taxYear = (month > 3 || (month === 3 && day >= 6)) ? currentYear : currentYear - 1;
 
-    // Filter ISA and LISA accounts
-    const isaAccounts = accountsData.filter(
-      (account) => account.accountType === "ISA" || account.accountType === "LISA"
+    // Tax year start and end dates
+    const taxYearStart = dayjs(`${taxYear}-04-06`, "YYYY-MM-DD");
+    const taxYearEnd = dayjs(`${taxYear + 1}-04-05`, "YYYY-MM-DD");
+
+    // Filter ISA and LISA uploads (not accountsData, need raw transaction data)
+    const isaUploads = uploads.filter(
+      (upload) =>
+        selectedAccounts.includes(upload.accountName) &&
+        (upload.accountType === "ISA" || upload.accountType === "LISA")
     );
 
-    if (isaAccounts.length === 0) {
+    if (isaUploads.length === 0) {
       return null;
     }
 
-    // Calculate total deposits to ISA/LISA accounts (not including interest)
-    const totalIsaLisaDeposits = isaAccounts.reduce((sum, account) => sum + account.deposits, 0);
+    // Calculate deposits made within current tax year only
+    let currentTaxYearDeposits = 0;
 
-    // ISA limit is always £20,000
+    isaUploads.forEach((upload) => {
+      const { rawData, mapping, dateFormat, accountType } = upload;
+
+      // Filter and process transactions in current tax year
+      rawData.forEach((row) => {
+        if (!row || !mapping || !mapping.date) return;
+
+        const dateValue = row[mapping.date];
+        if (!dateValue) return;
+
+        const transactionDate = dayjs(dateValue, dateFormat, true);
+        if (!transactionDate.isValid()) return;
+
+        // Only include transactions within current tax year
+        if (
+          transactionDate.isSameOrAfter(taxYearStart) &&
+          transactionDate.isSameOrBefore(taxYearEnd)
+        ) {
+          const description = mapping.description
+            ? String(row[mapping.description] || row.Description || "").toLowerCase()
+            : "";
+
+          const isInterest = description.includes("interest") ||
+                           description.includes("int paid") ||
+                           description.includes("int credit") ||
+                           description.includes("credit interest") ||
+                           description.includes("gross interest") ||
+                           description.includes("int pmt") ||
+                           description.match(/\bint\b/);
+
+          const isDividend = description.includes("dividend") ||
+                           description.includes("div paid") ||
+                           description.includes("div credit");
+
+          const isTransfer = description.includes("transfer");
+
+          // Only count deposits (positive amounts), excluding interest, dividends, and transfers
+          if (mapping.credit) {
+            const creditAmount = parseNumber(row[mapping.credit]);
+            if (creditAmount > 0 && !isInterest && !isDividend && !isTransfer) {
+              currentTaxYearDeposits += creditAmount;
+            }
+          } else if (mapping.amount) {
+            const amount = parseNumber(row[mapping.amount]);
+            if (amount > 0 && !isInterest && !isDividend && !isTransfer) {
+              currentTaxYearDeposits += amount;
+            }
+          }
+
+          // Note: We do NOT subtract withdrawals - ISA allowance is use-it-or-lose-it
+          // Withdrawals don't restore allowance in the same tax year
+        }
+      });
+    });
+
+    // ISA limit is £20,000 per tax year
     const isaLimit = 20000;
 
     // Calculate percentage used
-    const percentUsed = (totalIsaLisaDeposits / isaLimit) * 100;
+    const percentUsed = (currentTaxYearDeposits / isaLimit) * 100;
+
+    console.log(`[ISA Allowance] Tax Year ${taxYear}/${taxYear + 1}: Deposits: £${currentTaxYearDeposits.toFixed(2)}, Limit: £${isaLimit}, Used: ${percentUsed.toFixed(1)}%`);
 
     return {
       taxYear,
-      depositsUsed: totalIsaLisaDeposits,
+      depositsUsed: currentTaxYearDeposits,
       limit: isaLimit,
       percentUsed,
     };
-  }, [accountsData]);
+  }, [uploads, selectedAccounts]);
 
   const formatCurrency = (value) => {
     return Math.round(value).toLocaleString();
