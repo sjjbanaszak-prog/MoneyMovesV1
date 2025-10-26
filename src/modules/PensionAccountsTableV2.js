@@ -709,12 +709,15 @@ export default function PensionAccountsTableV2({
               const isEditing = editingIndex === idx;
               const hasHistory = pension.paymentHistory && pension.paymentHistory.length > 0;
               const stats = calculateContributionStats(pension.paymentHistory);
+              const isLastSelected = isSelected && selectedPensions.length === 1;
 
               return (
                 <React.Fragment key={idx}>
                   <tr
                     className={!isSelected ? "row-selected-v2" : ""}
                     onClick={() => onToggle(pension.provider)}
+                    style={isLastSelected ? { cursor: "not-allowed" } : {}}
+                    title={isLastSelected ? "At least one pension provider must remain selected" : ""}
                   >
                     <td className="expand-cell-v2">
                       {hasHistory && (
@@ -748,7 +751,7 @@ export default function PensionAccountsTableV2({
                       >
                         {getProviderInitials(pension.provider)}
                       </div>
-                      <span className="provider-name-v2">{pension.provider}</span>
+                      {pension.provider}
                     </div>
                   </td>
                   <td className="text-center-v2">
@@ -824,7 +827,7 @@ export default function PensionAccountsTableV2({
                           onClick={(e) => handleRemove(pension.provider, e)}
                           title="Remove"
                         >
-                          <Trash2 size={16} />
+                          <Trash2 size={14} />
                         </button>
                       </div>
                     )}
@@ -1084,7 +1087,7 @@ export default function PensionAccountsTableV2({
             <p className="modal-text-v2">
               {confirmDelete.type === "provider"
                 ? `Are you sure you want to remove ${confirmDelete.provider}?`
-                : `Are you sure you want to remove this deposit of £${formatCurrency(confirmDelete.amount)} from ${formatDate(confirmDelete.date)}?`}
+                : `Are you sure you want to remove this deposit of ${formatCurrency(confirmDelete.amount)} from ${formatDate(confirmDelete.date)}?`}
             </p>
             <div className="modal-buttons-v2">
               <button

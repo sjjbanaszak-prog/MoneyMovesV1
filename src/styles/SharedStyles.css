@@ -585,6 +585,8 @@ body {
   padding: var(--space-md) var(--space-lg);
   color: var(--color-gray-300);
   border-bottom: 1px solid var(--border-primary);
+  font-size: 12px !important;
+  font-weight: normal !important;
 }
 
 .table tbody tr:last-child td {
@@ -593,6 +595,200 @@ body {
 
 .table tbody tr:hover {
   background: var(--bg-hover);
+}
+
+/* V2 Table System - Standardized across all modules */
+
+/* Provider/Bank/Account Cell Styling */
+.provider-cell-v2,
+.savings-account-cell-v2 {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.provider-icon-v2,
+.savings-account-icon-v2 {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600 !important;
+  font-size: 12px !important;
+  color: white !important;
+  flex-shrink: 0;
+}
+
+/* Text Alignment Utilities for Tables */
+.text-right-v2,
+.savings-text-right-v2 {
+  text-align: right !important;
+}
+
+.text-center-v2,
+.savings-text-center-v2 {
+  text-align: center !important;
+}
+
+/* Type Indicators (Debit/Credit) */
+.savings-type-indicator-v2 {
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  display: inline-block;
+  text-transform: capitalize;
+}
+
+.savings-type-indicator-v2.debit {
+  background: rgba(239, 68, 68, 0.1) !important;
+  color: #ef4444 !important;
+}
+
+.savings-type-indicator-v2.credit {
+  background: rgba(16, 185, 129, 0.1) !important;
+  color: #10b981 !important;
+}
+
+/* Source Badges (Upload/Manual) */
+.source-badge-v2 {
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  display: inline-block;
+}
+
+.source-badge-v2.source-upload {
+  background: rgba(99, 102, 241, 0.1) !important;
+  color: #6366f1 !important;
+}
+
+.source-badge-v2.source-manual {
+  background: rgba(245, 158, 11, 0.1) !important;
+  color: #f59e0b !important;
+}
+
+/* History Action Buttons */
+.history-actions-v2 {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+}
+
+.history-action-button-v2 {
+  font-size: 16px;
+  color: #888;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: color 0.2s ease;
+  line-height: 1;
+  padding: 0;
+}
+
+.history-action-button-v2:hover {
+  color: #6366f1;
+}
+
+.history-remove-button-v2:hover {
+  color: #ef4444;
+}
+
+/* Expanded Row Containers */
+.expanded-row-v2,
+.savings-expanded-row-v2 {
+  background: #111827 !important;
+}
+
+.expanded-cell-v2,
+.savings-expanded-cell-v2 {
+  padding: 0 !important;
+  border-bottom: 1px solid #2d3139 !important;
+}
+
+.history-container-v2,
+.savings-history-container-v2 {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Summary Statistics Grid */
+.history-stats-v2,
+.savings-history-stats-grid-v2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.stat-card-v2,
+.savings-stat-card-v2 {
+  background: #1f2937;
+  border: 1px solid #2d3139;
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.stat-label-v2,
+.savings-stat-card-label-v2 {
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  color: #9ca3af !important;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.stat-value-v2,
+.savings-stat-card-value-v2 {
+  font-size: 18px !important;
+  font-weight: 600 !important;
+  color: #e4e6eb !important;
+}
+
+/* Mobile Responsive Table Adjustments */
+@media (max-width: 768px) {
+  .provider-icon-v2,
+  .savings-account-icon-v2 {
+    width: 28px;
+    height: 28px;
+    font-size: 11px !important;
+  }
+
+  .history-container-v2,
+  .savings-history-container-v2 {
+    padding: 16px;
+    gap: 12px;
+  }
+
+  .history-stats-v2,
+  .savings-history-stats-grid-v2 {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .stat-card-v2,
+  .savings-stat-card-v2 {
+    padding: 12px;
+  }
+
+  .stat-label-v2,
+  .savings-stat-card-label-v2 {
+    font-size: 10px !important;
+  }
+
+  .stat-value-v2,
+  .savings-stat-card-value-v2 {
+    font-size: 14px !important;
+  }
 }
 
 /* ============================================

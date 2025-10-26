@@ -304,11 +304,19 @@ export default function PensionPots() {
   };
 
   const toggleSelectedPension = (providerName) => {
-    setSelectedPensions((prev) =>
-      prev.includes(providerName)
+    setSelectedPensions((prev) => {
+      const isCurrentlySelected = prev.includes(providerName);
+
+      // Prevent deselecting the last provider
+      if (isCurrentlySelected && prev.length === 1) {
+        console.log("Cannot deselect the last pension provider");
+        return prev;
+      }
+
+      return isCurrentlySelected
         ? prev.filter((p) => p !== providerName)
-        : [...prev, providerName]
-    );
+        : [...prev, providerName];
+    });
   };
 
   const removePension = (providerName) => {

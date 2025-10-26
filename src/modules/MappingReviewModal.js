@@ -169,7 +169,9 @@ export default function MappingReviewModal({
           {/* Provider Name with Auto-Detection */}
           <div className="provider-section-compact">
             <label className="form-label-compact">
-              Pension Provider <span className="required-star">*</span>
+              <span className="form-label-text">
+                Pension Provider <span className="required-star">*</span>
+              </span>
               {detectedProvider && detectedProvider.confidence > 0 && (
                 <span
                   className={`confidence-badge ${
@@ -196,7 +198,9 @@ export default function MappingReviewModal({
           {/* Current Value Input */}
           <div className="provider-section-compact">
             <label className="form-label-compact">
-              Current Value (£) <span className="required-star">*</span>
+              <span className="form-label-text">
+                Current Value (£) <span className="required-star">*</span>
+              </span>
             </label>
             <input
               type="number"

@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import FileUploader from "../modules/FileUploader";
 import ColumnMapper from "../modules/ColumnMapper";
 import SavingsChart from "../modules/SavingsChart";
-import AccountsTable from "../modules/AccountsTable";
+import SavingsAccountsTable from "../modules/SavingsAccountsTable";
+import SavingsMetricCards from "../modules/SavingsMetricCards";
 import MonthlyBalanceChangeChart from "../modules/MonthlyBalanceChangeChart";
 import ISALISAUtilization from "../modules/ISALISAUtilization";
 import PremiumBondsAnalysis from "../modules/PremiumBondsAnalysis";
@@ -45,6 +46,10 @@ export default function SavingsTracker() {
   const [fileName, setFileName] = useState("");
   const [processingFile, setProcessingFile] = useState(false);
   const [autoDetectionResults, setAutoDetectionResults] = useState(null);
+  const [isInitialLoadComplete, setIsInitialLoadComplete] = useState(false);
+
+  // Ref for FileUploader section
+  const fileUploaderRef = useRef(null);
 
   // User preferences for AI Advisory
   const [userPreferences, setUserPreferences] = useState({
@@ -63,15 +68,21 @@ export default function SavingsTracker() {
 
   useEffect(() => {
     const fetchData = async () => {
-      if (!user) return;
+      if (!user) {
+        setIsInitialLoadComplete(false);
+        return;
+      }
       try {
+        console.log("Loading data from Firebase for user:", user.uid);
         const docRef = doc(db, "savingsTracker", user.uid);
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
           const data = docSnap.data();
-          console.log("Fetched data from Firebase");
+          console.log("Fetched data from Firebase:", data);
           setUploads(data.uploads || []);
           setSelectedAccounts(data.selectedAccounts || []);
+        } else {
+          console.log("No existing data found in Firebase");
         }
 
         // Load user preferences
@@ -83,8 +94,13 @@ export default function SavingsTracker() {
             ...preferencesSnap.data(),
           }));
         }
+
+        // Mark initial load as complete
+        setIsInitialLoadComplete(true);
+        console.log("Initial data load complete");
       } catch (error) {
         console.error("Error fetching user data:", error);
+        setIsInitialLoadComplete(true); // Still mark as complete even on error
       }
     };
     fetchData();
@@ -92,10 +108,21 @@ export default function SavingsTracker() {
 
   // Save function with undefined removal
   const saveToFirebase = async () => {
-    if (!user) return;
+    if (!user) {
+      console.log("Save skipped: No user authenticated");
+      return;
+    }
+
+    if (!isInitialLoadComplete) {
+      console.log("Save skipped: Initial data load not complete yet");
+      return;
+    }
 
     try {
-      console.log("Saving to Firebase...");
+      console.log("Saving to Firebase...", {
+        uploadsCount: uploads.length,
+        selectedAccountsCount: selectedAccounts.length,
+      });
 
       // Remove all undefined values before saving
       const cleanedUploads = removeUndefined(uploads);
@@ -126,10 +153,10 @@ export default function SavingsTracker() {
   };
 
   useEffect(() => {
-    if (user) {
+    if (user && isInitialLoadComplete) {
       saveToFirebase();
     }
-  }, [uploads, selectedAccounts, user]);
+  }, [uploads, selectedAccounts, user, isInitialLoadComplete]);
 
   useEffect(() => {
     if (user) {
@@ -242,26 +269,21 @@ export default function SavingsTracker() {
         dataQualityScore: qualityScore.score,
       };
 
-      setUploads((prev) => {
-        const existingNames = prev.map((u) => u.accountName);
-        let finalAccountName = accountName;
-        let counter = 1;
+      // Determine final account name (check for duplicates)
+      const existingNames = uploads.map((u) => u.accountName);
+      let finalAccountName = accountName;
+      let counter = 1;
 
-        while (existingNames.includes(finalAccountName)) {
-          finalAccountName = `${accountName} (${counter})`;
-          counter++;
-        }
+      while (existingNames.includes(finalAccountName)) {
+        finalAccountName = `${accountName} (${counter})`;
+        counter++;
+      }
 
-        upload.accountName = finalAccountName;
-        const updated = [...prev, upload];
+      upload.accountName = finalAccountName;
 
-        setSelectedAccounts((prevSelected) => [
-          ...prevSelected,
-          finalAccountName,
-        ]);
-
-        return updated;
-      });
+      // Update both states at the same level (not nested) to prevent duplicate saves
+      setUploads((prev) => [...prev, upload]);
+      setSelectedAccounts((prev) => [...prev, finalAccountName]);
 
       setShowColumnMapper(false);
       setRawData([]);
@@ -283,11 +305,19 @@ export default function SavingsTracker() {
   };
 
   const handleAccountToggle = (accountName) => {
-    setSelectedAccounts((prev) =>
-      prev.includes(accountName)
+    setSelectedAccounts((prev) => {
+      const isCurrentlySelected = prev.includes(accountName);
+
+      // Prevent deselecting the last account
+      if (isCurrentlySelected && prev.length === 1) {
+        console.log("Cannot deselect the last savings account");
+        return prev;
+      }
+
+      return isCurrentlySelected
         ? prev.filter((a) => a !== accountName)
-        : [...prev, accountName]
-    );
+        : [...prev, accountName];
+    });
   };
 
   const handleRemoveAccount = (accountName) => {
@@ -302,6 +332,12 @@ export default function SavingsTracker() {
     }
   };
 
+  const handleAddSavingData = () => {
+    if (fileUploaderRef.current) {
+      fileUploaderRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
   const hasISAorLISA = uploads.some(
     (upload) => upload.accountType === "ISA" || upload.accountType === "LISA"
   );
@@ -312,7 +348,28 @@ export default function SavingsTracker() {
 
   return (
     <div className="savings-tracker-container">
-      <div className="full-width-card">
+      {/* Savings Metric Cards - Always displayed at the top when savings exist */}
+      {uploads.length > 0 && selectedAccounts.length > 0 && (
+        <SavingsMetricCards
+          uploads={uploads}
+          selectedAccounts={selectedAccounts}
+        />
+      )}
+
+      {/* Savings Accounts Table V2 - Positioned after metrics cards */}
+      {uploads.length > 0 && (
+        <div className="full-width-card">
+          <SavingsAccountsTable
+            uploads={uploads}
+            selectedAccounts={selectedAccounts}
+            onToggle={handleAccountToggle}
+            onRemove={handleRemoveAccount}
+            onAddData={handleAddSavingData}
+          />
+        </div>
+      )}
+
+      <div className="full-width-card" ref={fileUploaderRef}>
         <FileUploader onDataParsed={handleFileParsed} />
         {processingFile && (
           <div className="processing-indicator">
@@ -360,15 +417,6 @@ export default function SavingsTracker() {
             <SavingsChart
               uploads={uploads}
               selectedAccounts={selectedAccounts}
-            />
-          </div>
-
-          <div className="full-width-card">
-            <AccountsTable
-              uploads={uploads}
-              selectedAccounts={selectedAccounts}
-              onToggle={handleAccountToggle}
-              onRemove={handleRemoveAccount}
             />
           </div>
 

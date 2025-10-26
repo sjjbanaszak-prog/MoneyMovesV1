@@ -371,6 +371,21 @@ export default function UnifiedPensionUploader({ onFileParsed, onClose }) {
       setUploading(false);
       setProgress(null);
 
+      // Transform suggestions from header-keyed to field-keyed (to match PDF structure)
+      const fieldKeyedSuggestions = {};
+      Object.entries(autoMapping.mapping).forEach(([field, header]) => {
+        // Find suggestions for this header
+        const headerSuggestions = autoMapping.suggestions[header];
+        if (headerSuggestions && headerSuggestions.length > 0) {
+          // Get the best match for this field
+          const bestMatch = headerSuggestions.find(s => s.field === field) || headerSuggestions[0];
+          fieldKeyedSuggestions[field] = {
+            confidence: bestMatch.confidence / 100, // Convert to 0-1 scale to match PDF
+            source: bestMatch.method,
+          };
+        }
+      });
+
       // Pass data to parent with detection results
       if (onFileParsed) {
         onFileParsed({
@@ -387,7 +402,7 @@ export default function UnifiedPensionUploader({ onFileParsed, onClose }) {
             requiresConfirmation: providerInfo.requiresConfirmation || false,
             source: providerInfo.source || "filename",
           },
-          suggestions: autoMapping.suggestions,
+          suggestions: fieldKeyedSuggestions,
           confidenceScores: autoMapping.confidenceScores,
           aiMetadata: {
             mappingConfidence: autoMapping.overallConfidence,

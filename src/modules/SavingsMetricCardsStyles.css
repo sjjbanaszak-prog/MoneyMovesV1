@@ -1,0 +1,178 @@
+/* Savings Metric Cards - Matches PensionMetricCards Styling */
+
+.savings-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 1.5rem;
+}
+
+.savings-metric-card {
+  background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+  border: 1px solid #374151;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.savings-metric-label {
+  font-size: 0.875rem;
+  color: #9ca3af;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.savings-metric-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 8px;
+}
+
+.savings-metric-change {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.savings-metric-subtitle {
+  font-size: 0.75rem;
+  color: #9ca3af;
+}
+
+/* Progress Bar Card - Full Width */
+.savings-progress-card {
+  background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+  border: 1px solid #374151;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 1.5rem;
+}
+
+.progress-card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.progress-legend {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.progress-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.progress-legend-color {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+}
+
+.progress-legend-color.start-color {
+  background-color: #00aaff;
+}
+
+.progress-legend-color.gain-color {
+  background-color: #00d97e;
+}
+
+.progress-legend-color.loss-color {
+  background-color: #ff5c5c;
+}
+
+.progress-legend-label {
+  font-size: 0.875rem;
+  color: #9ca3af;
+  font-weight: 500;
+}
+
+.savings-performance-bar {
+  height: 14px;
+  display: flex;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #374151;
+}
+
+.savings-start-bar {
+  background-color: #00aaff;
+  height: 100%;
+}
+
+.savings-growth-bar {
+  height: 100%;
+}
+
+.savings-growth-bar.gain {
+  background-color: #00d97e;
+}
+
+.savings-growth-bar.loss {
+  background-color: #ff5c5c;
+}
+
+/* Animation on mount or update */
+.animated-bar {
+  transition: width 1s ease-in-out;
+}
+
+/* Mobile responsive - 2x2 grid */
+@media (max-width: 768px) {
+  .savings-metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    grid-auto-rows: 1fr;
+  }
+
+  .savings-metric-card {
+    padding: 14px;
+    min-height: 0;
+  }
+
+  /* Ensure Total Balance is top-left, Growth is top-right */
+  .savings-metric-card:nth-child(1) {
+    order: 1;
+  }
+
+  .savings-metric-card:nth-child(2) {
+    order: 2;
+  }
+
+  /* Ensure Accounts is bottom-left, ISA/LISA or Total is bottom-right */
+  .savings-metric-card:nth-child(3) {
+    order: 3;
+  }
+
+  .savings-metric-card:nth-child(4) {
+    order: 4;
+  }
+
+  .savings-metric-label {
+    font-size: 0.8125rem;
+  }
+
+  .savings-metric-value {
+    font-size: 1.25rem;
+  }
+
+  .savings-progress-card {
+    padding: 14px;
+  }
+
+  .progress-legend {
+    gap: 16px;
+  }
+
+  .progress-legend-label {
+    font-size: 0.8125rem;
+  }
+}

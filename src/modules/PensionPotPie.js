@@ -71,9 +71,6 @@ function renderActiveShape(props) {
     startAngle,
     endAngle,
     fill,
-    payload,
-    percent,
-    value,
   } = props;
 
   return (
@@ -101,6 +98,7 @@ export default function PensionPotPie({
 
   const data = useMemo(() => {
     if (!pensionAccounts) return [];
+
     return pensionAccounts
       .filter((pot) => pot.currentValue > 0)
       .map((pot, i) => ({
@@ -178,7 +176,10 @@ export default function PensionPotPie({
             isAnimationActive={true}
           >
             {data.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={pieColors[index]} />
+              <Cell
+                key={`cell-${index}`}
+                fill={pieColors[index]}
+              />
             ))}
           </Pie>
           <Tooltip
