@@ -1,7 +1,12 @@
 import React, { useMemo } from "react";
 import dayjs from "dayjs";
+import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
+import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
 import { parseNumber } from "./utils/parseNumber";
 import "./SavingsMetricCardsStyles.css";
+
+dayjs.extend(isSameOrAfter);
+dayjs.extend(isSameOrBefore);
 
 export default function SavingsMetricCards({ uploads, selectedAccounts }) {
   // Process all upload data to extract account metrics
