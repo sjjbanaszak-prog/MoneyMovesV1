@@ -28,6 +28,15 @@ export default function PensionAllowanceUtilization({ yearlyTotals }) {
     [yearlyTotals]
   );
 
+  // Navigation handlers for mobile
+  const handlePrevYears = () => {
+    setMobileYearOffset((prev) => Math.min(carryForwardData.years.length - 4, prev + 1));
+  };
+
+  const handleNextYears = () => {
+    setMobileYearOffset((prev) => Math.max(0, prev - 1));
+  };
+
   // Filter years for mobile (current year + previous 3 years = 4 years total)
   // On mobile, if a year is selected, show that year as the rightmost + 3 years before it
   const displayData = useMemo(() => {
@@ -433,15 +442,19 @@ export default function PensionAllowanceUtilization({ yearlyTotals }) {
       ...displayData.years.map((y) => y.used)
     );
 
-    // Determine current year index (last year in array)
-    const currentYearIndex = displayData.years.length - 1;
+    // Determine current year index in the FULL dataset (last year in full array)
+    const currentYearIndex = carryForwardData.years.length - 1;
 
     // Calculate how much of each year's unused allowance was consumed by future years
+    // Must check against the FULL dataset, not just visible years on mobile
     const consumedByFuture = displayData.years.map((yearData, index) => {
       let consumed = 0;
-      // Check all future years to see if they used this year's unused allowance
-      for (let futureIndex = index + 1; futureIndex < displayData.years.length; futureIndex++) {
-        const futureYear = displayData.years[futureIndex];
+      // Find this year's actual index in the full dataset
+      const actualYearIndex = carryForwardData.years.findIndex(y => y.year === yearData.year);
+
+      // Check ALL future years in the full dataset to see if they used this year's unused allowance
+      for (let futureIndex = actualYearIndex + 1; futureIndex < carryForwardData.years.length; futureIndex++) {
+        const futureYear = carryForwardData.years[futureIndex];
         const usedFromThisYear = futureYear.breakdown.carryForward.find(
           cf => cf.fromYear === yearData.year
         );
@@ -457,11 +470,14 @@ export default function PensionAllowanceUtilization({ yearlyTotals }) {
         {displayData.years.map((yearData, index) => {
           const hasCarryForward = yearData.breakdown.carryForward.length > 0;
 
+          // Find the actual index of this year in the full dataset
+          const actualIndex = carryForwardData.years.findIndex(y => y.year === yearData.year);
+
           // Determine if this year's unused allowance is lost
           // Unused allowance can be carried forward for 3 years
           // So it's lost if there are no more years within 3 years that could use it
-          // This means: if (currentYearIndex - index) > 3, it's beyond the carry forward window
-          const yearsAfterThisYear = currentYearIndex - index;
+          // This means: if (currentYearIndex - actualIndex) > 3, it's beyond the carry forward window
+          const yearsAfterThisYear = currentYearIndex - actualIndex;
           const isLostAllowance = yearsAfterThisYear > 3;
 
           // Calculate actual pixel heights based on max contribution for responsive scaling
@@ -599,6 +615,31 @@ export default function PensionAllowanceUtilization({ yearlyTotals }) {
           </button>
         )}
       </div>
+
+      {/* Mobile navigation */}
+      {isMobile && carryForwardData.years && carryForwardData.years.length > 4 && (
+        <div className="cf-mobile-nav">
+          <button
+            className="cf-nav-btn"
+            onClick={handlePrevYears}
+            disabled={mobileYearOffset >= carryForwardData.years.length - 4}
+          >
+            ← Previous
+          </button>
+          <span className="cf-nav-info">
+            Showing {mobileYearOffset === 0
+              ? `${carryForwardData.years.length - 3}-${carryForwardData.years.length}`
+              : `${carryForwardData.years.length - mobileYearOffset - 3}-${carryForwardData.years.length - mobileYearOffset}`} of {carryForwardData.years.length}
+          </span>
+          <button
+            className="cf-nav-btn"
+            onClick={handleNextYears}
+            disabled={mobileYearOffset === 0}
+          >
+            Next →
+          </button>
+        </div>
+      )}
 
       <div id="carryForwardChart" className="cf-chart">
         {renderOverviewChart()}

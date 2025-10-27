@@ -5,11 +5,15 @@ import { db } from "../firebase";
 import NetWorthChart from "../modules/NetWorthChart";
 import "../styles/SharedStyles.css";
 import "./LandingPage.css";
+import { useDemoMode } from "../contexts/DemoModeContext";
+import DemoModeBanner from "../components/DemoModeBanner";
 
 console.log("=== LANDINGPAGE.JS FILE LOADED - VERSION 2.0 ===");
 
 const LandingPage = () => {
   const { user } = useAuth();
+  const { isDemoMode, demoData } = useDemoMode();
+
   const [moduleData, setModuleData] = useState({
     pension: null,
     mortgage: null,
@@ -37,6 +41,46 @@ const LandingPage = () => {
       }
 
       console.log("USER UID EXISTS:", user.uid);
+
+      // Demo mode: use demo data
+      if (isDemoMode && demoData) {
+        console.log("=== LOADING DEMO DATA ===");
+
+        setModuleData({
+          pension: demoData.pensionBuilder || null,
+          mortgage: null,
+          savings: null,
+          tax: null,
+        });
+
+        // Convert demo pension pots data to the format expected by the component
+        if (demoData.pensionPots) {
+          const pensionPotsFormatted = {
+            pensions: demoData.pensionPots.entries || [],
+            selectedPensions: demoData.pensionPots.entries?.map(p => p.provider) || [],
+            yearlyTotals: {},
+          };
+
+          // Calculate yearly totals from entries
+          demoData.pensionPots.entries?.forEach(entry => {
+            if (entry.yearlyTotals) {
+              Object.keys(entry.yearlyTotals).forEach(year => {
+                pensionPotsFormatted.yearlyTotals[year] =
+                  (pensionPotsFormatted.yearlyTotals[year] || 0) + entry.yearlyTotals[year];
+              });
+            }
+          });
+
+          setPensionPotsData(pensionPotsFormatted);
+        }
+
+        setSavingsData(demoData.savingsTracker || null);
+
+        console.log("DEMO DATA LOADED SUCCESSFULLY");
+        return;
+      }
+
+      // Live mode: load from Firestore
       console.log("Starting Firebase queries...");
 
       try {
@@ -99,7 +143,7 @@ const LandingPage = () => {
     };
 
     loadModuleData();
-  }, [user]);
+  }, [user, isDemoMode, demoData]);
 
   const formatCurrency = (value) => {
     if (value >= 1000000) {
@@ -375,6 +419,9 @@ const LandingPage = () => {
   return (
     <div className="landing-page-container">
       <div className="landing-content-wrapper">
+        {/* Demo Mode Banner */}
+        {isDemoMode && <DemoModeBanner />}
+
         {savingsUploads.length > 0 || pensionAccounts.length > 0 ? (
           <div className="networth-section">
             <NetWorthChart

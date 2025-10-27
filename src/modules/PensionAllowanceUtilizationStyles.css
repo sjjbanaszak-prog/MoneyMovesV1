@@ -26,6 +26,44 @@
   margin: 0;
 }
 
+/* Mobile Navigation */
+.cf-mobile-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding: 12px;
+  background: #374151;
+  border: 1px solid #4b5563;
+  border-radius: 8px;
+}
+
+.cf-nav-btn {
+  padding: 4px 12px;
+  background: #374151;
+  border: 1px solid #4b5563;
+  border-radius: 6px;
+  color: #e4e6eb;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+  line-height: 1.4;
+}
+
+.cf-nav-btn:hover:not(:disabled) {
+  background: #4b5563;
+}
+
+.cf-nav-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.cf-nav-info {
+  font-size: 13px;
+  color: #9ca3af;
+}
+
 /* Carry Forward Chart - Original colors preserved */
 .cf-chart {
   min-height: 250px;

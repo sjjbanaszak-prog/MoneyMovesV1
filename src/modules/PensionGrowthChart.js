@@ -9,7 +9,11 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+import dayjs from "dayjs";
+import customParseFormat from "dayjs/plugin/customParseFormat";
 import "./PensionGrowthChartStyles.css";
+
+dayjs.extend(customParseFormat);
 
 console.log("PensionGrowthChart component loaded - ALL FIXES APPLIED");
 
@@ -108,9 +112,19 @@ const DUMMY_DATA = [
 ];
 
 // FIXED: Generate chart data from actual payment history
-const generateChartDataFromPayments = (pensionAccounts) => {
+const generateChartDataFromPayments = (pensionAccounts, isDemoMode = false) => {
   console.log("=== USING REAL PAYMENT DATA ===");
   console.log("pensionAccounts received:", pensionAccounts?.length || 0);
+
+  // Helper function for parsing dates based on demo mode
+  const parseDate = (dateStr) => {
+    if (isDemoMode) {
+      // Demo data uses DD/MM/YYYY format - use strict parsing
+      return dayjs(dateStr, "DD/MM/YYYY", true);
+    }
+    // Live data - use flexible parsing
+    return dayjs(dateStr);
+  };
 
   if (!pensionAccounts || pensionAccounts.length === 0) {
     console.log("No accounts, returning dummy data");
@@ -135,17 +149,24 @@ const generateChartDataFromPayments = (pensionAccounts) => {
       }, deposits=${account.deposits}`
     );
 
-    if (account.firstPayment)
-      allYears.add(new Date(account.firstPayment).getFullYear());
-    if (account.lastPayment)
-      allYears.add(new Date(account.lastPayment).getFullYear());
+    if (account.firstPayment) {
+      const firstDate = parseDate(account.firstPayment);
+      if (firstDate.isValid()) allYears.add(firstDate.year());
+    }
+    if (account.lastPayment) {
+      const lastDate = parseDate(account.lastPayment);
+      if (lastDate.isValid()) allYears.add(lastDate.year());
+    }
     if (account.paymentHistory) {
       account.paymentHistory.forEach((payment) => {
-        if (payment.date) allYears.add(new Date(payment.date).getFullYear());
+        if (payment.date) {
+          const paymentDate = parseDate(payment.date);
+          if (paymentDate.isValid()) allYears.add(paymentDate.year());
+        }
       });
     }
   });
-  allYears.add(new Date().getFullYear());
+  allYears.add(dayjs().year());
 
   const sortedYears = Array.from(allYears).sort();
   console.log("Years to process:", sortedYears);
@@ -168,21 +189,31 @@ const generateChartDataFromPayments = (pensionAccounts) => {
       // Determine the first year this provider started contributing
       let providerStartYear = null;
       if (account.paymentHistory && account.paymentHistory.length > 0) {
-        providerStartYear = Math.min(
-          ...account.paymentHistory.map((p) => new Date(p.date).getFullYear())
-        );
+        const years = account.paymentHistory
+          .map((p) => {
+            const date = parseDate(p.date);
+            return date.isValid() ? date.year() : null;
+          })
+          .filter((y) => y !== null);
+        if (years.length > 0) {
+          providerStartYear = Math.min(...years);
+        }
       } else if (account.firstPayment) {
-        providerStartYear = new Date(account.firstPayment).getFullYear();
+        const firstDate = parseDate(account.firstPayment);
+        if (firstDate.isValid()) {
+          providerStartYear = firstDate.year();
+        }
       }
 
       // Only calculate actual data for this provider if we're at or after their start year
       if (providerStartYear && year >= providerStartYear) {
         // Sum up all payments for THIS account up to this year
         if (account.paymentHistory && account.paymentHistory.length > 0) {
-          const relevantPayments = account.paymentHistory.filter(
-            (payment) =>
-              payment.date && new Date(payment.date).getFullYear() <= year
-          );
+          const relevantPayments = account.paymentHistory.filter((payment) => {
+            if (!payment.date) return false;
+            const paymentDate = parseDate(payment.date);
+            return paymentDate.isValid() && paymentDate.year() <= year;
+          });
           contributions = relevantPayments.reduce(
             (sum, payment) => sum + (payment.amount || 0),
             0
@@ -192,13 +223,17 @@ const generateChartDataFromPayments = (pensionAccounts) => {
           );
         } else if (account.deposits > 0) {
           // If no payment history, estimate based on date range
-          const start = new Date(account.firstPayment).getFullYear();
-          const end = new Date(account.lastPayment).getFullYear();
-          if (year >= start && year <= end) {
-            const progress = (year - start + 1) / (end - start + 1);
-            contributions = account.deposits * progress;
-          } else if (year > end) {
-            contributions = account.deposits;
+          const startDate = parseDate(account.firstPayment);
+          const endDate = parseDate(account.lastPayment);
+          if (startDate.isValid() && endDate.isValid()) {
+            const start = startDate.year();
+            const end = endDate.year();
+            if (year >= start && year <= end) {
+              const progress = (year - start + 1) / (end - start + 1);
+              contributions = account.deposits * progress;
+            } else if (year > end) {
+              contributions = account.deposits;
+            }
           }
           console.log(
             `${providerName} ${year}: estimated £${contributions} (no payment history)`
@@ -206,7 +241,7 @@ const generateChartDataFromPayments = (pensionAccounts) => {
         }
 
         let totalValue = contributions;
-        if (year === new Date().getFullYear() && account.currentValue > 0) {
+        if (year === dayjs().year() && account.currentValue > 0) {
           totalValue = account.currentValue;
         }
 
@@ -228,16 +263,27 @@ const PensionGrowthChart = ({
   pensionAccounts = [],
   yearlyTotals = {},
   onProviderColorMapping,
+  isDemoMode = false,
 }) => {
   const [viewMode, setViewMode] = useState("contributions");
+
+  // Helper function for parsing dates based on demo mode
+  const parseDate = (dateStr) => {
+    if (isDemoMode) {
+      // Demo data uses DD/MM/YYYY format - use strict parsing
+      return dayjs(dateStr, "DD/MM/YYYY", true);
+    }
+    // Live data - use flexible parsing
+    return dayjs(dateStr);
+  };
 
   // FIXED: Use the payment history function instead of mock data
   const chartData = useMemo(() => {
     console.log("=== CHART DATA GENERATION ===");
-    const data = generateChartDataFromPayments(pensionAccounts);
+    const data = generateChartDataFromPayments(pensionAccounts, isDemoMode);
     console.log("Generated chart data:", data);
     return data;
-  }, [pensionAccounts]);
+  }, [pensionAccounts, isDemoMode]);
 
   // Check if we have real payment data or should show dummy data
   const hasRealPaymentData = pensionAccounts.some(
@@ -262,11 +308,20 @@ const PensionGrowthChart = ({
     const accountsWithStartYear = pensionAccounts.map((account) => {
       let startYear = 9999; // Default to far future if no data
       if (account.paymentHistory && account.paymentHistory.length > 0) {
-        startYear = Math.min(
-          ...account.paymentHistory.map((p) => new Date(p.date).getFullYear())
-        );
+        const years = account.paymentHistory
+          .map((p) => {
+            const date = parseDate(p.date);
+            return date.isValid() ? date.year() : null;
+          })
+          .filter((y) => y !== null);
+        if (years.length > 0) {
+          startYear = Math.min(...years);
+        }
       } else if (account.firstPayment) {
-        startYear = new Date(account.firstPayment).getFullYear();
+        const firstDate = parseDate(account.firstPayment);
+        if (firstDate.isValid()) {
+          startYear = firstDate.year();
+        }
       }
       return { ...account, startYear };
     });

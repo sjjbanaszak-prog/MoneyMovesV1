@@ -14,9 +14,10 @@ import {
   FiCreditCard,
 } from "react-icons/fi";
 import { FaBars, FaChevronDown } from "react-icons/fa";
-import { TestTube2 } from "lucide-react";
+import { TestTube2, Eye } from "lucide-react";
 import "./Navbar.css";
 import { useAuth } from "../contexts/AuthContext";
+import { useDemoMode } from "../contexts/DemoModeContext";
 
 const Navbar = () => {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -24,6 +25,7 @@ const Navbar = () => {
   const [collapsed, setCollapsed] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const { currentUser, signInWithGoogle, logout } = useAuth();
+  const { isDemoMode, toggleDemoMode } = useDemoMode();
   const menuRef = useRef(null);
   const userMenuRef = useRef(null);
   const location = useLocation();
@@ -61,8 +63,7 @@ const Navbar = () => {
   const handleDemoModeClick = () => {
     setUserMenuOpen(false);
     closeMenuImmediately();
-    // Add your demo mode logic here
-    console.log("Demo mode clicked");
+    toggleDemoMode();
   };
 
   const handleSignOut = () => {
@@ -204,8 +205,8 @@ const Navbar = () => {
                       onClick={handleDemoModeClick}
                       className="user-dropdown-item"
                     >
-                      <TestTube2 size={18} />
-                      <span>Demo Mode</span>
+                      {isDemoMode ? <Eye size={18} /> : <TestTube2 size={18} />}
+                      <span>{isDemoMode ? 'Live Mode' : 'Demo Mode'}</span>
                     </button>
 
                     <div className="user-dropdown-separator" />
@@ -326,8 +327,8 @@ const Navbar = () => {
                     onClick={handleDemoModeClick}
                     className="user-dropdown-item"
                   >
-                    <TestTube2 size={18} />
-                    <span>Demo Mode</span>
+                    {isDemoMode ? <Eye size={18} /> : <TestTube2 size={18} />}
+                    <span>{isDemoMode ? 'Live Mode' : 'Demo Mode'}</span>
                   </button>
 
                   <div className="user-dropdown-separator" />

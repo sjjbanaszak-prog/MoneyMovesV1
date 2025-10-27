@@ -1,12 +1,15 @@
 import React, { useState, useMemo } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import dayjs from "dayjs";
+import customParseFormat from "dayjs/plugin/customParseFormat";
 import { auth, db } from "../firebase";
 import { doc, setDoc } from "firebase/firestore";
 import debounce from "lodash.debounce";
 import UnifiedPensionUploader from "./UnifiedPensionUploader";
 import MappingReviewModal from "./MappingReviewModal";
 import "./PensionAccountsTableV2Styles.css";
+
+dayjs.extend(customParseFormat);
 
 export default function PensionAccountsTableV2({
   pensions,
@@ -17,6 +20,7 @@ export default function PensionAccountsTableV2({
   onUpdatePensions,
   onFileParsed,
   onMappingConfirmed,
+  isDemoMode = false,
 }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortConfig, setSortConfig] = useState({ key: "provider", direction: "asc" });
@@ -30,6 +34,17 @@ export default function PensionAccountsTableV2({
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [showUploader, setShowUploader] = useState(false);
 
+  // Helper function for parsing dates based on demo mode
+  const parseDate = (dateStr) => {
+    if (!dateStr) return null;
+    if (isDemoMode) {
+      // Demo data uses DD/MM/YYYY format - use strict parsing
+      return dayjs(dateStr, "DD/MM/YYYY", true);
+    }
+    // Live data - use flexible parsing
+    return dayjs(dateStr);
+  };
+
   // Helper function to format currency
   const formatCurrency = (value) => {
     if (!value || value === 0) return "-";
@@ -39,7 +54,9 @@ export default function PensionAccountsTableV2({
   // Helper function to format date
   const formatDate = (dateStr) => {
     if (!dateStr) return "-";
-    return dayjs(dateStr).format("DD/MM/YY");
+    const parsed = parseDate(dateStr);
+    if (!parsed || !parsed.isValid()) return "-";
+    return parsed.format("DD/MM/YY");
   };
 
   // Calculate IRR using Newton-Raphson method
@@ -77,16 +94,24 @@ export default function PensionAccountsTableV2({
     try {
       const cashflows = [];
       const paymentsByYear = {};
-      const startYear = new Date(paymentHistory[0].date).getFullYear();
-      const currentYear = new Date().getFullYear();
+
+      // Parse first payment date flexibly
+      const firstDate = parseDate(paymentHistory[0].date);
+      if (!firstDate.isValid()) return null;
+
+      const startYear = firstDate.year();
+      const currentYear = dayjs().year();
 
       for (let year = startYear; year <= currentYear; year++) {
         paymentsByYear[year] = 0;
       }
 
       paymentHistory.forEach((payment) => {
-        const year = new Date(payment.date).getFullYear();
-        paymentsByYear[year] += payment.amount;
+        const paymentDate = parseDate(payment.date);
+        if (paymentDate.isValid()) {
+          const year = paymentDate.year();
+          paymentsByYear[year] += payment.amount;
+        }
       });
 
       for (let year = startYear; year <= currentYear; year++) {
@@ -149,7 +174,9 @@ export default function PensionAccountsTableV2({
   // Determine status (Active or Frozen based on last payment date)
   const getStatus = (lastPayment) => {
     if (!lastPayment) return "frozen";
-    const monthsSinceLastPayment = dayjs().diff(dayjs(lastPayment), "month");
+    const lastPaymentDate = parseDate(lastPayment);
+    if (!lastPaymentDate || !lastPaymentDate.isValid()) return "frozen";
+    const monthsSinceLastPayment = dayjs().diff(lastPaymentDate, "month");
     return monthsSinceLastPayment <= 3 ? "active" : "frozen";
   };
 
@@ -240,7 +267,9 @@ export default function PensionAccountsTableV2({
   // Calculate UK Financial Year (April 6 - April 5)
   const getFinancialYear = (dateStr) => {
     if (!dateStr) return "-";
-    const date = dayjs(dateStr);
+    const date = parseDate(dateStr);
+    if (!date || !date.isValid()) return "-";
+
     const year = date.year();
     const month = date.month(); // 0-indexed (0 = January)
     const day = date.date();
@@ -258,7 +287,17 @@ export default function PensionAccountsTableV2({
     if (!paymentHistory || paymentHistory.length === 0) return null;
 
     const total = paymentHistory.reduce((sum, p) => sum + p.amount, 0);
-    const years = new Set(paymentHistory.map((p) => new Date(p.date).getFullYear())).size;
+
+    // Parse dates using DD/MM/YYYY format
+    const years = new Set(
+      paymentHistory
+        .map((p) => {
+          const date = parseDate(p.date);
+          return date.isValid() ? date.year() : null;
+        })
+        .filter((year) => year !== null)
+    ).size;
+
     const avgPerYear = years > 0 ? total / years : 0;
     const avgPerMonth = paymentHistory.length > 0 ? total / paymentHistory.length : 0;
 
@@ -290,7 +329,11 @@ export default function PensionAccountsTableV2({
 
     const sortedPayments = paymentHistory
       .slice()
-      .sort((a, b) => new Date(a.date) - new Date(b.date));
+      .sort((a, b) => {
+        const dateA = parseDate(a.date);
+        const dateB = parseDate(b.date);
+        return dateA.diff(dateB);
+      });
 
     const n = sortedPayments.length;
     let sumX = 0;
@@ -406,7 +449,11 @@ export default function PensionAccountsTableV2({
       };
 
       const updatedHistory = [...(p.paymentHistory || []), newPayment].sort(
-        (a, b) => new Date(a.date) - new Date(b.date)
+        (a, b) => {
+          const dateA = parseDate(a.date);
+          const dateB = parseDate(b.date);
+          return dateA.diff(dateB);
+        }
       );
 
       const newDeposits = (p.deposits || 0) + amount;
@@ -433,8 +480,11 @@ export default function PensionAccountsTableV2({
       updatedPensions.forEach((pension) => {
         if (pension.paymentHistory) {
           pension.paymentHistory.forEach((payment) => {
-            const year = new Date(payment.date).getFullYear().toString();
-            yearlyTotals[year] = (yearlyTotals[year] || 0) + payment.amount;
+            const paymentDate = parseDate(payment.date);
+            if (paymentDate.isValid()) {
+              const year = paymentDate.year().toString();
+              yearlyTotals[year] = (yearlyTotals[year] || 0) + payment.amount;
+            }
           });
         }
       });
@@ -502,7 +552,11 @@ export default function PensionAccountsTableV2({
               }
             : payment
         )
-        .sort((a, b) => new Date(a.date) - new Date(b.date));
+        .sort((a, b) => {
+          const dateA = parseDate(a.date);
+          const dateB = parseDate(b.date);
+          return dateA.diff(dateB);
+        });
 
       const newDeposits = p.deposits - oldAmount + amount;
       const newFirstPayment = updatedHistory[0].date;
@@ -528,8 +582,11 @@ export default function PensionAccountsTableV2({
       updatedPensions.forEach((pension) => {
         if (pension.paymentHistory) {
           pension.paymentHistory.forEach((payment) => {
-            const year = new Date(payment.date).getFullYear().toString();
-            yearlyTotals[year] = (yearlyTotals[year] || 0) + payment.amount;
+            const paymentDate = parseDate(payment.date);
+            if (paymentDate.isValid()) {
+              const year = paymentDate.year().toString();
+              yearlyTotals[year] = (yearlyTotals[year] || 0) + payment.amount;
+            }
           });
         }
       });
@@ -622,8 +679,11 @@ export default function PensionAccountsTableV2({
       updatedPensions.forEach((pension) => {
         if (pension.paymentHistory) {
           pension.paymentHistory.forEach((payment) => {
-            const year = new Date(payment.date).getFullYear().toString();
-            yearlyTotals[year] = (yearlyTotals[year] || 0) + payment.amount;
+            const paymentDate = parseDate(payment.date);
+            if (paymentDate.isValid()) {
+              const year = paymentDate.year().toString();
+              yearlyTotals[year] = (yearlyTotals[year] || 0) + payment.amount;
+            }
           });
         }
       });
@@ -866,7 +926,11 @@ export default function PensionAccountsTableV2({
                             <div className="timeline-bars-v2">
                               {pension.paymentHistory
                                 .slice()
-                                .sort((a, b) => new Date(a.date) - new Date(b.date))
+                                .sort((a, b) => {
+                                  const dateA = parseDate(a.date);
+                                  const dateB = parseDate(b.date);
+                                  return dateA.diff(dateB);
+                                })
                                 .map((payment, pIdx) => {
                                   const maxAmount = Math.max(...pension.paymentHistory.map((p) => p.amount));
                                   const heightPercent = (payment.amount / maxAmount) * 100;
@@ -926,7 +990,11 @@ export default function PensionAccountsTableV2({
                             <tbody>
                               {pension.paymentHistory
                                 .slice()
-                                .sort((a, b) => new Date(b.date) - new Date(a.date))
+                                .sort((a, b) => {
+                                  const dateA = parseDate(a.date);
+                                  const dateB = parseDate(b.date);
+                                  return dateB.diff(dateA); // Reverse sort (newest first)
+                                })
                                 .map((payment, pIdx) => {
                                   const isEditingThis =
                                     editingDeposit &&

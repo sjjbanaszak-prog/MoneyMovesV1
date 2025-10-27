@@ -23,6 +23,15 @@ export default function ISAUtilizationChart({ uploads }) {
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
+  // Initialize to show most recent years on mobile
+  useEffect(() => {
+    if (isMobile && years.length > 4) {
+      setVisibleYearStart(years.length - 4);
+    } else if (!isMobile) {
+      setVisibleYearStart(0);
+    }
+  }, [isMobile, years.length]);
+
   // Calculate visible years for mobile
   const visibleYears = useMemo(() => {
     if (!isMobile || years.length <= 4) {

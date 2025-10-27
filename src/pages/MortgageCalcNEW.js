@@ -17,9 +17,12 @@ import { db } from "../firebase";
 import { useAuth } from "../context/AuthProvider";
 
 import "./MortgageCalcNEWStyles.css";
+import { useDemoMode } from "../contexts/DemoModeContext";
+import DemoModeBanner from "../components/DemoModeBanner";
 
 const MortgageCalcNEW = () => {
   const { user } = useAuth();
+  const { isDemoMode, demoData } = useDemoMode();
 
   const [inputs, setInputs] = useState({
     loanAmount: 100000,
@@ -72,6 +75,25 @@ const MortgageCalcNEW = () => {
 
     const loadMortgageInputs = async () => {
       try {
+        // Demo mode: use demo data
+        if (isDemoMode && demoData?.mortgage) {
+          const data = demoData.mortgage;
+          setInputs({
+            loanAmount: data.loanAmount || 100000,
+            termYears: data.termYears || 20,
+            initialRate: data.initialRate || 4.6,
+            initialtermYears: data.initialTermYears || 2,
+            expiryRate: data.expiryRate || 8.09,
+            regularOverpayment: data.regularOverpayment || 0,
+            oneOffOverpayment: data.oneOffOverpayment || 0,
+            oneOffMonth: 1,
+            oneOffOverpaymentEnabled: false,
+            frequency: data.frequency || "monthly",
+          });
+          return;
+        }
+
+        // Live mode: load from Firestore
         const ref = doc(db, "mortgageCalculations", user.uid);
         const snap = await getDoc(ref);
         if (snap.exists()) {
@@ -90,11 +112,14 @@ const MortgageCalcNEW = () => {
     };
 
     loadMortgageInputs();
-  }, [user]);
+  }, [user, isDemoMode, demoData]);
 
   // Firebase: Save mortgage inputs with debounce
   useEffect(() => {
     if (!user?.uid) return;
+
+    // Don't save to Firestore in demo mode
+    if (isDemoMode) return;
 
     const saveMortgageInputs = debounce(async () => {
       try {
@@ -108,7 +133,7 @@ const MortgageCalcNEW = () => {
     saveMortgageInputs();
 
     return () => saveMortgageInputs.cancel();
-  }, [inputs, savingsRate, user?.uid]);
+  }, [inputs, savingsRate, user?.uid, isDemoMode]);
 
   // Mortgage calculation logic
   useEffect(() => {
@@ -184,6 +209,9 @@ const MortgageCalcNEW = () => {
 
   return (
     <div className="savings-tracker-container">
+      {/* Demo Mode Banner */}
+      {isDemoMode && <DemoModeBanner />}
+
       <MortgageInputForm
         inputs={inputs}
         updateInput={updateInput}

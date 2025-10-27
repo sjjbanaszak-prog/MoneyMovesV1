@@ -10,9 +10,12 @@ import IncomeTaxBreakdownTable from "../modules/IncomeTaxBreakdownTable";
 import { getIncomeTax, getNI } from "../modules/utils";
 import "./PensionBuilderStyles.css";
 import "./SavingsTrackerStyles.css"; // for full-width-card + tracker-title
+import { useDemoMode } from "../contexts/DemoModeContext";
+import DemoModeBanner from "../components/DemoModeBanner";
 
 export default function PensionBuilder() {
   const { user } = useAuth();
+  const { isDemoMode, demoData } = useDemoMode();
 
   // Core state
   const [salary, setSalary] = useState(100000);
@@ -103,6 +106,47 @@ export default function PensionBuilder() {
 
     const loadPensionScenarios = async () => {
       try {
+        // Demo mode: use demo data
+        if (isDemoMode && demoData?.pensionBuilder) {
+          const d = demoData.pensionBuilder;
+          if (d.salary !== undefined) setSalary(d.salary);
+          if (d.bonus !== undefined) setBonus(d.bonus);
+          if (d.age !== undefined) setAge(d.age);
+          if (d.retirementAge !== undefined) setRetirementAge(d.retirementAge);
+          if (d.currentPot !== undefined) setCurrentPot(d.currentPot);
+          // Map demo pension type format to component format
+          if (d.pensionType !== undefined) {
+            setPensionType(d.pensionType === 'salary-sacrifice' ? 'Salary Sacrifice' : 'Personal Contribution');
+          }
+          // Demo data has currentContrib as object { employee: 7, employer: 3 }
+          // Component expects single number for current contribution
+          if (d.currentContrib?.employee !== undefined) {
+            setCurrentContrib(d.currentContrib.employee);
+          }
+          // Demo data has futureContrib as object { employee: 10, employer: 5 }
+          if (d.futureContrib?.employee !== undefined) {
+            setFutureContrib(d.futureContrib.employee);
+          }
+          if (d.futureContrib?.employer !== undefined) {
+            setEmployerMatchEnabled(true);
+            setEmployerMatch(d.futureContrib.employer);
+          }
+          // Demo data has returnRates as { low: 3, medium: 5, high: 7 } (percentages)
+          // Component expects decimals { Low: 0.03, Medium: 0.05, High: 0.07 }
+          if (d.returnRates) {
+            setReturnRates({
+              Low: (d.returnRates.low || 3) / 100,
+              Medium: (d.returnRates.medium || 5) / 100,
+              High: (d.returnRates.high || 7) / 100,
+            });
+          }
+          // Default to Monthly for taxPeriod (demo data has '2024/25' which is tax year, not period)
+          setTaxPeriod('Monthly');
+          setUnitType('percent');
+          return;
+        }
+
+        // Live mode: load from Firestore
         const ref = doc(db, "pensionScenarios", user.uid);
         const snap = await getDoc(ref);
         if (snap.exists()) {
@@ -128,11 +172,14 @@ export default function PensionBuilder() {
     };
 
     loadPensionScenarios();
-  }, [user]);
+  }, [user, isDemoMode, demoData]);
 
   // Firebase: Save with debounce
   useEffect(() => {
     if (!user?.uid) return;
+
+    // Don't save to Firestore in demo mode
+    if (isDemoMode) return;
 
     const savePensionScenarios = debounce(async () => {
       try {
@@ -162,6 +209,7 @@ export default function PensionBuilder() {
     return () => savePensionScenarios.cancel();
   }, [
     user?.uid,
+    isDemoMode,
     salary,
     bonus,
     age,
@@ -180,6 +228,9 @@ export default function PensionBuilder() {
 
   return (
     <div className="savings-tracker-container">
+      {/* Demo Mode Banner */}
+      {isDemoMode && <DemoModeBanner />}
+
       <div className="full-width-card">
         <IncomeTaxInputs
           salary={salary}

@@ -7,6 +7,7 @@ import {
 } from "react-router-dom";
 import "./styles/SharedStyles.css"; // Import shared styles globally
 import { AuthProvider } from "./contexts/AuthContext";
+import { DemoModeProvider } from "./contexts/DemoModeContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import Login from "./components/auth/Login";
 import Register from "./components/auth/Register";
@@ -61,11 +62,12 @@ const App = () => {
   return (
     <Router>
       <AuthProvider>
-        <Routes>
-          {/* Public Auth Routes */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
+        <DemoModeProvider>
+          <Routes>
+            {/* Public Auth Routes */}
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
 
           {/* Protected Routes */}
           <Route
@@ -104,6 +106,7 @@ const App = () => {
             }
           />
         </Routes>
+        </DemoModeProvider>
       </AuthProvider>
     </Router>
   );

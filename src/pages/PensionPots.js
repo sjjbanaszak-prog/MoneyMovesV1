@@ -21,6 +21,8 @@ import PensionGrowthChart from "../modules/PensionGrowthChart";
 // import PensionPeerComparison from "../modules/PensionPeerComparison"; // ARCHIVED
 import AIFinancialAdvisory from "../modules/AIFinancialAdvisory";
 import PensionAllowanceUtilization from "../modules/PensionAllowanceUtilization";
+import { useDemoMode } from "../contexts/DemoModeContext";
+import DemoModeBanner from "../components/DemoModeBanner";
 
 const DEFAULT_MODULE_ORDER = [
   "uploader",
@@ -76,6 +78,9 @@ export default function PensionPots() {
   const [draggedModule, setDraggedModule] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Demo mode integration
+  const { isDemoMode, demoData } = useDemoMode();
+
   // Dashboard customization state
   const [dashboardPreferences, setDashboardPreferences] = useState({
     moduleOrder: DEFAULT_MODULE_ORDER,
@@ -112,6 +117,28 @@ export default function PensionPots() {
       try {
         setIsLoading(true);
 
+        // Demo mode: use demo data instead of Firestore
+        if (isDemoMode && demoData) {
+          setPensions(demoData.pensionPots.entries || []);
+          setSelectedPensions(
+            demoData.pensionPots.entries.map(p => p.provider) || []
+          );
+          // Calculate yearly totals from demo data
+          const totals = {};
+          demoData.pensionPots.entries.forEach(entry => {
+            if (entry.yearlyTotals) {
+              Object.keys(entry.yearlyTotals).forEach(year => {
+                totals[year] = (totals[year] || 0) + entry.yearlyTotals[year];
+              });
+            }
+          });
+          setYearlyTotals(totals);
+          setPensionBuilderData(demoData.pensionBuilder || null);
+          setIsLoading(false);
+          return;
+        }
+
+        // Live mode: load from Firestore
         // Load pension pots data
         const docRef = doc(db, "pensionPots", user.uid);
         const docSnap = await getDoc(docRef);
@@ -224,7 +251,7 @@ export default function PensionPots() {
     };
 
     fetchData();
-  }, [user]);
+  }, [user, isDemoMode, demoData]);
 
   const debouncedSave = useCallback(
     debounce(async (userId, pensions, selectedPensions, yearlyTotals) => {
@@ -267,7 +294,8 @@ export default function PensionPots() {
   );
 
   useEffect(() => {
-    if (user && !isLoading) {
+    // Don't save to Firestore in demo mode
+    if (user && !isLoading && !isDemoMode) {
       debouncedSave(user.uid, pensions, selectedPensions, yearlyTotals);
     }
   }, [
@@ -276,25 +304,29 @@ export default function PensionPots() {
     yearlyTotals,
     user,
     isLoading,
+    isDemoMode,
     debouncedSave,
   ]);
 
   useEffect(() => {
-    if (user && !isLoading) {
+    // Don't save to Firestore in demo mode
+    if (user && !isLoading && !isDemoMode) {
       debouncedSaveDashboardPreferences(user.uid, dashboardPreferences);
     }
   }, [
     dashboardPreferences,
     user,
     isLoading,
+    isDemoMode,
     debouncedSaveDashboardPreferences,
   ]);
 
   useEffect(() => {
-    if (user && !isLoading) {
+    // Don't save to Firestore in demo mode
+    if (user && !isLoading && !isDemoMode) {
       debouncedSaveUserPreferences(user.uid, userPreferences);
     }
-  }, [userPreferences, user, isLoading, debouncedSaveUserPreferences]);
+  }, [userPreferences, user, isLoading, isDemoMode, debouncedSaveUserPreferences]);
 
   const toggleAIAdvisory = () => {
     setUserPreferences((prev) => ({
@@ -320,30 +352,30 @@ export default function PensionPots() {
   };
 
   const removePension = (providerName) => {
-    setPensions((prev) => {
-      const updatedPensions = prev.filter((p) => p.provider !== providerName);
+    // Filter out the pension to be removed
+    const updatedPensions = pensions.filter((p) => p.provider !== providerName);
 
-      // Recalculate yearly totals from the remaining pensions
-      const newYearlyTotals = {};
-      updatedPensions.forEach((pension) => {
-        if (pension.paymentHistory) {
-          pension.paymentHistory.forEach((payment) => {
-            const paymentDate = new Date(payment.date);
-            const month = paymentDate.getMonth();
-            const day = paymentDate.getDate();
-            const year = paymentDate.getFullYear();
+    // Recalculate yearly totals from the remaining pensions
+    const newYearlyTotals = {};
+    updatedPensions.forEach((pension) => {
+      if (pension.paymentHistory) {
+        pension.paymentHistory.forEach((payment) => {
+          const paymentDate = new Date(payment.date);
+          const month = paymentDate.getMonth();
+          const day = paymentDate.getDate();
+          const year = paymentDate.getFullYear();
 
-            // Calculate UK tax year (April 6 cutoff)
-            const taxYear = (month > 3 || (month === 3 && day >= 6)) ? year : year - 1;
+          // Calculate UK tax year (April 6 cutoff)
+          const taxYear = (month > 3 || (month === 3 && day >= 6)) ? year : year - 1;
 
-            newYearlyTotals[taxYear] = (newYearlyTotals[taxYear] || 0) + payment.amount;
-          });
-        }
-      });
-
-      setYearlyTotals(newYearlyTotals);
-      return updatedPensions;
+          newYearlyTotals[taxYear] = (newYearlyTotals[taxYear] || 0) + payment.amount;
+        });
+      }
     });
+
+    // Update all states separately (not nested)
+    setPensions(updatedPensions);
+    setYearlyTotals(newYearlyTotals);
     setSelectedPensions((prev) => prev.filter((p) => p !== providerName));
   };
 
@@ -641,6 +673,7 @@ export default function PensionPots() {
                 <PensionGrowthChart
                   pensionAccounts={selectedPensionAccounts}
                   yearlyTotals={yearlyTotals}
+                  isDemoMode={isDemoMode}
                 />
               </div>
             </div>
@@ -694,6 +727,7 @@ export default function PensionPots() {
               onUpdatePensions={handleUpdatePensions}
               onFileParsed={handleFileParsed}
               onMappingConfirmed={handleMappingConfirmed}
+              isDemoMode={isDemoMode}
             />
           );
         }
@@ -743,6 +777,9 @@ export default function PensionPots() {
 
   return (
     <div className="savings-tracker-container">
+      {/* Demo Mode Banner */}
+      {isDemoMode && <DemoModeBanner />}
+
       {/* Settings button hidden for now - will be re-introduced later */}
       {/* <div className="dashboard-header">
         <button
@@ -767,6 +804,7 @@ export default function PensionPots() {
           pensionAccounts={pensions}
           selectedPensions={selectedPensions}
           yearlyTotals={yearlyTotals}
+          isDemoMode={isDemoMode}
         />
       )}
 

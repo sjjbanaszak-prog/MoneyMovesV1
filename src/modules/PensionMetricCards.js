@@ -1,14 +1,29 @@
 import React, { useMemo, useState } from "react";
 import { AlertCircle } from "lucide-react";
+import dayjs from "dayjs";
+import customParseFormat from "dayjs/plugin/customParseFormat";
 import "./PensionMetricCardsStyles.css";
+
+dayjs.extend(customParseFormat);
 
 export default function PensionMetricCards({
   pensionAccounts,
   selectedPensions,
   yearlyTotals,
+  isDemoMode = false,
 }) {
   const [showIRRTooltip, setShowIRRTooltip] = useState(false);
   const [irrTooltipPosition, setIRRTooltipPosition] = useState("tooltip-center");
+
+  // Helper function for parsing dates based on demo mode
+  const parseDate = (dateStr) => {
+    if (isDemoMode) {
+      // Demo data uses DD/MM/YYYY format - use strict parsing
+      return dayjs(dateStr, "DD/MM/YYYY", true);
+    }
+    // Live data - use flexible parsing
+    return dayjs(dateStr);
+  };
 
   // Calculate optimal tooltip position
   const calculateTooltipPosition = (event) => {
@@ -110,19 +125,28 @@ export default function PensionMetricCards({
 
       if (allPayments.length === 0) return null;
 
-      allPayments.sort((a, b) => new Date(a.date) - new Date(b.date));
+      allPayments.sort((a, b) => {
+        const dateA = parseDate(a.date);
+        const dateB = parseDate(b.date);
+        return dateA.diff(dateB);
+      });
 
       const paymentsByYear = {};
-      const startYear = new Date(allPayments[0].date).getFullYear();
-      const currentYear = new Date().getFullYear();
+      const startDate = parseDate(allPayments[0].date);
+      if (!startDate.isValid()) return null;
+      const startYear = startDate.year();
+      const currentYear = dayjs().year();
 
       for (let year = startYear; year <= currentYear; year++) {
         paymentsByYear[year] = 0;
       }
 
       allPayments.forEach((payment) => {
-        const year = new Date(payment.date).getFullYear();
-        paymentsByYear[year] += payment.amount;
+        const paymentDate = parseDate(payment.date);
+        if (paymentDate.isValid()) {
+          const year = paymentDate.year();
+          paymentsByYear[year] += payment.amount;
+        }
       });
 
       const cashflows = [];

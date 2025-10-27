@@ -14,6 +14,8 @@ import { auth, db } from "../firebase";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import "./SavingsTrackerStyles.css";
+import { useDemoMode } from "../contexts/DemoModeContext";
+import DemoModeBanner from "../components/DemoModeBanner";
 
 // Utility function to recursively remove undefined values from objects and arrays
 const removeUndefined = (obj) => {
@@ -31,6 +33,7 @@ const removeUndefined = (obj) => {
 };
 
 export default function SavingsTracker() {
+  const { isDemoMode, demoData } = useDemoMode();
   const [uploads, setUploads] = useState([]);
   const [selectedAccounts, setSelectedAccounts] = useState([]);
   const [user, setUser] = useState(null);
@@ -66,6 +69,16 @@ export default function SavingsTracker() {
         return;
       }
       try {
+        // Demo mode: use demo data
+        if (isDemoMode && demoData?.savingsTracker) {
+          console.log("Loading demo savings data");
+          setUploads(demoData.savingsTracker.uploads || []);
+          setSelectedAccounts(demoData.savingsTracker.selectedAccounts || []);
+          setIsInitialLoadComplete(true);
+          return;
+        }
+
+        // Live mode: load from Firestore
         console.log("Loading data from Firebase for user:", user.uid);
         const docRef = doc(db, "savingsTracker", user.uid);
         const docSnap = await getDoc(docRef);
@@ -97,12 +110,18 @@ export default function SavingsTracker() {
       }
     };
     fetchData();
-  }, [user]);
+  }, [user, isDemoMode, demoData]);
 
   // Save function with undefined removal
   const saveToFirebase = async () => {
     if (!user) {
       console.log("Save skipped: No user authenticated");
+      return;
+    }
+
+    // Don't save to Firestore in demo mode
+    if (isDemoMode) {
+      console.log("Save skipped: Demo mode active");
       return;
     }
 
@@ -136,6 +155,9 @@ export default function SavingsTracker() {
 
   const saveUserPreferences = async () => {
     if (!user) return;
+
+    // Don't save to Firestore in demo mode
+    if (isDemoMode) return;
 
     try {
       const preferencesRef = doc(db, "userPreferences", user.uid);
@@ -359,6 +381,9 @@ export default function SavingsTracker() {
 
   return (
     <div className="savings-tracker-container">
+      {/* Demo Mode Banner */}
+      {isDemoMode && <DemoModeBanner />}
+
       {/* Savings Metric Cards - Always displayed at the top when savings exist */}
       {uploads.length > 0 && selectedAccounts.length > 0 && (
         <SavingsMetricCards
