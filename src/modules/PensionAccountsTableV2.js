@@ -45,10 +45,16 @@ export default function PensionAccountsTableV2({
     return dayjs(dateStr);
   };
 
-  // Helper function to format currency
+  // Helper function to format currency (whole numbers)
   const formatCurrency = (value) => {
     if (!value || value === 0) return "-";
     return `£${Math.round(Number(value)).toLocaleString()}`;
+  };
+
+  // Helper function to format currency with 2 decimal places
+  const formatCurrencyWithDecimals = (value) => {
+    if (!value || value === 0) return "-";
+    return `£${Number(value).toFixed(2)}`;
   };
 
   // Helper function to format date
@@ -1066,7 +1072,7 @@ export default function PensionAccountsTableV2({
                                             onClick={(e) => e.stopPropagation()}
                                           />
                                         ) : (
-                                          formatCurrency(payment.amount)
+                                          formatCurrencyWithDecimals(payment.amount)
                                         )}
                                       </td>
                                       <td>

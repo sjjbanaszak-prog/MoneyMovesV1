@@ -23,6 +23,7 @@ const LandingPage = () => {
 
   const [pensionPotsData, setPensionPotsData] = useState(null);
   const [savingsData, setSavingsData] = useState(null);
+  const [debtsData, setDebtsData] = useState(null);
 
   console.log("=== LANDINGPAGE COMPONENT RENDERING ===");
   console.log("User object:", user);
@@ -99,6 +100,11 @@ const LandingPage = () => {
         const savingsSnap = await getDoc(savingsRef);
         console.log("savingsTracker exists:", savingsSnap.exists());
 
+        console.log("Loading userDebts...");
+        const debtsRef = doc(db, "userDebts", user.uid);
+        const debtsSnap = await getDoc(debtsRef);
+        console.log("userDebts exists:", debtsSnap.exists());
+
         console.log("=== ALL FIREBASE QUERIES COMPLETE ===");
 
         if (savingsSnap.exists()) {
@@ -133,6 +139,8 @@ const LandingPage = () => {
         );
 
         setSavingsData(savingsSnap.exists() ? savingsSnap.data() : null);
+
+        setDebtsData(debtsSnap.exists() ? debtsSnap.data() : null);
 
         console.log("ALL STATE SET SUCCESSFULLY");
       } catch (error) {
@@ -405,6 +413,7 @@ const LandingPage = () => {
 
   const savingsUploads = savingsData?.uploads || [];
   const pensionAccounts = pensionPotsData?.pensions || [];
+  const debts = debtsData?.debts || [];
 
   console.log("=== NET WORTH CHART DATA (RENDER) ===");
   console.log("savingsData state:", savingsData);
@@ -422,11 +431,12 @@ const LandingPage = () => {
         {/* Demo Mode Banner */}
         {isDemoMode && <DemoModeBanner />}
 
-        {savingsUploads.length > 0 || pensionAccounts.length > 0 ? (
+        {savingsUploads.length > 0 || pensionAccounts.length > 0 || debts.length > 0 ? (
           <div className="networth-section">
             <NetWorthChart
               savingsUploads={savingsUploads}
               pensionAccounts={pensionAccounts}
+              debts={debts}
               selectedSavingsAccounts={[]}
               selectedPensions={[]}
               showMetricsAbove={true}
@@ -434,7 +444,7 @@ const LandingPage = () => {
           </div>
         ) : (
           <div className="networth-placeholder">
-            Upload savings or pension data to see your net worth chart
+            Upload savings, pension, or debt data to see your net worth chart
           </div>
         )}
 

@@ -30,6 +30,7 @@ const TIMEFRAMES = [
 export default function NetWorthChart({
   savingsUploads = [],
   pensionAccounts = [],
+  debts = [],
   selectedSavingsAccounts = [],
   selectedPensions = [],
   showMetricsAbove = false,
@@ -119,6 +120,52 @@ export default function NetWorthChart({
       pensionDailyBalances[account.provider] = dailyBalances;
     });
 
+    // Process debt data - track total debt over time
+    const debtDailyBalances = {};
+    debts.forEach((debt, index) => {
+      const dailyBalances = {};
+
+      if (debt.transactions && debt.transactions.length > 0) {
+        // Start with original balance
+        let runningBalance = debt.originalBalance || debt.balance;
+
+        // Sort transactions by date
+        const sortedTransactions = [...debt.transactions].sort((a, b) => {
+          const dateA = dayjs(a.transactionDate);
+          const dateB = dayjs(b.transactionDate);
+          return dateA.isBefore(dateB) ? -1 : 1;
+        });
+
+        // Track balance at each transaction date
+        sortedTransactions.forEach((transaction) => {
+          if (!transaction.transactionDate) return;
+
+          const parsed = dayjs(transaction.transactionDate);
+          if (!parsed.isValid()) return;
+
+          const date = parsed.format("YYYY-MM-DD");
+          // Add transaction amount (negative for payments, positive for charges)
+          runningBalance += transaction.amount || 0;
+          dailyBalances[date] = Math.abs(runningBalance);
+
+          allDatesSet.add(date);
+          if (!minDate || parsed.isBefore(minDate)) minDate = parsed;
+          if (!maxDate || parsed.isAfter(maxDate)) maxDate = parsed;
+        });
+      }
+
+      // Add current balance as today's balance
+      const today = dayjs().format("YYYY-MM-DD");
+      if (debt.balance > 0) {
+        dailyBalances[today] = debt.balance;
+        allDatesSet.add(today);
+        const todayParsed = dayjs();
+        if (!maxDate || todayParsed.isAfter(maxDate)) maxDate = todayParsed;
+      }
+
+      debtDailyBalances[debt.debtName || `Debt ${index + 1}`] = dailyBalances;
+    });
+
     if (!minDate || !maxDate) return [];
 
     // Create full date range
@@ -158,6 +205,21 @@ export default function NetWorthChart({
       filledPensionBalances[provider] = filled;
     });
 
+    // Fill in debt balances with forward filling
+    const filledDebtBalances = {};
+    Object.keys(debtDailyBalances).forEach((debtName) => {
+      const raw = debtDailyBalances[debtName] || {};
+      const filled = {};
+      let lastKnown = 0;
+      fullDateRange.forEach((date) => {
+        if (raw[date] !== undefined) {
+          lastKnown = raw[date];
+        }
+        filled[date] = lastKnown;
+      });
+      filledDebtBalances[debtName] = filled;
+    });
+
     // Create data points (monthly sampling for cleaner display)
     const monthlyData = [];
     let lastMonth = null;
@@ -175,11 +237,16 @@ export default function NetWorthChart({
           return sum + (filledPensionBalances[provider]?.[date] || 0);
         }, 0);
 
+        const debtsTotal = Object.keys(filledDebtBalances).reduce((sum, debtName) => {
+          return sum + (filledDebtBalances[debtName]?.[date] || 0);
+        }, 0);
+
         monthlyData.push({
           date: dayjs(date).toDate(),
           savings: Math.round(savingsTotal),
           pensions: Math.round(pensionTotal),
-          netWorth: Math.round(savingsTotal + pensionTotal),
+          debts: Math.round(debtsTotal),
+          netWorth: Math.round(savingsTotal + pensionTotal - debtsTotal),
           displayMonth: dayjs(date).format("MMM YY"),
         });
 
@@ -191,6 +258,7 @@ export default function NetWorthChart({
   }, [
     savingsUploads,
     pensionAccounts,
+    debts,
     selectedSavingsAccounts,
     selectedPensions,
   ]);
@@ -256,7 +324,7 @@ export default function NetWorthChart({
   const isPositive = netWorthChange >= 0;
 
   const totalAssets = latestData ? latestData.savings + latestData.pensions : 0;
-  const totalLiabilities = 0;
+  const totalLiabilities = latestData ? latestData.debts || 0 : 0;
   const assetLiabilityRatio =
     totalLiabilities > 0 ? totalAssets / totalLiabilities : totalAssets;
 
@@ -357,6 +425,13 @@ export default function NetWorthChart({
         </div>
         <div style={{ color: "#3b82f6", marginBottom: "4px" }}>
           Pensions: £{dataPoint.pensions.toLocaleString()}
+        </div>
+
+        <div style={{ marginTop: "8px", marginBottom: "6px", fontSize: "11px", color: "#888" }}>
+          LIABILITIES
+        </div>
+        <div style={{ color: "#ef4444", marginBottom: "4px" }}>
+          Debts: £{(dataPoint.debts || 0).toLocaleString()}
         </div>
 
         <div
@@ -473,6 +548,10 @@ export default function NetWorthChart({
                 <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8} />
                 <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.1} />
               </linearGradient>
+              <linearGradient id="gradDebts" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#ef4444" stopOpacity={0.8} />
+                <stop offset="95%" stopColor="#ef4444" stopOpacity={0.1} />
+              </linearGradient>
             </defs>
             <CartesianGrid stroke="#2a2a2a" strokeDasharray="3 3" />
             <XAxis
@@ -509,6 +588,15 @@ export default function NetWorthChart({
               fillOpacity={0.6}
               strokeWidth={2}
               name="Pensions"
+            />
+            <Area
+              type="monotone"
+              dataKey="debts"
+              stroke="#ef4444"
+              fill="url(#gradDebts)"
+              fillOpacity={0.6}
+              strokeWidth={2}
+              name="Debts"
             />
             <Line
               type="monotone"

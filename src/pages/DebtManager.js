@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import './DebtManagerStyles.css';
 import DebtInputForm from '../modules/DebtInputForm';
-import DebtList from '../modules/DebtList';
+import DebtListV2 from '../modules/DebtListV2';
 import StrategySelector from '../modules/StrategySelector';
 import ProgressSummaryCard from '../modules/ProgressSummaryCard';
 import RepaymentTimelineChart from '../modules/RepaymentTimelineChart';
 import StrategyComparisonChart from '../modules/StrategyComparisonChart';
 import DebtAdvisorPanel from '../modules/DebtAdvisorPanel';
 import EditDebtModal from '../modules/EditDebtModal';
+import UnifiedDebtUploader from '../modules/UnifiedDebtUploader';
+import DebtMappingReviewModal from '../modules/DebtMappingReviewModal';
+import DebtSpendingAnalyzer from '../modules/DebtSpendingAnalyzer';
 import {
   calculateSnowballStrategy,
   calculateAvalancheStrategy,
@@ -24,6 +27,8 @@ const DebtManager = () => {
   const [strategy, setStrategy] = useState('avalanche');
   const [monthlyBudget, setMonthlyBudget] = useState(0);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [showUploader, setShowUploader] = useState(false);
+  const [showMappingModal, setShowMappingModal] = useState(false);
   const [strategyResult, setStrategyResult] = useState(null);
   const [progress, setProgress] = useState(null);
   const [comparison, setComparison] = useState(null);
@@ -32,6 +37,7 @@ const DebtManager = () => {
   const [saving, setSaving] = useState(false);
   const [editingDebt, setEditingDebt] = useState(null);
   const [editingIndex, setEditingIndex] = useState(null);
+  const [uploadData, setUploadData] = useState(null);
 
   // Calculate total minimums
   const totalMinimums = debts.reduce((sum, debt) => sum + debt.minimumPayment, 0);
@@ -162,7 +168,14 @@ const DebtManager = () => {
     }
   };
 
-  const handleEditDebt = (index) => {
+  const handleEditDebt = (index, updatedDebt) => {
+    // If updatedDebt is provided, save the changes (called from inline editing)
+    if (updatedDebt !== undefined) {
+      setDebts(prev => prev.map((debt, i) => i === index ? updatedDebt : debt));
+      return;
+    }
+
+    // Otherwise, open the modal for editing (called from edit button)
     setEditingDebt(debts[index]);
     setEditingIndex(index);
   };
@@ -176,6 +189,78 @@ const DebtManager = () => {
   const handleCancelEdit = () => {
     setEditingDebt(null);
     setEditingIndex(null);
+  };
+
+  const handleUploadStatement = () => {
+    setShowUploader(true);
+  };
+
+  const handleFileParsed = (parsedData) => {
+    console.log('File parsed:', parsedData);
+    setUploadData(parsedData);
+    setShowUploader(false);
+    setShowMappingModal(true);
+  };
+
+  const handleConfirmMapping = (mappingInfo) => {
+    console.log('Mapping confirmed:', mappingInfo);
+
+    try {
+      const { mapping, debtName, debtType, startingBalance, interestRate, minimumPayment } = mappingInfo;
+
+      // Process transactions from uploaded data (parsed from PDF)
+      const rawTransactions = uploadData.rawData || [];
+
+      console.log('Raw transactions from parser:', rawTransactions);
+
+      // Calculate current balance by applying all transactions to starting balance
+      let currentBalance = startingBalance;
+
+      rawTransactions.forEach(txn => {
+        const amount = typeof txn.amount === 'string' ? parseFloat(txn.amount) || 0 : txn.amount;
+        currentBalance += amount; // amount is already signed (negative for payments)
+      });
+
+      // Store transactions in the format needed for display
+      const transactions = rawTransactions.map(txn => ({
+        transactionDate: txn.date || txn.transactionDate, // Handle both formats
+        description: txn.description,
+        amount: typeof txn.amount === 'string' ? parseFloat(txn.amount) || 0 : txn.amount, // Convert string to number
+        creditor: txn.creditor
+      }));
+
+      // Create the debt object
+      const newDebt = {
+        debtName: debtName,
+        debtType: debtType,
+        balance: Math.abs(currentBalance),
+        originalBalance: Math.abs(startingBalance), // Use starting balance as original
+        interestRate: interestRate,
+        minimumPayment: minimumPayment || Math.max(25, Math.abs(currentBalance) * 0.02), // 2% or £25 minimum
+        currentPayment: minimumPayment || Math.max(25, Math.abs(currentBalance) * 0.02),
+        createdAt: new Date().toISOString(),
+        uploadedFrom: uploadData.fileName,
+        transactionCount: transactions.length,
+        transactions: transactions, // Store transaction history
+      };
+
+      // Add to debts
+      setDebts(prev => [...prev, newDebt]);
+
+      // Close modal and reset
+      setShowMappingModal(false);
+      setUploadData(null);
+
+      console.log('Debt added successfully:', newDebt);
+    } catch (error) {
+      console.error('Error processing debt upload:', error);
+      alert('Failed to process uploaded statement. Please try again.');
+    }
+  };
+
+  const handleCancelMapping = () => {
+    setShowMappingModal(false);
+    setUploadData(null);
   };
 
   // Show loading state
@@ -210,15 +295,31 @@ const DebtManager = () => {
         />
       )}
 
-      {/* Header */}
-      <div className="debt-manager-header">
-        <button
-          className="btn-add-debt"
-          onClick={() => setShowAddForm(!showAddForm)}
-        >
-          {showAddForm ? '✕ Cancel' : '+ Add Debt'}
-        </button>
-      </div>
+      {/* Upload Debt Statement Modal */}
+      {showUploader && (
+        <UnifiedDebtUploader
+          onFileParsed={handleFileParsed}
+          onClose={() => setShowUploader(false)}
+        />
+      )}
+
+      {/* Debt Mapping Review Modal */}
+      {showMappingModal && uploadData && (
+        <DebtMappingReviewModal
+          data={uploadData.rawData}
+          headers={uploadData.headers}
+          initialMapping={uploadData.initialMapping}
+          fileName={uploadData.fileName}
+          totalRows={uploadData.rawData?.length || 0}
+          detectedCreditor={uploadData.detectedCreditor}
+          startingBalance={uploadData.startingBalance}
+          interestRate={uploadData.interestRate}
+          confidenceScores={uploadData.confidenceScores}
+          aiMetadata={uploadData.aiMetadata}
+          onConfirm={handleConfirmMapping}
+          onCancel={handleCancelMapping}
+        />
+      )}
 
       {/* Add Debt Form */}
       {showAddForm && (
@@ -232,10 +333,18 @@ const DebtManager = () => {
       {debts.length > 0 ? (
         <>
           {/* Debt List */}
-          <DebtList
+          <DebtListV2
             debts={debts}
             onEditDebt={handleEditDebt}
             onDeleteDebt={handleDeleteDebt}
+            onAddDebt={() => setShowAddForm(true)}
+            onUploadStatement={handleUploadStatement}
+          />
+
+          {/* Debt Spending Analyzer */}
+          <DebtSpendingAnalyzer
+            debts={debts}
+            timeframe="month"
           />
 
           {/* Strategy Selector */}

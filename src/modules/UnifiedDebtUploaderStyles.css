@@ -1,0 +1,248 @@
+/* Unified Debt Uploader - Money Moves Theme */
+
+/* Overlay */
+.unified-debt-uploader-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+/* Modal Container */
+.unified-debt-uploader-modal {
+  background: #1f2937;
+  border-radius: 16px;
+  max-width: 500px;
+  width: 100%;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+  animation: debtModalSlideIn 0.3s ease-out;
+}
+
+@keyframes debtModalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Header */
+.unified-debt-uploader-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid #374151;
+}
+
+.unified-debt-uploader-header h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #f3f4f6;
+  margin: 0;
+}
+
+.unified-debt-close-btn {
+  background: transparent;
+  border: none;
+  color: #9ca3af;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  transition: color 0.2s;
+  border-radius: 4px;
+  line-height: 1;
+}
+
+.unified-debt-close-btn:hover {
+  color: #f3f4f6;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Body */
+.unified-debt-uploader-body {
+  padding: 2rem;
+}
+
+/* Instructions */
+.unified-debt-instructions {
+  text-align: center;
+  color: #d1d5db;
+  font-size: 0.9375rem;
+  margin: 0 0 0.5rem 0;
+}
+
+.unified-debt-formats {
+  text-align: center;
+  color: #9ca3af;
+  font-size: 0.8125rem;
+  margin: 0 0 1.5rem 0;
+}
+
+/* Error Message */
+.unified-debt-error {
+  padding: 1rem;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  color: #fca5a5;
+  font-size: 0.875rem;
+}
+
+.unified-debt-error strong {
+  color: #f87171;
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+/* Drop Zone */
+.unified-debt-dropzone {
+  border: 2px dashed #4b5563;
+  border-radius: 12px;
+  padding: 3rem 2rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: #111827;
+}
+
+.unified-debt-dropzone:hover {
+  border-color: #6366f1;
+  background: rgba(99, 102, 241, 0.05);
+}
+
+.unified-debt-dropzone.active {
+  border-color: #6366f1;
+  background: rgba(99, 102, 241, 0.1);
+}
+
+.unified-debt-dropzone-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.unified-debt-dropzone-text {
+  font-size: 0.9375rem;
+  color: #d1d5db;
+  margin: 0 0 0.75rem 0;
+  font-weight: 500;
+}
+
+.unified-debt-dropzone-or {
+  color: #6b7280;
+  font-size: 0.875rem;
+  margin: 1rem 0;
+}
+
+.unified-debt-browse-btn {
+  background: #6366f1;
+  color: white;
+  border: none;
+  padding: 0.625rem 1.5rem;
+  border-radius: 8px;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.unified-debt-browse-btn:hover {
+  background: #5558e3;
+}
+
+/* Uploading State */
+.unified-debt-uploading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 2rem;
+}
+
+.unified-debt-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(99, 102, 241, 0.2);
+  border-top-color: #6366f1;
+  border-radius: 50%;
+  animation: debtSpin 1s linear infinite;
+}
+
+@keyframes debtSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.unified-debt-uploading-text {
+  color: #d1d5db;
+  font-size: 0.9375rem;
+  margin: 0;
+  font-weight: 500;
+}
+
+.unified-debt-progress-bar {
+  width: 100%;
+  height: 6px;
+  background: rgba(99, 102, 241, 0.2);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.unified-debt-progress-fill {
+  height: 100%;
+  background: #6366f1;
+  transition: width 0.3s ease;
+}
+
+.unified-debt-file-info {
+  color: #9ca3af;
+  font-size: 0.8125rem;
+  margin: 0;
+}
+
+/* Mobile Responsive */
+@media (max-width: 640px) {
+  .unified-debt-uploader-overlay {
+    padding: 0.5rem;
+  }
+
+  .unified-debt-uploader-modal {
+    max-width: 100%;
+  }
+
+  .unified-debt-uploader-header {
+    padding: 1rem 1.5rem;
+  }
+
+  .unified-debt-uploader-header h2 {
+    font-size: 1.125rem;
+  }
+
+  .unified-debt-uploader-body {
+    padding: 1.5rem;
+  }
+
+  .unified-debt-dropzone {
+    padding: 2rem 1.5rem;
+  }
+
+  .unified-debt-dropzone-icon {
+    font-size: 2.5rem;
+  }
+
+  .unified-debt-dropzone-text {
+    font-size: 0.875rem;
+  }
+}

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import UnifiedSavingsUploader from "../modules/UnifiedSavingsUploader";
 import SavingsColumnMapperNew from "../modules/SavingsColumnMapperNew";
 import SavingsChartV2 from "../modules/SavingsChartV2";
+import SavingsPie from "../modules/SavingsPie";
 import SavingsAccountsTable from "../modules/SavingsAccountsTable";
 import SavingsMetricCards from "../modules/SavingsMetricCards";
 import MonthlyBalanceChangeChart from "../modules/MonthlyBalanceChangeChart";
@@ -443,11 +444,19 @@ export default function SavingsTracker() {
             </div>
           )}
 
-          <div className="full-width-card">
-            <SavingsChartV2
-              uploads={uploads}
-              selectedAccounts={selectedAccounts}
-            />
+          <div className="savings-overview-grid">
+            <div className="full-width-card pie-chart-container">
+              <SavingsPie
+                uploads={uploads}
+                selectedAccounts={selectedAccounts}
+              />
+            </div>
+            <div className="full-width-card growth-chart-container">
+              <SavingsChartV2
+                uploads={uploads}
+                selectedAccounts={selectedAccounts}
+              />
+            </div>
           </div>
 
           {hasISAorLISA && (

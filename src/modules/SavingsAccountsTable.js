@@ -14,10 +14,16 @@ export default function SavingsAccountsTable({
   const [sortConfig, setSortConfig] = useState({ key: "accountName", direction: "asc" });
   const [expandedRows, setExpandedRows] = useState([]);
 
-  // Helper function to format currency
+  // Helper function to format currency (whole numbers)
   const formatCurrency = (value) => {
     if (!value || value === 0) return "-";
     return `£${Math.round(Number(value)).toLocaleString()}`;
+  };
+
+  // Helper function to format currency with 2 decimal places
+  const formatCurrencyWithDecimals = (value) => {
+    if (!value || value === 0) return "-";
+    return `£${Number(value).toFixed(2)}`;
   };
 
   // Helper function to format date
@@ -638,7 +644,7 @@ export default function SavingsAccountsTable({
                                           </span>
                                         </td>
                                         <td className="savings-text-right-v2">
-                                          {formatCurrency(Math.abs(amount))}
+                                          {formatCurrencyWithDecimals(Math.abs(amount))}
                                         </td>
                                         <td>
                                           <span className={`source-badge-v2 source-${getDataSource(transaction).toLowerCase()}`}>

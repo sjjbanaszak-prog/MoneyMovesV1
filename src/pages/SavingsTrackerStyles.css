@@ -21,9 +21,15 @@
   overflow-x: hidden;
 }
 
-.full-width-card {
+/* Scoped to SavingsTracker only - excludes PensionPots which uses .dashboard-modules wrapper */
+.savings-tracker-container .full-width-card:not(.dashboard-modules .full-width-card) {
   width: 100%;
   overflow-x: hidden;
+  margin-bottom: 16px;
+}
+
+.savings-tracker-container .full-width-card:last-child:not(.dashboard-modules .full-width-card) {
+  margin-bottom: 0;
 }
 
 .tracker-header {
@@ -193,6 +199,26 @@
   font-weight: 600;
 }
 
+/* Grid layout for pie chart and growth chart - responsive side-by-side */
+.savings-overview-grid {
+  display: grid;
+  grid-template-columns: minmax(350px, 400px) minmax(350px, 1fr);
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.pie-chart-container,
+.growth-chart-container {
+  min-height: 300px;
+  display: flex;
+  height: 100%;
+}
+
+.pie-chart-container > *,
+.growth-chart-container > * {
+  flex: 1;
+}
+
 .chart-wrapper {
   margin: 32px 0;
   background: #1f2937;
@@ -270,6 +296,16 @@
     padding: 0 !important;  /* Remove all padding on mobile - SharedStyles.css provides 4px margin */
   }
 
+  .savings-overview-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1rem;
+  }
+
+  .pie-chart-container,
+  .growth-chart-container {
+    min-height: auto;
+  }
+
   .tracker-header {
     flex-direction: column;
     align-items: flex-start;
@@ -294,6 +330,13 @@
 
   .empty-state-icon {
     font-size: 3rem;
+  }
+}
+
+/* Tablet responsive */
+@media (max-width: 1024px) and (min-width: 769px) {
+  .savings-overview-grid {
+    gap: 16px;
   }
 }
 

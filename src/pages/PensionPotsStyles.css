@@ -302,6 +302,7 @@
   border: 2px dashed transparent;
   border-radius: 16px;
   transition: all 0.2s;
+  /* No margin-bottom - .dashboard-modules handles spacing with gap: 16px */
 }
 
 /* ARCHIVED - Drag and drop customization removed
@@ -327,7 +328,7 @@
   display: grid;
   grid-template-columns: minmax(350px, 400px) minmax(350px, 1fr);
   gap: 16px;
-  margin-bottom: 0;
+  margin-bottom: 0; /* No margin-bottom - .dashboard-modules gap handles spacing between modules */
 }
 
 .pie-chart-container {

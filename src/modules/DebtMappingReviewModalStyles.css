@@ -1,0 +1,366 @@
+/* Debt Mapping Review Modal - Money Moves Theme */
+
+/* Overlay */
+.debt-mapper-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1001;
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+/* Modal */
+.debt-mapper-modal {
+  background: #1f2937;
+  border-radius: 16px;
+  max-width: 900px;
+  width: 100%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+  animation: debtMapperSlideIn 0.3s ease-out;
+}
+
+@keyframes debtMapperSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Header */
+.debt-mapper-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid #374151;
+  flex-shrink: 0;
+}
+
+.debt-mapper-header h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #f3f4f6;
+  margin: 0 0 0.25rem 0;
+}
+
+.debt-mapper-filename {
+  font-size: 0.875rem;
+  color: #9ca3af;
+  margin: 0;
+}
+
+.debt-mapper-close {
+  background: transparent;
+  border: none;
+  color: #9ca3af;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  transition: color 0.2s;
+  border-radius: 4px;
+  line-height: 1;
+}
+
+.debt-mapper-close:hover {
+  color: #f3f4f6;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Body */
+.debt-mapper-body {
+  padding: 1.5rem 2rem;
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* Confidence Score */
+.debt-mapper-confidence {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+}
+
+.debt-mapper-confidence.high {
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.debt-mapper-confidence.medium {
+  background: rgba(234, 179, 8, 0.1);
+  border: 1px solid rgba(234, 179, 8, 0.3);
+}
+
+.debt-mapper-confidence.low {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.confidence-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.debt-mapper-confidence.high .confidence-icon {
+  color: #10b981;
+}
+
+.debt-mapper-confidence.medium .confidence-icon {
+  color: #eab308;
+}
+
+.debt-mapper-confidence.low .confidence-icon {
+  color: #ef4444;
+}
+
+.confidence-text strong {
+  display: block;
+  color: #e4e6eb;
+  font-size: 0.9375rem;
+  margin-bottom: 0.25rem;
+}
+
+.confidence-text p {
+  margin: 0;
+  color: #9ca3af;
+  font-size: 0.8125rem;
+}
+
+/* Sections */
+.debt-mapper-section {
+  margin-bottom: 2rem;
+}
+
+.debt-mapper-section h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #f3f4f6;
+  margin: 0 0 1rem 0;
+}
+
+/* Grid Layout */
+.debt-mapper-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group.full-width {
+  grid-column: 1 / -1;
+}
+
+.form-group label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #d1d5db;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.field-help {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin: 0.25rem 0 0 0;
+}
+
+/* Badges */
+.detected-badge,
+.confidence-badge {
+  font-size: 0.6875rem;
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+  font-weight: 600;
+}
+
+.detected-badge {
+  background: rgba(99, 102, 241, 0.2);
+  color: #a5b4fc;
+}
+
+.confidence-badge.high {
+  background: rgba(16, 185, 129, 0.2);
+  color: #6ee7b7;
+}
+
+.confidence-badge.medium {
+  background: rgba(234, 179, 8, 0.2);
+  color: #fde047;
+}
+
+.confidence-badge.low {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+}
+
+/* Inputs */
+.debt-mapper-input,
+.debt-mapper-select {
+  background: #111827;
+  border: 1px solid #374151;
+  border-radius: 6px;
+  padding: 0.625rem 0.875rem;
+  font-size: 0.875rem;
+  color: #e4e6eb;
+  transition: border-color 0.2s;
+}
+
+.debt-mapper-input:focus,
+.debt-mapper-select:focus {
+  outline: none;
+  border-color: #6366f1;
+}
+
+.debt-mapper-select {
+  cursor: pointer;
+}
+
+/* Input with prefix */
+.input-with-prefix {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-prefix {
+  position: absolute;
+  left: 0.875rem;
+  color: #9ca3af;
+  font-size: 0.875rem;
+  pointer-events: none;
+}
+
+.debt-mapper-input.with-prefix {
+  padding-left: 2rem;
+}
+
+/* Preview Table */
+.debt-mapper-preview {
+  overflow-x: auto;
+  border: 1px solid #374151;
+  border-radius: 8px;
+}
+
+.preview-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+}
+
+.preview-table thead th {
+  background: #111827;
+  color: #9ca3af;
+  font-weight: 600;
+  text-align: left;
+  padding: 0.75rem;
+  border-bottom: 1px solid #374151;
+  white-space: nowrap;
+}
+
+.preview-table tbody td {
+  padding: 0.75rem;
+  color: #e4e6eb;
+  border-bottom: 1px solid #2d3139;
+}
+
+.preview-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.preview-table tbody tr:hover {
+  background: rgba(99, 102, 241, 0.05);
+}
+
+/* Footer */
+.debt-mapper-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  padding: 1.5rem 2rem;
+  border-top: 1px solid #374151;
+  flex-shrink: 0;
+}
+
+.debt-mapper-btn {
+  padding: 0.625rem 1.5rem;
+  border-radius: 8px;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+}
+
+.debt-mapper-btn.secondary {
+  background: #374151;
+  color: #e4e6eb;
+}
+
+.debt-mapper-btn.secondary:hover {
+  background: #4b5563;
+}
+
+.debt-mapper-btn.primary {
+  background: #6366f1;
+  color: white;
+}
+
+.debt-mapper-btn.primary:hover {
+  background: #5558e3;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .debt-mapper-modal {
+    max-width: 100%;
+    max-height: 95vh;
+    border-radius: 16px 16px 0 0;
+  }
+
+  .debt-mapper-header,
+  .debt-mapper-body,
+  .debt-mapper-footer {
+    padding: 1rem 1.5rem;
+  }
+
+  .debt-mapper-header h2 {
+    font-size: 1.125rem;
+  }
+
+  .debt-mapper-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .form-group.full-width {
+    grid-column: 1;
+  }
+
+  .debt-mapper-footer {
+    flex-direction: column-reverse;
+  }
+
+  .debt-mapper-btn {
+    width: 100%;
+  }
+}

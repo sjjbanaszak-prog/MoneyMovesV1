@@ -1,0 +1,124 @@
+/* Updated savings pie chart wrapper to match PensionPotPie styling */
+.savings-pie-wrapper {
+  background-color: #1f2937;
+  border-radius: 16px;
+  padding: 24px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  margin: 0;
+}
+
+.savings-pie-wrapper .chart-header {
+  margin-bottom: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.savings-pie-wrapper .chart-heading {
+  font-size: 18px !important;
+  margin-bottom: 0;
+  margin-top: 0px;
+  color: #f3f4f6;
+  flex: 1;
+}
+
+.savings-pie-wrapper .no-data {
+  color: #ccc;
+  text-align: center;
+  font-style: italic;
+  margin: 2rem 0;
+}
+
+/* Custom tooltip styling to match the dark theme */
+.savings-pie-tooltip {
+  background-color: #1e1e1e !important;
+  color: #fff !important;
+  padding: 8px 10px !important;
+  border-radius: 4px !important;
+  font-size: 0.75rem !important;
+  line-height: 1.4 !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2) !important;
+  border: none !important;
+}
+
+.savings-pie-tooltip.no-animation {
+  transition: none !important;
+}
+
+/* Back to types button */
+.back-to-types-btn {
+  background-color: #374151;
+  color: #f3f4f6;
+  border: 1px solid #4b5563;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s;
+  white-space: nowrap;
+}
+
+.back-to-types-btn:hover {
+  background-color: #4b5563;
+  border-color: #10b981;
+  color: #10b981;
+}
+
+/* Drill-down hint */
+.drill-down-hint {
+  margin-top: 1rem;
+  text-align: center;
+}
+
+.hint-text {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  font-style: italic;
+  margin: 0;
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Desktop optimizations for larger screens */
+@media (min-width: 721px) {
+  .savings-pie-wrapper .chart-header {
+    margin-bottom: 0.25rem;
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .savings-pie-wrapper .chart-heading {
+    font-size: 16px !important;
+  }
+
+  .back-to-types-btn {
+    font-size: 12px;
+    padding: 5px 10px;
+  }
+}
+
+@media (max-width: 600px) {
+  .savings-pie-wrapper .chart-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .back-to-types-btn {
+    align-self: flex-end;
+  }
+}

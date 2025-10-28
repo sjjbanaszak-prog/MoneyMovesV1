@@ -42,13 +42,32 @@ const COLOR_PALETTE = [
   "#2ecc71", // Sea green
 ];
 
+// Fixed color mapping for account types to match SavingsAccountsTable badges
+const ACCOUNT_TYPE_COLORS = {
+  "Current Account": "#3b82f6", // Blue (COLOR_PALETTE[1])
+  "Savings": "#10b981", // Emerald green (COLOR_PALETTE[0])
+  "Savings Account": "#10b981", // Emerald green (COLOR_PALETTE[0])
+  "ISA": "#8b5cf6", // Purple (COLOR_PALETTE[2])
+  "LISA": "#ec4899", // Pink (COLOR_PALETTE[8])
+  "Premium Bonds": "#f59e0b", // Amber (COLOR_PALETTE[3])
+  "Investment Account": "#ef4444", // Red (COLOR_PALETTE[4])
+  "Other": "#06b6d4", // Cyan (COLOR_PALETTE[5])
+};
+
 // Function to create a consistent color mapping for savings accounts
 const createAccountColorMapping = (accounts) => {
   const mapping = {};
-  const sortedAccounts = [...accounts].sort(); // Sort for consistency
 
-  sortedAccounts.forEach((account, index) => {
-    mapping[account] = COLOR_PALETTE[index % COLOR_PALETTE.length];
+  accounts.forEach((account) => {
+    // Use fixed color if defined, otherwise fall back to palette-based assignment
+    if (ACCOUNT_TYPE_COLORS[account]) {
+      mapping[account] = ACCOUNT_TYPE_COLORS[account];
+    } else {
+      // Fallback for any undefined types - use hash-based color from palette
+      const sortedAccounts = [...accounts].sort();
+      const index = sortedAccounts.indexOf(account);
+      mapping[account] = COLOR_PALETTE[index % COLOR_PALETTE.length];
+    }
   });
 
   return mapping;

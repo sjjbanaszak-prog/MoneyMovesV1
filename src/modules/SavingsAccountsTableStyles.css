@@ -190,30 +190,48 @@
   white-space: nowrap;
 }
 
-/* Account type specific colors */
+/* Account type specific colors - matching SavingsChartV2 and SavingsPie */
+/* Current Account - Blue (#3b82f6 from COLOR_PALETTE[1]) */
 .savings-type-badge-v2.current-account {
-  background: rgba(59, 130, 246, 0.1) !important;
+  background: rgba(59, 130, 246, 0.15) !important;
   color: #3b82f6 !important;
 }
 
+/* Savings Account - Emerald green (#10b981 from COLOR_PALETTE[0]) */
+.savings-type-badge-v2.savings,
 .savings-type-badge-v2.savings-account {
-  background: rgba(16, 185, 129, 0.1) !important;
+  background: rgba(16, 185, 129, 0.15) !important;
   color: #10b981 !important;
 }
 
+/* ISA - Purple (#8b5cf6 from COLOR_PALETTE[2]) */
 .savings-type-badge-v2.isa {
-  background: rgba(139, 92, 246, 0.1) !important;
+  background: rgba(139, 92, 246, 0.15) !important;
   color: #8b5cf6 !important;
 }
 
+/* LISA - Pink (#ec4899 from COLOR_PALETTE[8]) */
 .savings-type-badge-v2.lisa {
-  background: rgba(236, 72, 153, 0.1) !important;
+  background: rgba(236, 72, 153, 0.15) !important;
   color: #ec4899 !important;
 }
 
+/* Premium Bonds - Amber (#f59e0b from COLOR_PALETTE[3]) */
 .savings-type-badge-v2.premium-bonds {
-  background: rgba(245, 158, 11, 0.1) !important;
+  background: rgba(245, 158, 11, 0.15) !important;
   color: #f59e0b !important;
+}
+
+/* Investment Account - Red (#ef4444 from COLOR_PALETTE[4]) */
+.savings-type-badge-v2.investment-account {
+  background: rgba(239, 68, 68, 0.15) !important;
+  color: #ef4444 !important;
+}
+
+/* Other - Cyan (#06b6d4 from COLOR_PALETTE[5]) */
+.savings-type-badge-v2.other {
+  background: rgba(6, 182, 212, 0.15) !important;
+  color: #06b6d4 !important;
 }
 
 /* Status Badges */
