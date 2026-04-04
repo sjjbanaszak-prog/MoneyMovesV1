@@ -1,0 +1,24 @@
+/*
+  mobile.css
+  Global styles for the mobile app only.
+  This file is imported exclusively by MobileApp.js — it will never affect desktop pages.
+*/
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  height: 100%;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+#mobile-root {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}

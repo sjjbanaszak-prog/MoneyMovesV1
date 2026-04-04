@@ -1,0 +1,18 @@
+/*
+  MobileLayout.module.css
+  Wrapper that fills the viewport and sandwiches scrollable content
+  between an optional header and bottom navigation bar.
+*/
+
+.root {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh; /* dynamic viewport height — accounts for browser chrome on mobile */
+  overflow: hidden;
+}
+
+.content {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}

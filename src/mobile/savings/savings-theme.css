@@ -1,0 +1,16 @@
+/* ================================================================
+   savings-theme.css — forwards to the single source of truth.
+   .savings-screen is kept as an alias for .mobile-screen so that
+   existing layout files continue to work without changes.
+   ================================================================ */
+
+@import '../mobile-theme.css';
+
+/* Alias: savings screens use the same root class as mobile-screen */
+.savings-screen {
+  min-height: 100dvh;
+  background: #0b1326;
+  color: #dae2fd;
+  font-family: 'Inter', sans-serif;
+  overflow-x: hidden;
+}
