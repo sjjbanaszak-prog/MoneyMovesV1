@@ -1,0 +1,946 @@
+/* Income Tax Calculator Styles */
+
+.income-tax-calculator {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+}
+
+.calculator-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 32px 24px;
+}
+
+/* Header */
+.calculator-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 32px;
+}
+
+.calculator-title-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.calculator-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #f3f4f6;
+  margin: 0;
+}
+
+.calculator-header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.btn-compare {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  background-color: #10b981;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-compare:hover {
+  background-color: #059669;
+}
+
+.btn-exit-compare {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  background-color: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-exit-compare:hover {
+  background-color: #dc2626;
+}
+
+.header-tax-year {
+  color: #94a3b8;
+  font-size: 1rem;
+  margin: 0;
+}
+
+.header-subtitle {
+  color: #94a3b8;
+  font-size: 1rem;
+  margin: 0;
+}
+
+/* Comparison Mode Indicator */
+.comparison-indicator {
+  background-color: #1e293b;
+  border: 2px solid #10b981;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.comparison-indicator-title {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #10b981;
+  font-weight: 600;
+}
+
+.comparison-indicator-text {
+  margin: 4px 0 0 0;
+  font-size: 0.85rem;
+  color: #94a3b8;
+}
+
+/* Comparison Dashboard Cards */
+.comparison-dashboard {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.comparison-card {
+  background-color: #1e293b;
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.comparison-card-takehome {
+  border: 2px solid #10b981;
+}
+
+.comparison-card-tax {
+  border: 2px solid #f59e0b;
+}
+
+.comparison-card-pension {
+  border: 2px solid #8b5cf6;
+}
+
+.comparison-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.comparison-card-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #f3f4f6;
+}
+
+.comparison-card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.comparison-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.comparison-label {
+  font-size: 0.85rem;
+  color: #94a3b8;
+}
+
+.comparison-value-base {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #3b82f6;
+}
+
+.comparison-value-scenario {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #10b981;
+}
+
+.comparison-divider {
+  height: 1px;
+  background-color: #334155;
+  margin: 4px 0;
+}
+
+.comparison-difference {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #f3f4f6;
+}
+
+.comparison-diff-values {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.comparison-diff-amount {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.comparison-diff-positive {
+  color: #10b981;
+}
+
+.comparison-diff-negative {
+  color: #ef4444;
+}
+
+.comparison-diff-percent {
+  font-size: 0.85rem;
+}
+
+/* Comparison Chart */
+.comparison-chart {
+  background-color: #1e293b;
+  border-radius: 12px;
+  padding: 24px;
+  border: 1px solid #334155;
+  margin-bottom: 24px;
+}
+
+.chart-header {
+  margin: 0 0 24px 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #f3f4f6;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.itc-chart-container {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+  align-items: end;
+  min-height: 300px;
+}
+
+.chart-metric {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+}
+
+.chart-bars-container {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  height: 300px;
+  align-items: flex-end;
+  justify-content: center;
+  position: relative;
+}
+
+.chart-bar-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  max-width: 60px;
+}
+
+.chart-bar {
+  width: 100%;
+  border-radius: 8px 8px 0 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 8px 4px;
+  min-height: 60px;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.chart-bar-base {
+  background-color: #3b82f6;
+}
+
+.chart-bar-scenario {
+  background-color: #10b981;
+}
+
+.chart-bar-value {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: white;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  margin-top: 8px;
+}
+
+.chart-bar-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-top: 8px;
+  text-align: center;
+}
+
+.chart-bar-label-base {
+  color: #3b82f6;
+}
+
+.chart-bar-label-scenario {
+  color: #10b981;
+}
+
+.chart-metric-info {
+  margin-top: 16px;
+  text-align: center;
+}
+
+.chart-metric-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #f3f4f6;
+  margin-bottom: 4px;
+}
+
+.chart-metric-diff {
+  font-size: 0.75rem;
+}
+
+/* Main Grid */
+.main-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+/* Input/Results Card */
+.itc-card {
+  background-color: #1e293b;
+  border-radius: 16px;
+  padding: 24px;
+  border: 1px solid #334155;
+  position: relative;
+}
+
+.itc-card-base {
+  border: 2px solid #3b82f6;
+}
+
+.itc-card-scenario {
+  border: 2px solid #10b981;
+}
+
+.itc-card-badge {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  padding: 4px 12px;
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-radius: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.badge-base {
+  background-color: #3b82f6;
+}
+
+.badge-scenario {
+  background-color: #10b981;
+}
+
+.itc-card-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #f3f4f6;
+  margin-bottom: 24px;
+  margin-top: 0;
+  padding-right: 80px;
+}
+
+/* Form Elements */
+.itc-form-group {
+  margin-bottom: 24px;
+}
+
+.itc-form-label {
+  display: block;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #f3f4f6;
+  margin-bottom: 8px;
+}
+
+.itc-form-label-flex {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.itc-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.currency-symbol {
+  color: #10b981;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.itc-form-input {
+  flex: 1;
+  padding: 12px;
+  background-color: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  color: #f3f4f6;
+  font-size: 1rem;
+  outline: none;
+  width: 100%;
+}
+
+.itc-form-input:focus {
+  border-color: #10b981;
+}
+
+.itc-form-input-disabled {
+  background-color: #1e293b;
+  border-color: #475569;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+.itc-form-checkbox {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.itc-form-checkbox-disabled {
+  cursor: not-allowed;
+}
+
+.itc-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  cursor: pointer;
+}
+
+.itc-checkbox-label-disabled {
+  cursor: not-allowed;
+}
+
+.itc-form-select {
+  width: 100%;
+  padding: 12px;
+  background-color: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  color: #f3f4f6;
+  font-size: 1rem;
+  outline: none;
+  cursor: pointer;
+}
+
+.itc-form-select:focus {
+  border-color: #10b981;
+}
+
+.itc-form-select-disabled {
+  background-color: #1e293b;
+  border-color: #475569;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+/* Button Toggle Group */
+.itc-btn-toggle-group {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.itc-btn-toggle {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  background-color: #0f172a;
+  color: #94a3b8;
+}
+
+.itc-btn-toggle-active {
+  background-color: #10b981;
+  color: white;
+  border-color: #10b981;
+}
+
+.itc-btn-toggle-disabled {
+  cursor: not-allowed;
+}
+
+/* Tooltip */
+.tooltip-trigger {
+  position: relative;
+  display: inline-block;
+  cursor: help;
+}
+
+.tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 8px;
+  padding: 12px;
+  background-color: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  color: #f3f4f6;
+  font-size: 0.85rem;
+  width: 280px;
+  z-index: 1000;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+/* Results Section */
+.results-summary {
+  background-color: #10b981;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.results-main-value {
+  margin: 0;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 8px;
+}
+
+.results-amount {
+  margin: 0;
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: white;
+}
+
+.results-monthly {
+  margin: 4px 0 0 0;
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.results-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.breakdown-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px;
+  background-color: #0f172a;
+  border-radius: 8px;
+}
+
+.breakdown-item-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.breakdown-label-text {
+  color: #94a3b8;
+  font-size: 0.95rem;
+}
+
+.breakdown-value {
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.breakdown-value-negative {
+  color: #ef4444;
+}
+
+.breakdown-value-positive {
+  color: #3b82f6;
+}
+
+.breakdown-divider {
+  height: 1px;
+  background-color: #334155;
+  margin: 8px 0;
+}
+
+.effective-rate-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px;
+  background-color: #0f172a;
+  border-radius: 8px;
+  position: relative;
+}
+
+.effective-rate-value {
+  color: #f59e0b;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+/* Pension Summary */
+.pension-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+}
+
+.pension-box {
+  background-color: #0f172a;
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.pension-box-total {
+  background-color: #10b981;
+}
+
+.pension-label {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #94a3b8;
+  margin-bottom: 8px;
+}
+
+.pension-label-total {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.pension-value {
+  margin: 0;
+  font-size: 1.75rem;
+  font-weight: 700;
+}
+
+.pension-value-employee {
+  color: #3b82f6;
+}
+
+.pension-value-employer {
+  color: #10b981;
+}
+
+.pension-value-relief {
+  color: #f59e0b;
+}
+
+.pension-value-total {
+  color: white;
+}
+
+.pension-info-box {
+  margin-top: 20px;
+  padding: 16px;
+  background-color: #0f172a;
+  border-radius: 8px;
+  border: 1px solid #1e3a8a;
+}
+
+.pension-info-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.pension-scheme-title {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #93c5fd;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.pension-scheme-description {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #94a3b8;
+  line-height: 1.5;
+}
+
+/* Info Box */
+.itc-info-box {
+  margin-top: 24px;
+  background-color: #1e293b;
+  border-radius: 16px;
+  padding: 24px;
+  border: 1px solid #334155;
+}
+
+.itc-info-box-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.itc-info-box-text {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #94a3b8;
+  line-height: 1.6;
+}
+
+.itc-info-box-text strong {
+  color: #f3f4f6;
+}
+
+/* Qualifying Earnings Badge */
+.qualifying-earnings-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background-color: rgba(139, 92, 246, 0.1);
+  border: 1px solid #8b5cf6;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  color: #c4b5fd;
+  margin-top: 8px;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .comparison-dashboard {
+    grid-template-columns: 1fr;
+  }
+  
+  .pension-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .calculator-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  
+  .main-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .chart-container {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .pension-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .calculator-title {
+    font-size: 1.5rem;
+  }
+
+  .results-amount {
+    font-size: 2rem;
+  }
+
+  .chart-container {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+}
+
+/* ============================================================================
+   BENEFIT FORM CLASSES
+   ============================================================================ */
+
+/* Indented inputs that appear under checkbox toggles */
+.itc-input-nested {
+  margin-left: 26px;
+}
+
+/* Form group with no bottom margin */
+.itc-form-group-last {
+  margin-bottom: 0;
+}
+
+/* Container for the benefits list under the BIK checkbox */
+.itc-benefits-container {
+  margin-top: 12px;
+  margin-left: 26px;
+}
+
+/* Benefit type selection dropdown row */
+.itc-benefit-select-wrapper {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.itc-benefit-select-wrapper .itc-form-select {
+  flex: 1;
+}
+
+/* Individual benefit item card */
+.itc-benefit-item {
+  background-color: #0f172a;
+  border: 1px solid #334155;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  position: relative;
+}
+
+/* Benefit item header row (label + remove button) */
+.itc-benefit-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+/* Benefit label (no bottom margin, full-white) */
+.itc-benefit-label {
+  margin-bottom: 0;
+  color: #f3f4f6;
+}
+
+/* Remove benefit button */
+.itc-benefit-remove {
+  background: transparent;
+  border: none;
+  color: #ef4444;
+  cursor: pointer;
+  font-size: 1.5rem;
+  padding: 0 4px;
+  line-height: 1;
+  font-weight: bold;
+}
+
+/* Spacing between stacked fields within a benefit item */
+.itc-benefit-field {
+  margin-bottom: 8px;
+}
+
+/* Salary sacrifice checkbox + label row */
+.itc-salary-sacrifice-row {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.itc-salary-sacrifice-checkbox {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.itc-salary-sacrifice-checkbox:disabled {
+  cursor: not-allowed;
+}
+
+.itc-salary-sacrifice-label {
+  font-size: 0.8125rem;
+  color: #94a3b8;
+  cursor: pointer;
+  user-select: none;
+}
+
+.itc-salary-sacrifice-label-disabled {
+  cursor: not-allowed;
+}
+
+/* Small helper note beneath a benefit field */
+.itc-benefit-note {
+  font-size: 0.6875rem;
+  color: #64748b;
+  margin: 4px 0 0 0;
+  line-height: 1.3;
+}
+
+/* Empty state when no benefits have been added */
+.itc-benefit-empty {
+  font-size: 0.8125rem;
+  color: #64748b;
+  font-style: italic;
+  margin: 0;
+}
+
+/* Small inline label (fuel provided, electric range, etc.) */
+.itc-small-label {
+  font-size: 0.8125rem;
+}
+
+/* ============================================================================
+   BREAKDOWN ITEM CLASSES
+   ============================================================================ */
+
+/* Right-aligned value column within a breakdown item */
+.breakdown-item-right {
+  text-align: right;
+}
+
+/* Monthly sub-label beneath each breakdown value */
+.breakdown-item-monthly {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+
+/* Colour variants for breakdown values */
+.breakdown-value-green {
+  color: #10b981;
+}
+
+.breakdown-value-amber {
+  color: #f59e0b;
+}
+
+/* Strong/highlighted label (used for Effective Tax Rate) */
+.breakdown-label-strong {
+  font-weight: 600;
+  color: #f3f4f6;
+}
