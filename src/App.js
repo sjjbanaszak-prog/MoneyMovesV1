@@ -8,7 +8,9 @@ import {
 import "./styles/SharedStyles.css"; // Import shared styles globally
 import { AuthProvider } from "./contexts/AuthContext";
 import { DemoModeProvider } from "./contexts/DemoModeContext";
+import { ReportProblemProvider } from "./contexts/ReportProblemContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
+import ReportProblemModal from "./components/ReportProblemModal";
 import Login from "./components/auth/Login";
 import Register from "./components/auth/Register";
 import ForgotPassword from "./components/auth/ForgotPassword";
@@ -21,6 +23,8 @@ import SavingsTracker from "./pages/SavingsTracker";
 import Trading212Dashboard from "./pages/Trading212Dashboard";
 import AccountSettings from "./pages/AccountSettings";
 import DebtManager from "./pages/DebtManager";
+import IncomeTaxNew from "./pages/IncomeTaxNew";
+import MobileApp from "./mobile/MobileApp";
 
 const App = () => {
   // Shared state for both PensionStatus and PensionBuilder
@@ -46,66 +50,67 @@ const App = () => {
     return () => window.removeEventListener("resize", checkScreenSize);
   }, []);
 
-  // Dynamic styles based on screen size
-  const mainContentStyles = {
-    display: "flex",
-    minHeight: "100vh",
-  };
-
-  const contentStyles = {
-    flex: 1,
-    padding: isDesktop ? "1rem" : "1rem",
-    paddingTop: isDesktop ? "1rem" : "80px", // Account for fixed mobile navbar
-    // Remove paddingLeft for desktop - let CSS handle sidebar offset
-  };
-
   return (
     <Router>
       <AuthProvider>
         <DemoModeProvider>
-          <Routes>
-            {/* Public Auth Routes */}
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
+          <ReportProblemProvider>
+            <Routes>
+              {/* Public Auth Routes */}
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
 
-          {/* Protected Routes */}
-          <Route
-            path="/*"
-            element={
-              <ProtectedRoute>
-                <div style={mainContentStyles}>
-                  <Navbar />
-                  <div style={contentStyles}>
-                    <Routes>
-                      <Route path="/" element={<LandingPage />} />
-                      <Route
-                        path="/PensionPots"
-                        element={
-                          <PensionStatus entries={entries} setEntries={setEntries} />
-                        }
-                      />
-                      <Route
-                        path="/PensionBuilderNEW"
-                        element={<PensionBuilderNEW currentPot={total} />}
-                      />
-                      <Route path="/MortgageCalcNEW" element={<MortgageCalcNEW />} />
-                      {/* Redirect old mortgage route to new one */}
-                      <Route path="/MortgageCalc" element={<Navigate to="/MortgageCalcNEW" replace />} />
-                      <Route path="/SavingsTracker" element={<SavingsTracker />} />
-                      <Route
-                        path="/Trading212Dashboard"
-                        element={<Trading212Dashboard />}
-                      />
-                      <Route path="/debt-manager" element={<DebtManager />} />
-                      <Route path="/account-settings" element={<AccountSettings />} />
-                    </Routes>
+              {/* Mobile App — own layout, no desktop Navbar */}
+              <Route
+                path="/mobile/*"
+                element={
+                  <ProtectedRoute>
+                    <MobileApp />
+                  </ProtectedRoute>
+                }
+              />
+
+            {/* Protected Routes */}
+            <Route
+              path="*"
+              element={
+                <ProtectedRoute>
+                  <div className="app-wrapper">
+                    <Navbar />
+                    <div className="app-main-content">
+                      <Routes>
+                        <Route path="/" element={<LandingPage />} />
+                        <Route
+                          path="/PensionPots"
+                          element={
+                            <PensionStatus entries={entries} setEntries={setEntries} />
+                          }
+                        />
+                        <Route
+                          path="/PensionBuilderNEW"
+                          element={<PensionBuilderNEW currentPot={total} />}
+                        />
+                        <Route path="/MortgageCalcNEW" element={<MortgageCalcNEW />} />
+                        {/* Redirect old mortgage route to new one */}
+                        <Route path="/MortgageCalc" element={<Navigate to="/MortgageCalcNEW" replace />} />
+                        <Route path="/SavingsTracker" element={<SavingsTracker />} />
+                        <Route
+                          path="/Trading212Dashboard"
+                          element={<Trading212Dashboard />}
+                        />
+                        <Route path="/debt-manager" element={<DebtManager />} />
+                        <Route path="/income-new" element={<IncomeTaxNew />} />
+                        <Route path="/account-settings" element={<AccountSettings />} />
+                      </Routes>
+                    </div>
                   </div>
-                </div>
-              </ProtectedRoute>
-            }
-          />
-        </Routes>
+                </ProtectedRoute>
+              }
+            />
+          </Routes>
+          <ReportProblemModal />
+          </ReportProblemProvider>
         </DemoModeProvider>
       </AuthProvider>
     </Router>
