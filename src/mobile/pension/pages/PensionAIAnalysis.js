@@ -216,7 +216,7 @@ export default function PensionAIAnalysis() {
           icon: 'event_busy',
           color: '#ff8a80',
           title: 'Tax Year Deadline Approaching',
-          body: `You have ${fmtShort(remainingAllowance)} of allowance remaining with just ${daysUntilYearEnd} day${daysUntilYearEnd !== 1 ? 's' : ''} until 5 April. Any unused allowance cannot be carried forward to next year — a contribution now could meaningfully reduce your tax bill.`,
+          body: `You have ${fmtShort(remainingAllowance)} of allowance remaining with just ${daysUntilYearEnd} day${daysUntilYearEnd !== 1 ? 's' : ''} until 5 April. A contribution now could reduce your tax bill. Any unused current year allowance can be carried forward for up to 3 future tax years.`,
           tag: 'Deadline',
           tagColor: '#ff8a80',
         });
@@ -232,29 +232,32 @@ export default function PensionAIAnalysis() {
       }
     }
 
-    // 4. Carry forward expiry warning — only when <31 days to year end
+    // 4. Carry forward expiry warning — always shown when <31 days to year end
     // Shows total carry forward available and specifically calls out the oldest year's
     // amount that will be permanently lost when the tax year rolls over.
     if (daysUntilYearEnd <= 30) {
       const currentFYStart = getTaxYearStart(now);
       const expiringYear = currentFYStart - 3;
       const expiringLabel = `FY ${String(expiringYear).slice(-2)}/${String(expiringYear + 1).slice(-2)}`;
-      if (carryForwardData.total > 0 || carryForwardData.expiringThisYear > 0) {
-        let body = carryForwardData.total > 0
-          ? `You have an estimated ${fmtShort(carryForwardData.total)} of carry forward available from your previous 3 tax years.`
-          : `Your carry forward pool from previous years has been fully consumed by contributions already made.`;
+      let body;
+      if (carryForwardData.total > 0) {
+        body = `You have an estimated ${fmtShort(carryForwardData.total)} of carry forward available from the previous 3 tax years.`;
         if (carryForwardData.expiringThisYear > 0) {
-          body += ` ${fmtShort(carryForwardData.expiringThisYear)} from ${expiringLabel} will be permanently lost on 5 April — once the new tax year starts this allowance can no longer be used.`;
+          body += ` Of this, ${fmtShort(carryForwardData.expiringThisYear)} from ${expiringLabel} will be permanently lost on 5 April — once the new tax year starts, only the most recent 3 years can be used.`;
+        } else {
+          body += ` Your ${expiringLabel} carry forward has already been fully used — the remaining balance comes from more recent years and is not at risk.`;
         }
-        recs.push({
-          icon: 'timer',
-          color: '#ff8a80',
-          title: 'Carry Forward Expiring Soon',
-          body,
-          tag: 'Deadline',
-          tagColor: '#ff8a80',
-        });
+      } else {
+        body = `Your carry forward from all 3 prior tax years has been fully consumed. Your current year's unused allowance of ${fmtShort(remainingAllowance)} will itself become carry forward available from next year.`;
       }
+      recs.push({
+        icon: 'timer',
+        color: '#ff8a80',
+        title: 'Carry Forward Expiring Soon',
+        body,
+        tag: 'Deadline',
+        tagColor: '#ff8a80',
+      });
     }
 
     // 5. Contribution gap — no contributions this tax year
