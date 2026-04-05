@@ -44,7 +44,9 @@ export default function PensionAIAnalysis() {
   // Carry forward: remaining unused allowance from the 3 prior tax years,
   // accounting for (a) intermediate years that consumed prior carry forward,
   // and (b) the current year having already drawn down some carry forward.
-  const carryForwardAvailable = useMemo(() => {
+  // Returns { total, expiringThisYear } where expiringThisYear is the amount
+  // from the oldest year (currentFYStart - 3) that will be permanently lost on 5 April.
+  const carryForwardData = useMemo(() => {
     const currentFYStart = getTaxYearStart(now);
 
     // Build total contributions per FY from all providers' paymentHistory
@@ -84,8 +86,18 @@ export default function PensionAIAnalysis() {
       currentExcess -= consume;
     }
 
-    return Math.max(0, unused.reduce((sum, u) => sum + u, 0));
+    return {
+      total: Math.max(0, unused.reduce((sum, u) => sum + u, 0)),
+      expiringThisYear: Math.max(0, unused[0]), // from currentFYStart - 3
+    };
   }, [entries, now]);
+
+  // Days remaining in the current tax year (until April 5)
+  const daysUntilYearEnd = useMemo(() => {
+    const currentFYStart = getTaxYearStart(now);
+    const yearEnd = new Date(currentFYStart + 1, 3, 5, 23, 59, 59); // April 5 end-of-day
+    return Math.max(0, Math.ceil((yearEnd - now) / (1000 * 60 * 60 * 24)));
+  }, [now]);
 
   // ── Health Score (5 factors, 100 pts total) ─────────────────────────────
   const { healthScore, healthLabel, healthColor } = useMemo(() => {
@@ -186,44 +198,63 @@ export default function PensionAIAnalysis() {
     }
 
     // 2. Carry forward opportunity (only when allowance maxed AND carry forward exists)
-    if (allowanceMaxed && carryForwardAvailable > 0) {
+    if (allowanceMaxed && carryForwardData.total > 0) {
       recs.push({
         icon: 'account_balance',
         color: '#ffb95f',
         title: 'Carry Forward Available',
-        body: `You've used your full £60,000 allowance this year. Based on your contribution history, you have an estimated ${fmtShort(carryForwardAvailable)} of unused allowance from the previous 3 tax years that can be carried forward. You may be able to contribute above the standard limit — speak to an adviser to confirm your carry forward position before acting.`,
+        body: `You've used your full £60,000 allowance this year. Based on your contribution history, you have an estimated ${fmtShort(carryForwardData.total)} of unused allowance from the previous 3 tax years that can be carried forward. You may be able to contribute above the standard limit — speak to an adviser to confirm your carry forward position before acting.`,
         tag: 'Tax Efficiency',
         tagColor: '#ffb95f',
       });
     }
 
-    // 3. Annual allowance remaining (when not maxed)
+    // 3. Allowance remaining — deadline replaces standard rec when <31 days to year end
     if (!allowanceMaxed && remainingAllowance > 0) {
-      recs.push({
-        icon: 'account_balance',
-        color: '#ffb95f',
-        title: 'Annual Allowance Available',
-        body: `You still have ${fmtShort(remainingAllowance)} of your annual pension allowance remaining this tax year. Making additional contributions before 5 April could reduce your tax liability.`,
-        tag: 'Tax Efficiency',
-        tagColor: '#ffb95f',
-      });
+      if (daysUntilYearEnd <= 30) {
+        recs.push({
+          icon: 'event_busy',
+          color: '#ff8a80',
+          title: 'Tax Year Deadline Approaching',
+          body: `You have ${fmtShort(remainingAllowance)} of allowance remaining with just ${daysUntilYearEnd} day${daysUntilYearEnd !== 1 ? 's' : ''} until 5 April. Any unused allowance cannot be carried forward to next year — a contribution now could meaningfully reduce your tax bill.`,
+          tag: 'Deadline',
+          tagColor: '#ff8a80',
+        });
+      } else {
+        recs.push({
+          icon: 'account_balance',
+          color: '#ffb95f',
+          title: 'Annual Allowance Available',
+          body: `You still have ${fmtShort(remainingAllowance)} of your annual pension allowance remaining this tax year. Making additional contributions before 5 April could reduce your tax liability.`,
+          tag: 'Tax Efficiency',
+          tagColor: '#ffb95f',
+        });
+      }
     }
 
-    // 4. Approaching tax year end (January–April 5)
-    const month = now.getMonth(); // 0-based
-    const day = now.getDate();
-    const isApproachingYearEnd = month === 0 || month === 1 || month === 2 || (month === 3 && day <= 5);
-    if (isApproachingYearEnd && remainingAllowance > 0) {
-      const aprilFifth = new Date(now.getFullYear(), 3, 5);
-      const daysLeft = Math.ceil((aprilFifth - now) / (1000 * 60 * 60 * 24));
-      recs.push({
-        icon: 'event_busy',
-        color: '#ff8a80',
-        title: 'Tax Year Deadline Approaching',
-        body: `You have ${fmtShort(remainingAllowance)} of allowance remaining with just ${daysLeft} day${daysLeft !== 1 ? 's' : ''} until 5 April. Any unused allowance is lost at the end of the tax year — a contribution now could meaningfully reduce your tax bill.`,
-        tag: 'Deadline',
-        tagColor: '#ff8a80',
-      });
+    // 4. Carry forward expiry warning — only when <31 days to year end
+    // Shows total carry forward available and specifically calls out the oldest year's
+    // amount that will be permanently lost when the tax year rolls over.
+    if (daysUntilYearEnd <= 30) {
+      const currentFYStart = getTaxYearStart(now);
+      const expiringYear = currentFYStart - 3;
+      const expiringLabel = `FY ${String(expiringYear).slice(-2)}/${String(expiringYear + 1).slice(-2)}`;
+      if (carryForwardData.total > 0 || carryForwardData.expiringThisYear > 0) {
+        let body = carryForwardData.total > 0
+          ? `You have an estimated ${fmtShort(carryForwardData.total)} of carry forward available from your previous 3 tax years.`
+          : `Your carry forward pool from previous years has been fully consumed by contributions already made.`;
+        if (carryForwardData.expiringThisYear > 0) {
+          body += ` ${fmtShort(carryForwardData.expiringThisYear)} from ${expiringLabel} will be permanently lost on 5 April — once the new tax year starts this allowance can no longer be used.`;
+        }
+        recs.push({
+          icon: 'timer',
+          color: '#ff8a80',
+          title: 'Carry Forward Expiring Soon',
+          body,
+          tag: 'Deadline',
+          tagColor: '#ff8a80',
+        });
+      }
     }
 
     // 5. Contribution gap — no contributions this tax year
@@ -297,7 +328,7 @@ export default function PensionAIAnalysis() {
     }
 
     return recs;
-  }, [entries, metrics, userProfile, sixMonthsAgo, remainingAllowance, carryForwardAvailable, now]);
+  }, [entries, metrics, userProfile, sixMonthsAgo, remainingAllowance, carryForwardData, daysUntilYearEnd, now]);
 
   return (
     <PensionLayout>
