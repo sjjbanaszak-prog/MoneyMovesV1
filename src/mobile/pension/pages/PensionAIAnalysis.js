@@ -41,26 +41,50 @@ export default function PensionAIAnalysis() {
   // ── Allowance calculations ──────────────────────────────────────────────
   const remainingAllowance = Math.max(0, ANNUAL_ALLOWANCE - (metrics.currentFYTotal || 0));
 
-  // Carry forward: sum unused allowance from the 3 prior tax years
+  // Carry forward: remaining unused allowance from the 3 prior tax years,
+  // accounting for (a) intermediate years that consumed prior carry forward,
+  // and (b) the current year having already drawn down some carry forward.
   const carryForwardAvailable = useMemo(() => {
     const currentFYStart = getTaxYearStart(now);
+
+    // Build total contributions per FY from all providers' paymentHistory
     const contribsByYear = {};
     entries.forEach(e => {
       (e.paymentHistory || []).forEach(p => {
         const d = parseDate(p.date);
         if (!d) return;
         const fy = getTaxYearStart(d);
-        contribsByYear[fy] = (contribsByYear[fy] || 0) + (p.amount || 0);
+        if (fy !== null) contribsByYear[fy] = (contribsByYear[fy] || 0) + (p.amount || 0);
       });
     });
-    let carry = 0;
-    for (let i = 1; i <= 3; i++) {
-      const yr = currentFYStart - i;
-      const allowance = allowanceForYear(yr);
-      const used = contribsByYear[yr] || 0;
-      carry += Math.max(0, allowance - used);
+
+    const priorYears = [currentFYStart - 3, currentFYStart - 2, currentFYStart - 1];
+
+    // Step 1: unused allowance for each prior year (before any cross-year consumption)
+    const unused = priorYears.map(yr =>
+      Math.max(0, allowanceForYear(yr) - (contribsByYear[yr] || 0))
+    );
+
+    // Step 2: for each prior year that exceeded its own allowance, consume FIFO
+    // from older prior years (HMRC rule: oldest unused allowance used first)
+    for (let i = 0; i < 3; i++) {
+      let excess = Math.max(0, (contribsByYear[priorYears[i]] || 0) - allowanceForYear(priorYears[i]));
+      for (let j = 0; j < i && excess > 0; j++) {
+        const consume = Math.min(unused[j], excess);
+        unused[j] -= consume;
+        excess -= consume;
+      }
     }
-    return carry;
+
+    // Step 3: subtract what the current year has already consumed from the pool
+    let currentExcess = Math.max(0, (contribsByYear[currentFYStart] || 0) - allowanceForYear(currentFYStart));
+    for (let j = 0; j < 3 && currentExcess > 0; j++) {
+      const consume = Math.min(unused[j], currentExcess);
+      unused[j] -= consume;
+      currentExcess -= consume;
+    }
+
+    return Math.max(0, unused.reduce((sum, u) => sum + u, 0));
   }, [entries, now]);
 
   // ── Health Score (5 factors, 100 pts total) ─────────────────────────────
