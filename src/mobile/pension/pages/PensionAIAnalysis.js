@@ -44,8 +44,9 @@ export default function PensionAIAnalysis() {
   // Carry forward: remaining unused allowance from the 3 prior tax years,
   // accounting for (a) intermediate years that consumed prior carry forward,
   // and (b) the current year having already drawn down some carry forward.
-  // Returns { total, expiringThisYear } where expiringThisYear is the amount
-  // from the oldest year (currentFYStart - 3) that will be permanently lost on 5 April.
+  // Returns { total, expiringThisYear, genuineExcess } where genuineExcess is
+  // the amount by which this year's contributions exceed the annual allowance AND
+  // all available carry forward — i.e. a real HMRC annual allowance charge situation.
   const carryForwardData = useMemo(() => {
     const currentFYStart = getTaxYearStart(now);
 
@@ -98,8 +99,11 @@ export default function PensionAIAnalysis() {
     const total = Math.max(0, windowYears.reduce((sum, yr) => sum + (unusedPool[yr] || 0), 0));
     // expiringThisYear = oldest window year — permanently lost when the new tax year starts
     const expiringThisYear = Math.max(0, unusedPool[currentFYStart - 3] || 0);
+    // genuineExcess = carry forward ran out before covering the current year's excess.
+    // Whatever currentExcess remains after the FIFO loop is a real annual allowance breach.
+    const genuineExcess = Math.max(0, currentExcess);
 
-    return { total, expiringThisYear };
+    return { total, expiringThisYear, genuineExcess };
   }, [entries, now]);
 
   // Days remaining in the current tax year (until April 5)
@@ -207,7 +211,19 @@ export default function PensionAIAnalysis() {
       });
     }
 
-    // 2. Carry forward opportunity (only when allowance maxed AND carry forward exists)
+    // 2. Annual allowance breach — genuine excess beyond carry forward (urgent HMRC alert)
+    if (carryForwardData.genuineExcess > 0) {
+      recs.push({
+        icon: 'gpp_bad',
+        color: '#ff8a80',
+        title: 'Annual Allowance Exceeded',
+        body: `Your pension contributions this year exceed your annual allowance and all available carry forward by an estimated ${fmtShort(carryForwardData.genuineExcess)}. HMRC requires this to be reported via Self Assessment. An annual allowance charge is likely due — contact a tax specialist urgently to assess the liability and notify HMRC before your tax return deadline.`,
+        tag: 'Tax Alert',
+        tagColor: '#ff8a80',
+      });
+    }
+
+    // 4. Carry forward opportunity (only when allowance maxed AND carry forward exists, no genuine breach)
     if (allowanceMaxed && carryForwardData.total > 0) {
       recs.push({
         icon: 'account_balance',
