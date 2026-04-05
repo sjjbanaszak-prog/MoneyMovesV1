@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useLayoutEffect } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import './mobile.css';
 import PensionApp  from './pension/PensionApp';
@@ -7,7 +7,11 @@ import MortgageApp from './mortgage/MortgageApp';
 
 function ScrollToTop() {
   const { pathname } = useLocation();
-  useEffect(() => { window.scrollTo(0, 0); }, [pathname]);
+  useLayoutEffect(() => {
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }, [pathname]);
   return null;
 }
 
