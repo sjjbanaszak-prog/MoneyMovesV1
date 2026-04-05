@@ -1,9 +1,15 @@
-import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import './mobile.css';
 import PensionApp  from './pension/PensionApp';
 import SavingsApp  from './savings/SavingsApp';
 import MortgageApp from './mortgage/MortgageApp';
+
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => { window.scrollTo(0, 0); }, [pathname]);
+  return null;
+}
 
 /**
  * MobileApp
@@ -21,6 +27,8 @@ import MortgageApp from './mortgage/MortgageApp';
  */
 export default function MobileApp() {
   return (
+    <>
+    <ScrollToTop />
     <Routes>
       {/* Default landing → pension overview */}
       <Route index element={<Navigate to="/mobile/pension" replace />} />
@@ -37,5 +45,6 @@ export default function MobileApp() {
       {/* Catch-all */}
       <Route path="*" element={<Navigate to="/mobile/pension" replace />} />
     </Routes>
+    </>
   );
 }
