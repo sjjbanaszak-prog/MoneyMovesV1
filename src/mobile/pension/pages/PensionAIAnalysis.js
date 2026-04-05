@@ -60,36 +60,46 @@ export default function PensionAIAnalysis() {
       });
     });
 
-    const priorYears = [currentFYStart - 3, currentFYStart - 2, currentFYStart - 1];
+    // Build an unused-allowance pool going 6 years back.
+    // We need 6 years because a window year (currentFYStart-1) can consume carry
+    // forward from up to 3 years before it (currentFYStart-4), and those source
+    // years are outside the current 3-year window but must be tracked.
+    const poolStart = currentFYStart - 6;
+    const unusedPool = {};
+    for (let yr = poolStart; yr <= currentFYStart - 1; yr++) {
+      unusedPool[yr] = Math.max(0, allowanceForYear(yr) - (contribsByYear[yr] || 0));
+    }
 
-    // Step 1: unused allowance for each prior year (before any cross-year consumption)
-    const unused = priorYears.map(yr =>
-      Math.max(0, allowanceForYear(yr) - (contribsByYear[yr] || 0))
-    );
-
-    // Step 2: for each prior year that exceeded its own allowance, consume FIFO
-    // from older prior years (HMRC rule: oldest unused allowance used first)
-    for (let i = 0; i < 3; i++) {
-      let excess = Math.max(0, (contribsByYear[priorYears[i]] || 0) - allowanceForYear(priorYears[i]));
-      for (let j = 0; j < i && excess > 0; j++) {
-        const consume = Math.min(unused[j], excess);
-        unused[j] -= consume;
-        excess -= consume;
+    // For each year in the pool (oldest to newest), if it had excess contributions,
+    // consume carry forward FIFO from the 3 years prior to it.
+    for (let yr = poolStart + 1; yr <= currentFYStart - 1; yr++) {
+      let excess = Math.max(0, (contribsByYear[yr] || 0) - allowanceForYear(yr));
+      for (let src = yr - 3; src < yr && excess > 0; src++) {
+        if (unusedPool[src] !== undefined) {
+          const consume = Math.min(unusedPool[src], excess);
+          unusedPool[src] -= consume;
+          excess -= consume;
+        }
       }
     }
 
-    // Step 3: subtract what the current year has already consumed from the pool
+    // Apply any current year excess — consumes from the window years FIFO
     let currentExcess = Math.max(0, (contribsByYear[currentFYStart] || 0) - allowanceForYear(currentFYStart));
-    for (let j = 0; j < 3 && currentExcess > 0; j++) {
-      const consume = Math.min(unused[j], currentExcess);
-      unused[j] -= consume;
-      currentExcess -= consume;
+    for (let src = currentFYStart - 3; src < currentFYStart && currentExcess > 0; src++) {
+      if (unusedPool[src] !== undefined) {
+        const consume = Math.min(unusedPool[src], currentExcess);
+        unusedPool[src] -= consume;
+        currentExcess -= consume;
+      }
     }
 
-    return {
-      total: Math.max(0, unused.reduce((sum, u) => sum + u, 0)),
-      expiringThisYear: Math.max(0, unused[0]), // from currentFYStart - 3
-    };
+    // Carry forward available for the current year = sum of the 3 window years
+    const windowYears = [currentFYStart - 3, currentFYStart - 2, currentFYStart - 1];
+    const total = Math.max(0, windowYears.reduce((sum, yr) => sum + (unusedPool[yr] || 0), 0));
+    // expiringThisYear = oldest window year — permanently lost when the new tax year starts
+    const expiringThisYear = Math.max(0, unusedPool[currentFYStart - 3] || 0);
+
+    return { total, expiringThisYear };
   }, [entries, now]);
 
   // Days remaining in the current tax year (until April 5)
