@@ -144,8 +144,26 @@ export function PensionDataProvider({ children }) {
   const metrics = computeMetrics(entries);
 
   /**
+   * Derive yearlyTotals from all entries' paymentHistory so the desktop
+   * PensionAllowanceUtilization chart stays in sync with mobile contributions.
+   */
+  function buildYearlyTotals(allEntries) {
+    const totals = {};
+    allEntries.forEach(e => {
+      (e.paymentHistory || []).forEach(p => {
+        const d = parseDate(p.date);
+        if (!d) return;
+        const fy = getTaxYearStart(d);
+        if (fy !== null) totals[fy] = (totals[fy] || 0) + (p.amount || 0);
+      });
+    });
+    return totals;
+  }
+
+  /**
    * Update arbitrary fields on an entry by index.
    * Persists to Firestore when not in demo mode.
+   * Also recalculates yearlyTotals to keep the desktop chart in sync.
    */
   async function updateEntry(idx, fields) {
     if (idx < 0 || idx >= entries.length) return;
@@ -154,7 +172,8 @@ export function PensionDataProvider({ children }) {
     setEntries(updatedEntries);
     if (!isDemoMode && user) {
       try {
-        await updateDoc(doc(db, 'pensionPots', user.uid), { pensions: updatedEntries });
+        const yearlyTotals = buildYearlyTotals(updatedEntries);
+        await updateDoc(doc(db, 'pensionPots', user.uid), { pensions: updatedEntries, yearlyTotals });
       } catch (e) {
         console.error('PensionDataContext: failed to save entry update', e);
         setEntries(entries);
@@ -202,9 +221,10 @@ export function PensionDataProvider({ children }) {
     setEntries(updatedEntries);
     if (!isDemoMode && user) {
       try {
+        const yearlyTotals = buildYearlyTotals(updatedEntries);
         await setDoc(
           doc(db, 'pensionPots', user.uid),
-          { pensions: updatedEntries },
+          { pensions: updatedEntries, yearlyTotals },
           { merge: true }
         );
       } catch (e) {
