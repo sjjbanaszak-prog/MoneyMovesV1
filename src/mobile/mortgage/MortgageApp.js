@@ -12,6 +12,7 @@ import AddMortgagePayment    from './pages/AddMortgagePayment';
 import MortgageInsights      from './pages/MortgageInsights';
 import MortgageCalculator    from './pages/MortgageCalculator';
 import MortgageCompare       from './pages/MortgageCompare';
+import MortgageAIAnalysis    from './pages/MortgageAIAnalysis';
 
 /**
  * MortgageApp
@@ -20,7 +21,7 @@ import MortgageCompare       from './pages/MortgageCompare';
  *   /mobile/mortgage/:idx               → MortgageDetail (property drill-down)
  *   /mobile/mortgage/:idx/payments      → AllMortgagePayments (full history)
  *   /mobile/mortgage/calculator         → MortgageCalculator (overpayment modeller)
- *   /mobile/mortgage/ai                 → (coming soon — redirects to overview)
+ *   /mobile/mortgage/ai                 → MortgageAIAnalysis
  */
 export default function MortgageApp() {
   return (
@@ -32,7 +33,7 @@ export default function MortgageApp() {
         <Route path="comparisons"          element={<MortgageCompare />} />
         <Route path="insights"             element={<MortgageInsights />} />
         <Route path="calculator"           element={<MortgageCalculator />} />
-        <Route path="ai"                   element={<Navigate to="/mobile/mortgage" replace />} />
+        <Route path="ai"                   element={<MortgageAIAnalysis />} />
         <Route path=":idx"                 element={<MortgageDetail />} />
         <Route path=":idx/payments"        element={<AllMortgagePayments />} />
         <Route path=":idx/add"             element={<AddMortgagePayment />} />

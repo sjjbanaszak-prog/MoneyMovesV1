@@ -122,14 +122,6 @@ export default function SavingsOverview() {
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <DemoToggle />
-            <button style={{
-              width: '40px', height: '40px', borderRadius: '12px',
-              background: 'rgba(173,198,255,0.08)', border: 'none',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: '#adc6ff', cursor: 'pointer',
-            }}>
-              <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>notifications</span>
-            </button>
           </div>
         </div>
 

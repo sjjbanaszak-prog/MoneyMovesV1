@@ -50,15 +50,34 @@ export default function PensionAIAnalysis() {
   const carryForwardData = useMemo(() => {
     const currentFYStart = getTaxYearStart(now);
 
-    // Build total contributions per FY from all providers' paymentHistory
+    // Build total contributions per FY from paymentHistory.
+    // Then cross-check against entry.deposits (the authoritative total per pension):
+    // if deposits > sum(paymentHistory), attribute the gap to the most recent FY
+    // present in that entry's history (or current FY if no history exists), so
+    // contributions that weren't individually recorded are still counted.
     const contribsByYear = {};
     entries.forEach(e => {
+      let historyTotal = 0;
+      let mostRecentFY = null;
       (e.paymentHistory || []).forEach(p => {
         const d = parseDate(p.date);
         if (!d) return;
         const fy = getTaxYearStart(d);
-        if (fy !== null) contribsByYear[fy] = (contribsByYear[fy] || 0) + (p.amount || 0);
+        if (fy !== null) {
+          contribsByYear[fy] = (contribsByYear[fy] || 0) + (p.amount || 0);
+          historyTotal += p.amount || 0;
+          if (mostRecentFY === null || fy > mostRecentFY) mostRecentFY = fy;
+        }
       });
+      // If entry.deposits exceeds what paymentHistory accounts for, the difference
+      // represents contributions not in the history — attribute to the most recent
+      // known FY for this entry (or current FY if no history at all).
+      const depositTotal = e.deposits || 0;
+      const untracked = depositTotal - historyTotal;
+      if (untracked > 0.01) {
+        const targetFY = mostRecentFY !== null ? mostRecentFY : currentFYStart;
+        contribsByYear[targetFY] = (contribsByYear[targetFY] || 0) + untracked;
+      }
     });
 
     // Build an unused-allowance pool going 6 years back.
@@ -258,10 +277,9 @@ export default function PensionAIAnalysis() {
       }
     }
 
-    // 4. Carry forward expiry warning — always shown when <31 days to year end
-    // Shows total carry forward available and specifically calls out the oldest year's
-    // amount that will be permanently lost when the tax year rolls over.
-    if (daysUntilYearEnd <= 30) {
+    // 4. Carry forward expiry warning — shown when <31 days to year end AND no genuine breach
+    // (if allowance exceeded, that rec already covers urgency — expiry info is redundant)
+    if (daysUntilYearEnd <= 30 && carryForwardData.genuineExcess === 0) {
       const currentFYStart = getTaxYearStart(now);
       const expiringYear = currentFYStart - 3;
       const expiringLabel = `FY ${String(expiringYear).slice(-2)}/${String(expiringYear + 1).slice(-2)}`;

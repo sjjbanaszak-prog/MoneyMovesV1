@@ -46,7 +46,7 @@ export default function UniversalNavbar() {
       borderTop: '1px solid rgba(173,198,255,0.08)',
       display: 'flex',
       padding: '8px 8px 12px',
-      zIndex: 100,
+      zIndex: 80,
       gap: '4px',
     }}>
       {TABS.map(tab => (
