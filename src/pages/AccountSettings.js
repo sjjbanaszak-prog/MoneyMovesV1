@@ -288,8 +288,6 @@ export default function AccountSettings() {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       });
-
-      console.log("Report submitted successfully");
       alert(
         "Thank you! Your report has been submitted successfully. We'll get back to you soon."
       );
@@ -325,7 +323,6 @@ export default function AccountSettings() {
           },
           { merge: true }
         );
-        console.log("Profile saved successfully");
         setEditProfileOpen(false);
       } catch (error) {
         console.error("Error saving profile:", error);
@@ -993,7 +990,6 @@ function UpgradePremiumModal({
             </button>
             <button
               onClick={() => {
-                console.log("Upgrading to:", selectedPlan);
                 setUpgradePremiumOpen(false);
               }}
               className="modal-btn modal-btn-primary"

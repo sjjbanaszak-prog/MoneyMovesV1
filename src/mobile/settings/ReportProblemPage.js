@@ -60,6 +60,16 @@ export default function ReportProblemPage() {
 
   async function handleSubmit() {
     if (!canSubmit) return;
+
+    if (subject.trim().length > 200) {
+      setError('Subject must be 200 characters or fewer.');
+      return;
+    }
+    if (description.trim().length > 5000) {
+      setError('Description must be 5000 characters or fewer.');
+      return;
+    }
+
     setSubmitting(true);
     setError(null);
     try {

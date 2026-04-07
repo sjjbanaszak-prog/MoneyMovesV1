@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import './AuthStyles.css';
@@ -11,6 +11,7 @@ const ForgotPassword = () => {
 
   const { resetPassword, currentUser } = useAuth();
   const navigate = useNavigate();
+  const lastSubmitRef = useRef(0);
 
   // Redirect if already logged in
   useEffect(() => {
@@ -39,6 +40,13 @@ const ForgotPassword = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    const now = Date.now();
+    if (now - lastSubmitRef.current < 3000) {
+      setError('Please wait a moment before trying again.');
+      return;
+    }
+    lastSubmitRef.current = now;
 
     if (!email) {
       setError('Please enter your email address');

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import './AuthStyles.css';
@@ -12,6 +12,7 @@ const Login = () => {
 
   const { login, signInWithGoogle, currentUser } = useAuth();
   const navigate = useNavigate();
+  const lastSubmitRef = useRef(0);
 
   // Redirect if already logged in
   useEffect(() => {
@@ -46,6 +47,13 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    const now = Date.now();
+    if (now - lastSubmitRef.current < 3000) {
+      setError('Please wait a moment before trying again.');
+      return;
+    }
+    lastSubmitRef.current = now;
 
     if (!email || !password) {
       setError('Please fill in all fields');

@@ -8,7 +8,6 @@ import "./LandingPage.css";
 import { useDemoMode } from "../contexts/DemoModeContext";
 import DemoModeBanner from "../components/DemoModeBanner";
 
-console.log("=== LANDINGPAGE.JS FILE LOADED - VERSION 2.0 ===");
 
 const LandingPage = () => {
   const { user } = useAuth();
@@ -25,28 +24,12 @@ const LandingPage = () => {
   const [savingsData, setSavingsData] = useState(null);
   const [debtsData, setDebtsData] = useState(null);
 
-  console.log("=== LANDINGPAGE COMPONENT RENDERING ===");
-  console.log("User object:", user);
-  console.log("User UID:", user?.uid);
-
   useEffect(() => {
-    console.log("=== USEEFFECT TRIGGERED ===");
-
     const loadModuleData = async () => {
-      console.log("=== INSIDE loadModuleData FUNCTION ===");
-      console.log("User UID check:", user?.uid);
-
-      if (!user?.uid) {
-        console.log("NO USER UID - EXITING");
-        return;
-      }
-
-      console.log("USER UID EXISTS:", user.uid);
+      if (!user?.uid) return;
 
       // Demo mode: use demo data
       if (isDemoMode && demoData) {
-        console.log("=== LOADING DEMO DATA ===");
-
         setModuleData({
           pension: demoData.pensionBuilder || null,
           mortgage: null,
@@ -77,12 +60,10 @@ const LandingPage = () => {
 
         setSavingsData(demoData.savingsTracker || null);
 
-        console.log("DEMO DATA LOADED SUCCESSFULLY");
         return;
       }
 
       // Live mode: load from Firestore
-      console.log("Starting Firebase queries...");
 
       try {
         console.log("Loading pensionScenarios...");

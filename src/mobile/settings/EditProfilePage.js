@@ -57,11 +57,25 @@ export default function EditProfilePage() {
 
   async function handleSave() {
     if (!currentUser) return;
+
+    if (!fullName.trim()) {
+      setError('Full name cannot be empty.');
+      return;
+    }
+    if (fullName.length > 100) {
+      setError('Full name must be 100 characters or fewer.');
+      return;
+    }
+    if (dob.length > 50) {
+      setError('Date of birth value is too long.');
+      return;
+    }
+
     setSaving(true);
     setError(null);
     try {
       const ref = doc(db, 'users', currentUser.uid);
-      await setDoc(ref, { fullName, dob, industry }, { merge: true });
+      await setDoc(ref, { fullName: fullName.trim(), dob: dob.trim(), industry }, { merge: true });
       navigate('/mobile/settings');
     } catch (e) {
       setError('Failed to save changes. Please try again.');

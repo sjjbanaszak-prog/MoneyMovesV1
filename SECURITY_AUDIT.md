@@ -13,9 +13,9 @@
 |----------|-------|--------|
 | 🔴 Critical | 1 | ✅ Resolved |
 | 🟠 High | 3 | ✅ Resolved |
-| 🟡 Medium | 3 | Open |
-| 🔵 Low | 2 | Open |
-| **Total** | **9** | |
+| 🟡 Medium | 3 | ✅ Resolved |
+| 🔵 Low | 2 | ✅ Resolved |
+| **Total** | **9** | ✅ All Resolved |
 
 ---
 
@@ -78,7 +78,7 @@ firebase emulators:start --only firestore
 
 ---
 
-### M-1 — User UID and User Object Logged to Browser Console
+### ~~M-1 — User UID and User Object Logged to Browser Console~~ ✅ RESOLVED
 
 **File:** `src/pages/LandingPage.js`  
 **Lines:** 11, 29, 30, 37, 44
@@ -106,7 +106,7 @@ if (process.env.NODE_ENV === 'development') {
 
 ---
 
-### M-2 — No Input Validation Before Firestore Writes
+### ~~M-2 — No Input Validation Before Firestore Writes~~ ✅ RESOLVED
 
 **Files and representative lines:**
 - `src/mobile/settings/EditProfilePage.js` — `fullName`, `dob`, `industry` written without validation
@@ -144,7 +144,7 @@ if (description.trim().length > 5000) {
 
 ---
 
-### M-3 — No Client-Side Rate Limiting on Auth Forms
+### ~~M-3 — No Client-Side Rate Limiting on Auth Forms~~ ✅ RESOLVED
 
 **Files:**
 - `src/components/auth/Login.js`
@@ -172,7 +172,7 @@ async function handleSubmit(e) {
 
 ---
 
-### L-1 — Extensive Debug Console Logs Throughout the Codebase
+### ~~L-1 — Extensive Debug Console Logs Throughout the Codebase~~ ✅ RESOLVED
 
 **Files with notable debug output:**
 - `src/pages/PensionPots.js` — 20+ `console.log` calls including data payloads
@@ -193,7 +193,7 @@ Alternatively add the `babel-plugin-transform-remove-console` package and config
 
 ---
 
-### L-2 — Demo Mode State Persisted in localStorage
+### ~~L-2 — Demo Mode State Persisted in localStorage~~ ✅ RESOLVED
 
 **File:** `src/contexts/DemoModeContext.js`  
 **Lines:** 17, 23

@@ -214,12 +214,9 @@ export default function PensionPots() {
 
           moduleOrder.splice(insertIndex, 0, ...newOrder);
 
-          console.log("After migration, moduleOrder:", moduleOrder);
-
           // Add any new modules that exist in MODULE_CONFIG but not in saved preferences
           const newModules = allModuleIds.filter(id => !moduleOrder.includes(id));
           if (newModules.length > 0) {
-            console.log("Adding new modules to user preferences:", newModules);
             moduleOrder = [...moduleOrder, ...newModules];
           }
 
@@ -233,7 +230,6 @@ export default function PensionPots() {
 
           const newVisibleModules = allModuleIds.filter(id => !visibleModules.includes(id));
           if (newVisibleModules.length > 0) {
-            console.log("Adding new modules to visible modules:", newVisibleModules);
             visibleModules = [...visibleModules, ...newVisibleModules];
           }
 
@@ -272,7 +268,6 @@ export default function PensionPots() {
       const docRef = doc(db, "dashboardPreferences", userId);
       try {
         await setDoc(docRef, preferences);
-        console.log("Dashboard preferences saved successfully");
       } catch (err) {
         console.error("Error saving dashboard preferences:", err);
       }
@@ -341,7 +336,6 @@ export default function PensionPots() {
 
       // Prevent deselecting the last provider
       if (isCurrentlySelected && prev.length === 1) {
-        console.log("Cannot deselect the last pension provider");
         return prev;
       }
 
@@ -425,14 +419,11 @@ export default function PensionPots() {
 
   // Step 2: Handle confirmed mapping from MappingReviewModal
   const handleMappingConfirmed = (confirmedResult) => {
-    console.log("PensionPots: handleMappingConfirmed called", confirmedResult);
 
     try {
       // Process the upload result using the pension data processor
       const { yearlyTotals: newYearlyTotals, providerData } =
         processPensionUpload(confirmedResult);
-
-      console.log("PensionPots: Processed upload - yearlyTotals:", newYearlyTotals, "providerData:", providerData);
 
     // Get the current value from the confirmed result
     const userEnteredCurrentValue = confirmedResult.currentValue || 0;
@@ -506,10 +497,8 @@ export default function PensionPots() {
     }
 
     // Close the review modal and clear upload result
-    console.log("PensionPots: Closing review modal and clearing upload result");
     setShowReviewModal(false);
     setUploadResult(null);
-    console.log("PensionPots: handleMappingConfirmed completed successfully");
     } catch (error) {
       console.error("PensionPots: Error in handleMappingConfirmed:", error);
       // Still close the modal even if there's an error
@@ -734,10 +723,6 @@ export default function PensionPots() {
         return null;
 
       case "allowance-utilization":
-        console.log("allowance-utilization case hit!");
-        console.log("yearlyTotals:", yearlyTotals);
-        console.log("yearlyTotals keys length:", Object.keys(yearlyTotals).length);
-        console.log("isModuleVisible:", isModuleVisible("allowance-utilization"));
         console.log("shouldShowModule result:", shouldShowModule(
           "allowance-utilization",
           Object.keys(yearlyTotals).length > 0
@@ -749,14 +734,12 @@ export default function PensionPots() {
             Object.keys(yearlyTotals).length > 0
           )
         ) {
-          console.log("✅ RENDERING ALLOWANCE UTILIZATION");
           return (
             <div className="full-width-card">
               <PensionAllowanceUtilization yearlyTotals={yearlyTotals} />
             </div>
           );
         }
-        console.log("❌ NOT RENDERING - condition failed");
         return null;
 
       default:
@@ -787,7 +770,6 @@ export default function PensionPots() {
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
-            console.log("Customize button clicked!");
             setShowCustomizePanel(!showCustomizePanel);
           }}
           aria-label="Customize Dashboard"
@@ -809,9 +791,7 @@ export default function PensionPots() {
       )}
 
       <div className="dashboard-modules">
-        {console.log("Rendering modules with moduleOrder:", dashboardPreferences.moduleOrder)}
-        {dashboardPreferences.moduleOrder.map((moduleId) => {
-          console.log("Rendering module:", moduleId);
+                {dashboardPreferences.moduleOrder.map((moduleId) => {
           return (
             <div
               key={moduleId}
@@ -955,8 +935,7 @@ export default function PensionPots() {
       {/* CSV/Excel Upload Modal */}
       {showUploadModal && (
         <>
-          {console.log("Rendering IntelligentFileUploader modal")}
-          <IntelligentFileUploader
+                    <IntelligentFileUploader
             context="pensions"
             onFileParsed={handleFileParsed}
             onClose={() => setShowUploadModal(false)}
@@ -967,8 +946,7 @@ export default function PensionPots() {
       {/* PDF/Image Upload Modal */}
       {showPdfUploadModal && (
         <>
-          {console.log("Rendering PdfPensionUploader modal")}
-          <PdfPensionUploader
+                    <PdfPensionUploader
             onFileParsed={handleFileParsed}
             onClose={() => setShowPdfUploadModal(false)}
           />
@@ -978,8 +956,7 @@ export default function PensionPots() {
       {/* Mapping Review Modal */}
       {showReviewModal && uploadResult && (
         <>
-          {console.log("Rendering MappingReviewModal")}
-          <MappingReviewModal
+                    <MappingReviewModal
             uploadResult={uploadResult}
             context="pensions"
             onConfirm={handleMappingConfirmed}

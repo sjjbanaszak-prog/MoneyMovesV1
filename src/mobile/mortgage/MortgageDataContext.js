@@ -94,9 +94,18 @@ export function MortgageDataProvider({ children }) {
    * Update arbitrary fields on a mortgage by index.
    * In live mode, persists to Firestore.
    */
+  const MORTGAGE_ALLOWED_FIELDS = [
+    'name', 'lender', 'type', 'propertyValue', 'purchasePrice',
+    'mortgageAmount', 'outstandingBalance', 'interestRate', 'monthlyPayment',
+    'termYears', 'startDate', 'fixedRateEndDate', 'notes',
+  ];
+
   const updateMortgage = useCallback((idx, fields) => {
+    const safeFields = Object.fromEntries(
+      Object.entries(fields).filter(([key]) => MORTGAGE_ALLOWED_FIELDS.includes(key))
+    );
     setMortgages(prev => {
-      const updated = prev.map((m, i) => (i === idx ? { ...m, ...fields } : m));
+      const updated = prev.map((m, i) => (i === idx ? { ...m, ...safeFields } : m));
       if (!isDemoMode && user) {
         setDoc(doc(db, 'mortgagePots', user.uid), { mortgages: updated }, { merge: true })
           .catch(e => console.error('MortgageDataContext: failed to save update', e));

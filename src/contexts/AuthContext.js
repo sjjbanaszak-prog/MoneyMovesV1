@@ -131,6 +131,7 @@ export function AuthProvider({ children }) {
    */
   async function logout() {
     try {
+      localStorage.removeItem('moneyMovesDemoMode');
       await firebaseSignOut(auth);
     } catch (error) {
       console.error('Logout error:', error);

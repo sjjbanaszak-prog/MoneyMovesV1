@@ -14,6 +14,7 @@ import { calculateDataQualityScore } from "../modules/utils/dataValidation";
 import { auth, db } from "../firebase";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
+import "./PensionPotsStyles.css";
 import "./SavingsTrackerStyles.css";
 import { useDemoMode } from "../contexts/DemoModeContext";
 import DemoModeBanner from "../components/DemoModeBanner";
@@ -72,7 +73,6 @@ export default function SavingsTracker() {
       try {
         // Demo mode: use demo data
         if (isDemoMode && demoData?.savingsTracker) {
-          console.log("Loading demo savings data");
           setUploads(demoData.savingsTracker.uploads || []);
           setSelectedAccounts(demoData.savingsTracker.selectedAccounts || []);
           setIsInitialLoadComplete(true);
@@ -80,16 +80,12 @@ export default function SavingsTracker() {
         }
 
         // Live mode: load from Firestore
-        console.log("Loading data from Firebase for user:", user.uid);
         const docRef = doc(db, "savingsTracker", user.uid);
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
           const data = docSnap.data();
-          console.log("Fetched data from Firebase:", data);
           setUploads(data.uploads || []);
           setSelectedAccounts(data.selectedAccounts || []);
-        } else {
-          console.log("No existing data found in Firebase");
         }
 
         // Load user preferences
@@ -102,9 +98,7 @@ export default function SavingsTracker() {
           }));
         }
 
-        // Mark initial load as complete
         setIsInitialLoadComplete(true);
-        console.log("Initial data load complete");
       } catch (error) {
         console.error("Error fetching user data:", error);
         setIsInitialLoadComplete(true); // Still mark as complete even on error
@@ -116,18 +110,15 @@ export default function SavingsTracker() {
   // Save function with undefined removal
   const saveToFirebase = async () => {
     if (!user) {
-      console.log("Save skipped: No user authenticated");
       return;
     }
 
     // Don't save to Firestore in demo mode
     if (isDemoMode) {
-      console.log("Save skipped: Demo mode active");
       return;
     }
 
     if (!isInitialLoadComplete) {
-      console.log("Save skipped: Initial data load not complete yet");
       return;
     }
 
@@ -146,8 +137,6 @@ export default function SavingsTracker() {
         uploads: cleanedUploads,
         selectedAccounts: cleanedSelectedAccounts,
       });
-
-      console.log("Successfully saved to Firebase");
     } catch (error) {
       console.error("Error saving:", error);
       alert(`Save failed: ${error.message}`);
@@ -235,7 +224,6 @@ export default function SavingsTracker() {
 
       if (existingUploadIndex !== -1) {
         // Account exists - merge transactions
-        console.log(`Merging transactions for existing account: ${accountName}`);
 
         const existingUpload = uploads[existingUploadIndex];
         const existingTransactions = existingUpload.rawData;
@@ -261,8 +249,6 @@ export default function SavingsTracker() {
           const txnId = createTransactionId(row, updatedMapping);
           return !existingIds.has(txnId);
         });
-
-        console.log(`Found ${uniqueNewTransactions.length} new transactions out of ${newTransactions.length} total`);
 
         if (uniqueNewTransactions.length === 0) {
           alert(`No new transactions found. All ${newTransactions.length} transactions already exist in ${accountName}.`);
@@ -346,7 +332,6 @@ export default function SavingsTracker() {
 
       // Prevent deselecting the last account
       if (isCurrentlySelected && prev.length === 1) {
-        console.log("Cannot deselect the last savings account");
         return prev;
       }
 
@@ -393,19 +378,6 @@ export default function SavingsTracker() {
         />
       )}
 
-      {/* Savings Accounts Table V2 - Positioned after metrics cards */}
-      {uploads.length > 0 && (
-        <div className="full-width-card">
-          <SavingsAccountsTable
-            uploads={uploads}
-            selectedAccounts={selectedAccounts}
-            onToggle={handleAccountToggle}
-            onRemove={handleRemoveAccount}
-            onAddData={handleAddSavingData}
-          />
-        </div>
-      )}
-
       {/* Upload Modal */}
       {showUploadModal && (
         <UnifiedSavingsUploader
@@ -429,7 +401,17 @@ export default function SavingsTracker() {
       )}
 
       {uploads.length > 0 && (
-        <>
+        <div className="dashboard-modules">
+          {/* Savings Accounts Table - Positioned first in dashboard-modules */}
+          <div className="full-width-card">
+            <SavingsAccountsTable
+              uploads={uploads}
+              selectedAccounts={selectedAccounts}
+              onToggle={handleAccountToggle}
+              onRemove={handleRemoveAccount}
+              onAddData={handleAddSavingData}
+            />
+          </div>
           {/* AI Savings Advisory - positioned after file uploader, before charts */}
           {userPreferences.showAIAdvisory && (
             <div className="full-width-card">
@@ -444,7 +426,7 @@ export default function SavingsTracker() {
             </div>
           )}
 
-          <div className="savings-overview-grid">
+          <div className="pension-overview-grid">
             <div className="full-width-card pie-chart-container">
               <SavingsPie
                 uploads={uploads}
@@ -481,7 +463,7 @@ export default function SavingsTracker() {
               selectedAccounts={selectedAccounts}
             />
           </div>
-        </>
+        </div>
       )}
 
       {uploads.length === 0 && !showColumnMapper && (
