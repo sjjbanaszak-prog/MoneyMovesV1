@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import './AuthStyles.css';
 
@@ -12,14 +12,17 @@ const Login = () => {
 
   const { login, signInWithGoogle, currentUser } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const lastSubmitRef = useRef(0);
+
+  const from = location.state?.from?.pathname || '/';
 
   // Redirect if already logged in
   useEffect(() => {
     if (currentUser) {
-      navigate('/');
+      navigate(from, { replace: true });
     }
-  }, [currentUser, navigate]);
+  }, [currentUser, navigate, from]);
 
   /**
    * Get user-friendly error message
@@ -64,7 +67,7 @@ const Login = () => {
       setError('');
       setLoading(true);
       await login(email, password, rememberMe);
-      navigate('/');
+      navigate(from, { replace: true });
     } catch (error) {
       setError(getErrorMessage(error.code));
       console.error('Login error:', error);
@@ -78,7 +81,7 @@ const Login = () => {
       setError('');
       setLoading(true);
       await signInWithGoogle();
-      navigate('/');
+      navigate(from, { replace: true });
     } catch (error) {
       if (error.code === 'auth/popup-closed-by-user') {
         setError('Sign-in cancelled.');
