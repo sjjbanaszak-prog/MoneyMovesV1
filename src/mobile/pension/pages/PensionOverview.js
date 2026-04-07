@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useDemoMode } from '../../../contexts/DemoModeContext';
 import { usePensionData, parseDate } from '../PensionDataContext';
 import PensionLayout from '../PensionLayout';
+import { formatLastUpdated } from '../../utils/formatLastUpdated';
 
 // ---- helpers ----
 function fmt(n) {
@@ -81,7 +82,7 @@ function DemoToggle() {
 // ---- Main Component ----
 export default function PensionOverview() {
   const navigate = useNavigate();
-  const { entries, metrics, isLoading } = usePensionData();
+  const { entries, metrics, isLoading, lastUpdated } = usePensionData();
   const ANNUAL_ALLOWANCE = 60000;
 
   // Sort providers by most recent contribution descending, keeping original index for routing
@@ -191,7 +192,7 @@ export default function PensionOverview() {
                   ? 'Loading...'
                   : entries.length === 0
                     ? 'No pension data yet'
-                    : `${entries.length} provider${entries.length !== 1 ? 's' : ''} · updated today`}
+                    : [entries.length + ` provider${entries.length !== 1 ? 's' : ''}`, formatLastUpdated(lastUpdated)].filter(Boolean).join(' · ')}
               </p>
             </div>
           </div>
@@ -302,6 +303,7 @@ export default function PensionOverview() {
                           {fmtPct(entryGrowthPct)}
                         </p>
                       </div>
+                      <span className="material-symbols-outlined row-chevron">chevron_right</span>
                     </div>
                   </Link>
                 );

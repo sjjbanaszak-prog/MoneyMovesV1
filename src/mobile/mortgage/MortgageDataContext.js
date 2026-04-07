@@ -62,6 +62,7 @@ export function MortgageDataProvider({ children }) {
   const { isDemoMode } = useDemoMode();
   const [user, setUser]           = useState(null);
   const [mortgages, setMortgages] = useState([]);
+  const [lastUpdated, setLastUpdated] = useState(null);
 
   // Auth listener
   useEffect(() => {
@@ -76,13 +77,22 @@ export function MortgageDataProvider({ children }) {
     async function load() {
       if (isDemoMode) {
         setMortgages(DEMO_MORTGAGES);
+        setLastUpdated(null);
       } else {
         try {
           const snap = await getDoc(doc(db, 'mortgagePots', user.uid));
-          setMortgages(snap.exists() ? (snap.data().mortgages || []) : []);
+          if (snap.exists()) {
+            const data = snap.data();
+            setMortgages(data.mortgages || []);
+            setLastUpdated(data.lastUpdated || null);
+          } else {
+            setMortgages([]);
+            setLastUpdated(null);
+          }
         } catch (e) {
           console.error('MortgageDataContext: failed to load', e);
           setMortgages([]);
+          setLastUpdated(null);
         }
       }
     }
@@ -97,7 +107,7 @@ export function MortgageDataProvider({ children }) {
   const MORTGAGE_ALLOWED_FIELDS = [
     'name', 'lender', 'type', 'propertyValue', 'purchasePrice',
     'mortgageAmount', 'outstandingBalance', 'interestRate', 'monthlyPayment',
-    'termYears', 'startDate', 'fixedRateEndDate', 'notes',
+    'termYears', 'startDate', 'fixedRateEndDate', 'notes', 'paymentHistory',
   ];
 
   const updateMortgage = useCallback((idx, fields) => {
@@ -107,7 +117,9 @@ export function MortgageDataProvider({ children }) {
     setMortgages(prev => {
       const updated = prev.map((m, i) => (i === idx ? { ...m, ...safeFields } : m));
       if (!isDemoMode && user) {
-        setDoc(doc(db, 'mortgagePots', user.uid), { mortgages: updated }, { merge: true })
+        const now = new Date().toISOString();
+        setDoc(doc(db, 'mortgagePots', user.uid), { mortgages: updated, lastUpdated: now }, { merge: true })
+          .then(() => setLastUpdated(now))
           .catch(e => console.error('MortgageDataContext: failed to save update', e));
       }
       return updated;
@@ -123,11 +135,13 @@ export function MortgageDataProvider({ children }) {
     setMortgages(updated);
     if (!isDemoMode && user) {
       try {
+        const now = new Date().toISOString();
         await setDoc(
           doc(db, 'mortgagePots', user.uid),
-          { mortgages: updated },
+          { mortgages: updated, lastUpdated: now },
           { merge: true }
         );
+        setLastUpdated(now);
       } catch (e) {
         console.error('MortgageDataContext: failed to save new mortgage', e);
         setMortgages(mortgages);
@@ -136,7 +150,7 @@ export function MortgageDataProvider({ children }) {
   }
 
   return (
-    <MortgageDataContext.Provider value={{ mortgages, updateMortgage, addMortgage, isDemoMode }}>
+    <MortgageDataContext.Provider value={{ mortgages, updateMortgage, addMortgage, isDemoMode, lastUpdated }}>
       {children}
     </MortgageDataContext.Provider>
   );

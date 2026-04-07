@@ -2,6 +2,7 @@ import React from 'react';
 import { useDemoMode } from '../../../contexts/DemoModeContext';
 import { useSavingsData } from '../SavingsDataContext';
 import SavingsLayout from '../SavingsLayout';
+import { formatLastUpdated } from '../../utils/formatLastUpdated';
 
 // ---- Helpers ----
 function fmt(n) {
@@ -88,7 +89,7 @@ function DemoToggle() {
 
 // ---- Main Component ----
 export default function SavingsOverview() {
-  const { accounts, metrics, isLoading } = useSavingsData();
+  const { accounts, metrics, isLoading, lastUpdated } = useSavingsData();
 
   const { totalBalance, currentFYIsaDeposits, isaAllowance, totalDeposited, totalGrowth, growthPct } = metrics;
   const allowancePct   = Math.min(100, Math.round((currentFYIsaDeposits / isaAllowance) * 100));
@@ -176,7 +177,7 @@ export default function SavingsOverview() {
                   ? 'Loading...'
                   : accounts.length === 0
                     ? 'No savings data yet'
-                    : `${accounts.length} account${accounts.length !== 1 ? 's' : ''} · updated today`}
+                    : [accounts.length + ` account${accounts.length !== 1 ? 's' : ''}`, formatLastUpdated(lastUpdated)].filter(Boolean).join(' · ')}
               </p>
             </div>
           </div>
@@ -240,7 +241,7 @@ export default function SavingsOverview() {
                   : 0;
 
                 return (
-                  <div key={i} className="account-row">
+                  <div key={i} className="account-row" style={{ cursor: 'pointer' }}>
                     {/* Logo / initials */}
                     <div style={{
                       width: '46px', height: '46px', borderRadius: '10px',
@@ -285,6 +286,7 @@ export default function SavingsOverview() {
                         {pctOfTotal}% of total
                       </p>
                     </div>
+                    <span className="material-symbols-outlined row-chevron">chevron_right</span>
                   </div>
                 );
               })}

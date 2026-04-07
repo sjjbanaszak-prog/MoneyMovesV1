@@ -136,6 +136,7 @@ export default function SavingsTracker() {
       await setDoc(docRef, {
         uploads: cleanedUploads,
         selectedAccounts: cleanedSelectedAccounts,
+        lastUpdated: new Date().toISOString(),
       });
     } catch (error) {
       console.error("Error saving:", error);

@@ -91,6 +91,7 @@ export function PensionDataProvider({ children }) {
   const [user, setUser]         = useState(null);
   const [entries, setEntries]   = useState([]);
   const [isLoading, setLoading] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState(null);
   const [userProfile, setUserProfile] = useState({ currentAge: 38, retirementAge: 65 });
 
   // Auth listener
@@ -122,12 +123,14 @@ export function PensionDataProvider({ children }) {
           if (snap.exists()) {
             const data = snap.data();
             setEntries(data.pensions || data.entries || []);
+            setLastUpdated(data.lastUpdated || null);
             setUserProfile({
               currentAge: data.currentAge || 38,
               retirementAge: data.retirementAge || 65,
             });
           } else {
             setEntries([]);
+            setLastUpdated(null);
           }
         }
       } catch (e) {
@@ -172,8 +175,10 @@ export function PensionDataProvider({ children }) {
     setEntries(updatedEntries);
     if (!isDemoMode && user) {
       try {
+        const now = new Date().toISOString();
         const yearlyTotals = buildYearlyTotals(updatedEntries);
-        await updateDoc(doc(db, 'pensionPots', user.uid), { pensions: updatedEntries, yearlyTotals });
+        await updateDoc(doc(db, 'pensionPots', user.uid), { pensions: updatedEntries, yearlyTotals, lastUpdated: now });
+        setLastUpdated(now);
       } catch (e) {
         console.error('PensionDataContext: failed to save entry update', e);
         setEntries(entries);
@@ -204,7 +209,9 @@ export function PensionDataProvider({ children }) {
 
     if (!isDemoMode && user) {
       try {
-        await updateDoc(doc(db, 'pensionPots', user.uid), { pensions: updatedEntries });
+        const now = new Date().toISOString();
+        await updateDoc(doc(db, 'pensionPots', user.uid), { pensions: updatedEntries, lastUpdated: now });
+        setLastUpdated(now);
       } catch (e) {
         console.error('PensionDataContext: failed to save value update', e);
         setEntries(entries); // revert on error
@@ -221,12 +228,14 @@ export function PensionDataProvider({ children }) {
     setEntries(updatedEntries);
     if (!isDemoMode && user) {
       try {
+        const now = new Date().toISOString();
         const yearlyTotals = buildYearlyTotals(updatedEntries);
         await setDoc(
           doc(db, 'pensionPots', user.uid),
-          { pensions: updatedEntries, yearlyTotals },
+          { pensions: updatedEntries, yearlyTotals, lastUpdated: now },
           { merge: true }
         );
+        setLastUpdated(now);
       } catch (e) {
         console.error('PensionDataContext: failed to save new entry', e);
         setEntries(entries);
@@ -256,7 +265,7 @@ export function PensionDataProvider({ children }) {
   }
 
   return (
-    <PensionDataContext.Provider value={{ entries, metrics, isLoading, isDemoMode, updateEntryValue, updateEntry, addEntry, userProfile, updateUserProfile }}>
+    <PensionDataContext.Provider value={{ entries, metrics, isLoading, isDemoMode, lastUpdated, updateEntryValue, updateEntry, addEntry, userProfile, updateUserProfile }}>
       {children}
     </PensionDataContext.Provider>
   );

@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useDemoMode } from '../../../contexts/DemoModeContext';
 import { useMortgageData } from '../MortgageDataContext';
 import MortgageLayout from '../MortgageLayout';
+import { formatLastUpdated } from '../../utils/formatLastUpdated';
 
 // ---- helpers ----
 function fmt(n) {
@@ -69,7 +70,7 @@ function DemoToggle() {
 // ---- Main Component ----
 export default function MortgageOverview() {
   const navigate = useNavigate();
-  const { mortgages } = useMortgageData();
+  const { mortgages, lastUpdated } = useMortgageData();
 
   const totalEquity = mortgages.reduce((s, m) => s + (m.propertyValue - m.outstandingBalance), 0);
   // Growth = property value appreciation above purchase price
@@ -151,7 +152,7 @@ export default function MortgageOverview() {
               <p style={{ fontSize: '12px', color: '#bbcabf', margin: '10px 0 0' }}>
                 {mortgages.length === 0
                   ? 'No mortgage data yet'
-                  : `${mortgages.length} mortgage${mortgages.length !== 1 ? 's' : ''} · updated today`}
+                  : [mortgages.length + ` mortgage${mortgages.length !== 1 ? 's' : ''}`, formatLastUpdated(lastUpdated)].filter(Boolean).join(' · ')}
               </p>
             </div>
           </div>
@@ -214,6 +215,7 @@ export default function MortgageOverview() {
                           {fmtPct(equityPct)} equity
                         </p>
                       </div>
+                      <span className="material-symbols-outlined row-chevron">chevron_right</span>
                     </div>
                   </Link>
                 );

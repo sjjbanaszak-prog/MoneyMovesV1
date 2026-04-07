@@ -240,6 +240,12 @@ export default function MortgageCalculator() {
 
   const [step, setStep] = useState(0);
   const [selectedIdx, setSelectedIdx] = useState(null);
+  const [activeMode, setActiveMode] = useState(0); // 0 = Overpayment, 1 = Switch
+
+  // Auto-select when there is exactly one mortgage
+  React.useEffect(() => {
+    if (mortgages.length === 1) setSelectedIdx(0);
+  }, [mortgages]);
 
   // Step 1 state
   const [overpayAmt, setOverpayAmt]     = useState('');
@@ -338,6 +344,8 @@ export default function MortgageCalculator() {
   // ─────────────────────────────────────────────────────────────────────────
 
   if (step === 0) {
+    const canContinue = selectedIdx !== null && activeMode === 0;
+
     return (
       <MortgageLayout>
         <div style={{ padding: '0 0 32px' }}>
@@ -349,9 +357,24 @@ export default function MortgageCalculator() {
             </h1>
           </div>
 
+          {/* Mode tabs */}
+          <div style={{ padding: '0 16px 16px', display: 'flex', gap: '8px' }}>
+            {['Overpayment', 'Switch'].map((label, i) => (
+              <button
+                key={label}
+                className={`tab-btn${activeMode === i ? ' active' : ''}`}
+                onClick={() => setActiveMode(i)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
           <div style={{ padding: '0 20px 20px' }}>
             <p style={{ fontSize: '13px', color: '#64748b', margin: 0 }}>
-              Choose a mortgage to model your overpayment strategy.
+              {activeMode === 0
+                ? 'Choose a mortgage to model your overpayment strategy.'
+                : 'Choose a mortgage to model your product switch strategy.'}
             </p>
           </div>
 
@@ -413,15 +436,15 @@ export default function MortgageCalculator() {
 
           <div style={{ padding: '4px 16px 0' }}>
             <button
-              onClick={() => setStep(1)}
-              disabled={selectedIdx === null}
+              onClick={() => canContinue && setStep(1)}
+              disabled={!canContinue}
               style={{
                 width: '100%',
-                background: selectedIdx !== null ? '#4edea3' : '#1a2438',
-                color: selectedIdx !== null ? '#003824' : '#3d5068',
+                background: canContinue ? '#4edea3' : '#1a2438',
+                color: canContinue ? '#003824' : '#3d5068',
                 border: 'none', borderRadius: '14px', padding: '16px',
                 fontFamily: 'Manrope, sans-serif', fontWeight: 800, fontSize: '16px',
-                cursor: selectedIdx !== null ? 'pointer' : 'not-allowed',
+                cursor: canContinue ? 'pointer' : 'not-allowed',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
                 transition: 'all 0.2s',
               }}

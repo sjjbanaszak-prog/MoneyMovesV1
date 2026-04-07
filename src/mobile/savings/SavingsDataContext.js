@@ -214,6 +214,7 @@ export function SavingsDataProvider({ children }) {
   const [user, setUser]         = useState(null);
   const [accounts, setAccounts] = useState([]);
   const [isLoading, setLoading] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState(null);
 
   // Auth listener
   useEffect(() => {
@@ -235,6 +236,7 @@ export function SavingsDataProvider({ children }) {
           const uploads  = demoData.savingsTracker?.uploads || [];
           const selected = demoData.savingsTracker?.selectedAccounts || uploads.map(u => u.accountName);
           setAccounts(uploads.filter(u => selected.includes(u.accountName)));
+          setLastUpdated(null);
         } else {
           // SavingsTracker.js saves to the 'savingsTracker' collection
           const snap = await getDoc(doc(db, 'savingsTracker', user.uid));
@@ -243,8 +245,10 @@ export function SavingsDataProvider({ children }) {
             const uploads  = data.uploads || [];
             const selected = data.selectedAccounts || uploads.map(u => u.accountName);
             setAccounts(uploads.filter(u => selected.includes(u.accountName)));
+            setLastUpdated(data.lastUpdated || null);
           } else {
             setAccounts([]);
+            setLastUpdated(null);
           }
         }
       } catch (e) {
@@ -267,7 +271,7 @@ export function SavingsDataProvider({ children }) {
   const metrics = computeMetrics(accounts);
 
   return (
-    <SavingsDataContext.Provider value={{ accounts: enrichedAccounts, metrics, isLoading, isDemoMode }}>
+    <SavingsDataContext.Provider value={{ accounts: enrichedAccounts, metrics, isLoading, isDemoMode, lastUpdated }}>
       {children}
     </SavingsDataContext.Provider>
   );

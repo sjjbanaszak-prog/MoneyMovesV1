@@ -2,13 +2,16 @@ import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 
+// Hardcoded until subscription system is implemented — must match MobileSettingsPage.js
+const IS_PREMIUM = false;
+
 const NAV_ITEMS = [
-  { label: 'Dashboard', icon: 'grid_view',        path: '/mobile/pension',  match: null },
+  { label: 'Dashboard', icon: 'grid_view',        path: '/mobile/pension',  match: null,              disabled: true },
   { label: 'Pension',   icon: 'account_balance',  path: '/mobile/pension',  match: '/mobile/pension'  },
   { label: 'Mortgage',  icon: 'home',             path: '/mobile/mortgage', match: '/mobile/mortgage' },
   { label: 'Savings',   icon: 'savings',          path: '/mobile/savings',  match: '/mobile/savings'  },
-  { label: 'Income',    icon: 'payments',         path: '/income-new',      match: '/income-new'      },
-  { label: 'Debt',      icon: 'credit_card',      path: '/debt-manager',    match: '/debt-manager'    },
+  { label: 'Income',    icon: 'payments',         path: '/income-new',      match: '/income-new',     disabled: true },
+  { label: 'Debt',      icon: 'credit_card',      path: '/debt-manager',    match: '/debt-manager',   disabled: true },
 ];
 
 export default function MobileNavDrawer() {
@@ -166,10 +169,14 @@ export default function MobileNavDrawer() {
               {currentUser?.email || 'The Architect'}
             </p>
             <span style={{
-              fontSize: '9px', fontWeight: 700, letterSpacing: '0.08em',
-              textTransform: 'uppercase', color: '#4edea3',
+              display: 'inline-flex', alignItems: 'center',
+              padding: '3px 10px', borderRadius: '999px',
+              fontSize: '9px', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase',
+              background: IS_PREMIUM ? 'rgba(78,222,163,0.1)' : '#2d3449',
+              color: IS_PREMIUM ? '#4edea3' : '#adc6ff',
+              border: IS_PREMIUM ? '1px solid rgba(78,222,163,0.3)' : '1px solid rgba(60,74,66,0.2)',
             }}>
-              Premium Tier
+              {IS_PREMIUM ? 'Premium Member' : 'Free Tier'}
             </span>
           </div>
         </div>
@@ -178,6 +185,51 @@ export default function MobileNavDrawer() {
         <nav style={{ flex: 1, padding: '8px 12px' }}>
           {NAV_ITEMS.map(item => {
             const active = isActive(item);
+            const inner = (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '14px',
+                padding: '12px 16px',
+                borderRadius: '12px',
+                background: active ? 'rgba(78,222,163,0.12)' : 'transparent',
+                transition: 'background 0.2s',
+                cursor: item.disabled ? 'default' : 'pointer',
+                opacity: item.disabled ? 0.35 : 1,
+              }}>
+                <span
+                  className="material-symbols-outlined"
+                  style={{
+                    fontSize: '22px',
+                    color: active ? '#4edea3' : '#adc6ff',
+                    transition: 'color 0.2s',
+                  }}
+                >
+                  {item.icon}
+                </span>
+                <span style={{
+                  fontFamily: 'Manrope, sans-serif',
+                  fontWeight: active ? 700 : 500,
+                  fontSize: '15px',
+                  color: active ? '#4edea3' : '#adc6ff',
+                  transition: 'color 0.2s',
+                }}>
+                  {item.label}
+                </span>
+                {active && (
+                  <div style={{
+                    marginLeft: 'auto',
+                    width: '6px', height: '6px', borderRadius: '50%',
+                    background: '#4edea3',
+                    flexShrink: 0,
+                  }} />
+                )}
+              </div>
+            );
+
+            if (item.disabled) {
+              return <div key={item.label} style={{ marginBottom: '2px' }}>{inner}</div>;
+            }
             return (
               <Link
                 key={item.label}
@@ -185,44 +237,7 @@ export default function MobileNavDrawer() {
                 onClick={close}
                 style={{ textDecoration: 'none', display: 'block', marginBottom: '2px' }}
               >
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '14px',
-                  padding: '12px 16px',
-                  borderRadius: '12px',
-                  background: active ? 'rgba(78,222,163,0.12)' : 'transparent',
-                  transition: 'background 0.2s',
-                  cursor: 'pointer',
-                }}>
-                  <span
-                    className="material-symbols-outlined"
-                    style={{
-                      fontSize: '22px',
-                      color: active ? '#4edea3' : '#adc6ff',
-                      transition: 'color 0.2s',
-                    }}
-                  >
-                    {item.icon}
-                  </span>
-                  <span style={{
-                    fontFamily: 'Manrope, sans-serif',
-                    fontWeight: active ? 700 : 500,
-                    fontSize: '15px',
-                    color: active ? '#4edea3' : '#adc6ff',
-                    transition: 'color 0.2s',
-                  }}>
-                    {item.label}
-                  </span>
-                  {active && (
-                    <div style={{
-                      marginLeft: 'auto',
-                      width: '6px', height: '6px', borderRadius: '50%',
-                      background: '#4edea3',
-                      flexShrink: 0,
-                    }} />
-                  )}
-                </div>
+                {inner}
               </Link>
             );
           })}
