@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import MobileNavDrawer from '../components/MobileNavDrawer';
 
 /**
  * PensionDetailLayout — wraps drill-down screens (Aegon Detail, Add Contribution, All Contributions).
@@ -17,7 +18,8 @@ export default function PensionDetailLayout({ children, title, backTo }) {
   }
 
   return (
-    <div className="mobile-screen" style={{ paddingBottom: '24px' }}>
+    <div className="mobile-screen" style={{ paddingTop: '50px', paddingBottom: '24px' }}>
+      <MobileNavDrawer />
 
       <div style={{ padding: '20px 20px 0', display: 'flex', alignItems: 'center', gap: '12px' }}>
         <button

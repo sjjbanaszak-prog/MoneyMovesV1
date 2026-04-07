@@ -1,9 +1,13 @@
 import React, { useLayoutEffect } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import './mobile.css';
-import PensionApp  from './pension/PensionApp';
-import SavingsApp  from './savings/SavingsApp';
-import MortgageApp from './mortgage/MortgageApp';
+import PensionApp         from './pension/PensionApp';
+import SavingsApp         from './savings/SavingsApp';
+import MortgageApp        from './mortgage/MortgageApp';
+import MobileSettingsPage  from './settings/MobileSettingsPage';
+import EditProfilePage     from './settings/EditProfilePage';
+import ReportProblemPage   from './settings/ReportProblemPage';
+import MobileUpgradePage   from './upgrade/MobileUpgradePage';
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -45,6 +49,12 @@ export default function MobileApp() {
 
       {/* Mortgage section — owns all /mobile/mortgage/* routes */}
       <Route path="mortgage/*" element={<MortgageApp />} />
+
+      {/* Settings & Upgrade */}
+      <Route path="settings"                  element={<MobileSettingsPage />} />
+      <Route path="settings/edit-profile"    element={<EditProfilePage />} />
+      <Route path="settings/report-problem"  element={<ReportProblemPage />} />
+      <Route path="upgrade"                  element={<MobileUpgradePage />} />
 
       {/* Catch-all */}
       <Route path="*" element={<Navigate to="/mobile/pension" replace />} />

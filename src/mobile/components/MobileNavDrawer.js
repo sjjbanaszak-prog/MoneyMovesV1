@@ -83,7 +83,7 @@ export default function MobileNavDrawer() {
           }}>
             <span className="material-symbols-outlined" style={{ fontSize: '24px', color: '#4edea3' }}>notifications</span>
           </button>
-          <Link to="/account-settings" style={{ textDecoration: 'none' }}>
+          <Link to="/mobile/settings" style={{ textDecoration: 'none' }}>
             <button style={{
               background: 'none', border: 'none', padding: '8px',
               cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -233,7 +233,7 @@ export default function MobileNavDrawer() {
           padding: '16px 12px 32px',
           borderTop: '1px solid rgba(60,74,66,0.15)',
         }}>
-          <Link to="/account-settings" onClick={close} style={{ textDecoration: 'none', display: 'block' }}>
+          <Link to="/mobile/settings" onClick={close} style={{ textDecoration: 'none', display: 'block' }}>
             <div style={{
               display: 'flex',
               alignItems: 'center',
