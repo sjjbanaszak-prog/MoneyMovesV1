@@ -1,0 +1,84 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper: caller is authenticated and owns the document
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    // ── User profiles ─────────────────────────────────────────────────────
+    match /users/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    // ── Pension ───────────────────────────────────────────────────────────
+    match /pensionScenarios/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    match /pensionPots/{userId} {
+      allow read, write: if isOwner(userId);
+      match /historical_positions/{posId} {
+        allow read, write: if isOwner(userId);
+      }
+    }
+
+    // ── Savings ───────────────────────────────────────────────────────────
+    match /savingsTracker/{userId} {
+      allow read, write: if isOwner(userId);
+      match /historical_positions/{posId} {
+        allow read, write: if isOwner(userId);
+      }
+    }
+
+    match /savingsAccounts/{userId} {
+      allow read, write: if isOwner(userId);
+      match /historical_positions/{posId} {
+        allow read, write: if isOwner(userId);
+      }
+    }
+
+    // ── Mortgage ──────────────────────────────────────────────────────────
+    match /mortgagePots/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    match /mortgageCalculations/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    // ── Debt ──────────────────────────────────────────────────────────────
+    match /userDebts/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    // ── Investments ───────────────────────────────────────────────────────
+    match /trading212Portfolios/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    // ── Dashboard & preferences ───────────────────────────────────────────
+    match /dashboardPreferences/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    match /userPreferences/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    // ── Problem reports ───────────────────────────────────────────────────
+    // Users can only create reports attributed to themselves.
+    // Reports are never readable from the client — use Firebase Console.
+    match /problem_reports/{reportId} {
+      allow create: if request.auth != null
+                    && request.resource.data.userId == request.auth.uid;
+      allow read, update, delete: if false;
+    }
+
+    // ── Deny everything else ──────────────────────────────────────────────
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
