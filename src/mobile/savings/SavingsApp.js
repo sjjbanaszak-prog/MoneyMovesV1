@@ -4,7 +4,8 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import './savings-theme.css'; // pulls in mobile-theme.css (single source of truth)
 
 import { SavingsDataProvider } from './SavingsDataContext';
-import SavingsOverview from './pages/SavingsOverview';
+import SavingsOverview      from './pages/SavingsOverview';
+import SavingsAccountDetail from './pages/SavingsAccountDetail';
 
 /**
  * SavingsApp
@@ -20,6 +21,7 @@ export default function SavingsApp() {
     <SavingsDataProvider>
       <Routes>
         <Route index                   element={<SavingsOverview />} />
+        <Route path="account/:idx"     element={<SavingsAccountDetail />} />
         <Route path="calculator"       element={<Navigate to="/mobile/savings" replace />} />
         <Route path="comparisons"      element={<Navigate to="/mobile/savings" replace />} />
         <Route path="insights"         element={<Navigate to="/mobile/savings" replace />} />

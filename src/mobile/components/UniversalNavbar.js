@@ -22,13 +22,17 @@ const TABS = [
   { segment: '/ai',          label: 'AI',         icon: 'psychology'             },
 ];
 
-const SECTIONS = ['pension', 'mortgage', 'savings'];
+const SECTIONS = ['pension', 'mortgage', 'savings', 'income'];
+
+// Sections whose tabs are display-only (not yet navigable)
+const DISABLED_SECTIONS = ['income'];
 
 export default function UniversalNavbar() {
   const { pathname } = useLocation();
 
-  const section = SECTIONS.find(s => pathname.startsWith(`/mobile/${s}`)) || 'pension';
-  const base    = `/mobile/${section}`;
+  const section   = SECTIONS.find(s => pathname.startsWith(`/mobile/${s}`)) || 'pension';
+  const base      = `/mobile/${section}`;
+  const isDisabled = DISABLED_SECTIONS.includes(section);
 
   function isActive(segment) {
     const full = base + segment;
@@ -49,23 +53,29 @@ export default function UniversalNavbar() {
       zIndex: 80,
       gap: '4px',
     }}>
-      {TABS.map(tab => (
-        <Link
-          key={tab.segment}
-          to={base + tab.segment}
-          style={{ flex: 1, textDecoration: 'none' }}
-        >
+      {TABS.map(tab => {
+        const active = isActive(tab.segment);
+        const btn = (
           <button
-            className={`nav-btn${isActive(tab.segment) ? ' active' : ''}`}
-            style={{ width: '100%' }}
+            className={`nav-btn${active ? ' active' : ''}`}
+            style={{ width: '100%', cursor: isDisabled ? 'default' : 'pointer', opacity: isDisabled && !active ? 0.4 : 1 }}
           >
             <span className="material-symbols-outlined" style={{ fontSize: '22px' }}>
               {tab.icon}
             </span>
             <span className="label">{tab.label}</span>
           </button>
-        </Link>
-      ))}
+        );
+
+        if (isDisabled) {
+          return <div key={tab.segment} style={{ flex: 1 }}>{btn}</div>;
+        }
+        return (
+          <Link key={tab.segment} to={base + tab.segment} style={{ flex: 1, textDecoration: 'none' }}>
+            {btn}
+          </Link>
+        );
+      })}
     </nav>
   );
 }

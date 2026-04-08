@@ -10,7 +10,7 @@ const NAV_ITEMS = [
   { label: 'Pension',   icon: 'account_balance',  path: '/mobile/pension',  match: '/mobile/pension'  },
   { label: 'Mortgage',  icon: 'home',             path: '/mobile/mortgage', match: '/mobile/mortgage' },
   { label: 'Savings',   icon: 'savings',          path: '/mobile/savings',  match: '/mobile/savings'  },
-  { label: 'Income',    icon: 'payments',         path: '/income-new',      match: '/income-new',     disabled: true },
+  { label: 'Income',    icon: 'payments',         path: '/mobile/income',   match: '/mobile/income'   },
   { label: 'Debt',      icon: 'credit_card',      path: '/debt-manager',    match: '/debt-manager',   disabled: true },
 ];
 

@@ -48,6 +48,11 @@ service cloud.firestore {
       allow read, write: if isOwner(userId);
     }
 
+    // ── Income ───────────────────────────────────────────────────────────
+    match /incomePots/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+
     // ── Debt ──────────────────────────────────────────────────────────────
     match /userDebts/{userId} {
       allow read, write: if isOwner(userId);

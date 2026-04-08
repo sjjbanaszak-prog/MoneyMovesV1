@@ -4,6 +4,7 @@ import './mobile.css';
 import PensionApp         from './pension/PensionApp';
 import SavingsApp         from './savings/SavingsApp';
 import MortgageApp        from './mortgage/MortgageApp';
+import IncomeApp          from './income/IncomeApp';
 import MobileSettingsPage  from './settings/MobileSettingsPage';
 import EditProfilePage     from './settings/EditProfilePage';
 import ReportProblemPage   from './settings/ReportProblemPage';
@@ -49,6 +50,9 @@ export default function MobileApp() {
 
       {/* Mortgage section — owns all /mobile/mortgage/* routes */}
       <Route path="mortgage/*" element={<MortgageApp />} />
+
+      {/* Income section — owns all /mobile/income/* routes */}
+      <Route path="income/*" element={<IncomeApp />} />
 
       {/* Settings & Upgrade */}
       <Route path="settings"                  element={<MobileSettingsPage />} />

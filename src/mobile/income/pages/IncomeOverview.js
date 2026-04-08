@@ -1,67 +1,50 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDemoMode } from '../../../contexts/DemoModeContext';
-import { useSavingsData } from '../SavingsDataContext';
-import SavingsLayout from '../SavingsLayout';
+import { useIncomeData } from '../IncomeDataContext';
+import IncomeLayout from '../IncomeLayout';
 import { formatLastUpdated } from '../../utils/formatLastUpdated';
 
-// ---- Helpers ----
 function fmt(n) {
   return '£' + Math.round(n || 0).toLocaleString('en-GB');
 }
 
-// Map account type → display colour
-const TYPE_COLORS = {
-  isa:             '#4edea3',
-  'cash isa':      '#4edea3',
-  'stocks & shares isa': '#4edea3',
-  'lifetime isa':  '#f472b6',
-  lisa:            '#f472b6',
-  'savings account': '#adc6ff',
-  'easy access':   '#adc6ff',
-  'current account': '#ffb95f',
-  'fixed rate':    '#a78bfa',
-};
-
-function accountColor(accountType = '') {
-  const key = accountType.toLowerCase();
-  for (const [k, v] of Object.entries(TYPE_COLORS)) {
-    if (key.includes(k)) return v;
-  }
-  return '#adc6ff';
+function employerColorIndex(name = '') {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h << 5) - h);
+  const COLORS = ['#4edea3', '#adc6ff', '#ffb95f', '#f472b6', '#a78bfa', '#38bdf8'];
+  return COLORS[Math.abs(h) % COLORS.length];
 }
 
-function accountInitials(name = '') {
+function employerInitials(name = '') {
   const words = name.trim().split(/\s+/);
   if (words.length >= 2) return (words[0][0] + words[1][0]).toUpperCase();
   return name.substring(0, 2).toUpperCase();
 }
 
-function accountTypeBadge(accountType = '') {
-  const t = accountType.toLowerCase();
-  if (t.includes('lisa') || t.includes('lifetime')) return 'LISA';
-  if (t.includes('isa')) return 'ISA';
-  if (t.includes('current')) return 'Current';
-  if (t.includes('fixed')) return 'Fixed';
-  return 'Savings';
+const EMPLOYMENT_TYPE_COLORS = {
+  'Full-time':     '#4edea3',
+  'Part-time':     '#adc6ff',
+  'Contract':      '#ffb95f',
+  'Freelance':     '#f472b6',
+  'Self-employed': '#a78bfa',
+};
+
+function typeColor(type = '') {
+  return EMPLOYMENT_TYPE_COLORS[type] || '#adc6ff';
 }
 
-// ---- Demo Toggle ----
 function DemoToggle() {
   const { isDemoMode, toggleDemoMode } = useDemoMode();
   return (
     <button
       onClick={toggleDemoMode}
       style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '7px',
+        display: 'flex', alignItems: 'center', gap: '7px',
         background: isDemoMode ? 'rgba(78,222,163,0.12)' : 'rgba(173,198,255,0.08)',
         border: isDemoMode ? '1px solid rgba(78,222,163,0.3)' : '1px solid rgba(173,198,255,0.12)',
-        borderRadius: '20px',
-        padding: '5px 10px 5px 7px',
-        cursor: 'pointer',
-        transition: 'all 0.2s',
+        borderRadius: '20px', padding: '5px 10px 5px 7px',
+        cursor: 'pointer', transition: 'all 0.2s',
       }}
     >
       <div style={{
@@ -88,28 +71,14 @@ function DemoToggle() {
   );
 }
 
-// ---- Main Component ----
-export default function SavingsOverview() {
+export default function IncomeOverview() {
   const navigate = useNavigate();
-  const { accounts, metrics, isLoading, lastUpdated } = useSavingsData();
+  const { incomes, metrics, isLoading, lastUpdated } = useIncomeData();
 
-  const { totalBalance, currentFYIsaDeposits, isaAllowance, totalDeposited, totalGrowth, growthPct } = metrics;
-  const allowancePct   = Math.min(100, Math.round((currentFYIsaDeposits / isaAllowance) * 100));
-  const allowanceColor = allowancePct >= 90 ? '#ff6b6b' : allowancePct >= 70 ? '#ffb95f' : '#4edea3';
-  const depositBarPct  = totalBalance > 0 ? Math.round((totalDeposited / totalBalance) * 100) : 0;
-
-  // Sort accounts: ISA first, then by balance descending
-  const sortedAccounts = React.useMemo(() => {
-    return [...accounts].sort((a, b) => {
-      const aIsa = (a.accountType || '').toLowerCase().includes('isa') ? 1 : 0;
-      const bIsa = (b.accountType || '').toLowerCase().includes('isa') ? 1 : 0;
-      if (aIsa !== bIsa) return bIsa - aIsa;
-      return (b.currentBalance || 0) - (a.currentBalance || 0);
-    });
-  }, [accounts]);
+  const { totalIncome, totalBase, totalBonuses, bonusPct, baseBarPct } = metrics;
 
   return (
-    <SavingsLayout>
+    <IncomeLayout>
       <div style={{ padding: '0 0 16px' }}>
 
         {/* Header */}
@@ -118,7 +87,7 @@ export default function SavingsOverview() {
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         }}>
           <div>
-            <p style={{ fontSize: '13px', color: '#bbcabf', marginBottom: '2px' }}>My Savings</p>
+            <p style={{ fontSize: '13px', color: '#bbcabf', marginBottom: '2px' }}>My Income</p>
             <h1 style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 900, fontSize: '26px', color: '#dae2fd', margin: 0 }}>
               Overview
             </h1>
@@ -139,37 +108,37 @@ export default function SavingsOverview() {
             <div className="hero-gradient" style={{ position: 'absolute', inset: 0, zIndex: 0, borderRadius: '20px' }} />
             <div style={{ position: 'relative', zIndex: 1 }}>
               <p style={{ fontSize: '12px', color: '#adc6ff', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '6px' }}>
-                Total Savings Balance
+                Total Income
               </p>
+
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px', flexWrap: 'wrap' }}>
                 <h2 style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 900, fontSize: '36px', color: '#dae2fd', margin: 0, lineHeight: 1 }}>
-                  {isLoading ? '–' : fmt(totalBalance)}
+                  {isLoading ? '–' : fmt(totalIncome)}
                 </h2>
-                {/* Growth badge — inline with balance */}
-                {!isLoading && totalGrowth > 0 && (
+                {!isLoading && totalBonuses > 0 && (
                   <div style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', background: 'rgba(78,222,163,0.15)', border: '1px solid rgba(78,222,163,0.25)', borderRadius: '20px', padding: '4px 10px' }}>
                     <span className="material-symbols-outlined" style={{ fontSize: '13px', color: '#4edea3' }}>arrow_upward</span>
                     <span style={{ fontSize: '12px', fontWeight: 700, color: '#4edea3' }}>
-                      {growthPct.toFixed(2)}%
+                      +{bonusPct.toFixed(1)}% bonuses
                     </span>
                   </div>
                 )}
               </div>
 
-              {/* Deposits / Growth split bar */}
-              {!isLoading && totalBalance > 0 && (
+              {/* Base / Bonuses split bar */}
+              {!isLoading && totalIncome > 0 && (
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-                    <span style={{ fontSize: '10px', color: '#64748b', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Deposits</span>
-                    <span style={{ fontSize: '10px', color: '#64748b', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Growth</span>
+                    <span style={{ fontSize: '10px', color: '#64748b', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Base</span>
+                    <span style={{ fontSize: '10px', color: '#64748b', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Bonuses</span>
                   </div>
                   <div style={{ display: 'flex', height: '5px', borderRadius: '3px', overflow: 'hidden', background: 'rgba(173,198,255,0.1)' }}>
-                    <div style={{ width: `${depositBarPct}%`, background: 'linear-gradient(90deg, #adc6ff, #7aa5ff)', transition: 'width 0.6s ease' }} />
+                    <div style={{ width: `${baseBarPct}%`, background: 'linear-gradient(90deg, #adc6ff, #7aa5ff)', transition: 'width 0.6s ease' }} />
                     <div style={{ flex: 1, background: 'linear-gradient(90deg, #4edea3, #22c87a)' }} />
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px' }}>
-                    <span style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 700, fontSize: '13px', color: '#adc6ff' }}>{fmt(totalDeposited)}</span>
-                    <span style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 700, fontSize: '13px', color: '#4edea3' }}>{fmt(totalGrowth)}</span>
+                    <span style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 700, fontSize: '13px', color: '#adc6ff' }}>{fmt(totalBase)}</span>
+                    <span style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 700, fontSize: '13px', color: '#4edea3' }}>{fmt(totalBonuses)}</span>
                   </div>
                 </div>
               )}
@@ -177,75 +146,43 @@ export default function SavingsOverview() {
               <p style={{ fontSize: '12px', color: '#bbcabf', margin: '10px 0 0' }}>
                 {isLoading
                   ? 'Loading...'
-                  : accounts.length === 0
-                    ? 'No savings data yet'
-                    : [accounts.length + ` account${accounts.length !== 1 ? 's' : ''}`, formatLastUpdated(lastUpdated)].filter(Boolean).join(' · ')}
+                  : incomes.length === 0
+                    ? 'No income data yet'
+                    : [incomes.length + ` employer${incomes.length !== 1 ? 's' : ''}`, formatLastUpdated(lastUpdated)].filter(Boolean).join(' · ')}
               </p>
             </div>
           </div>
         </div>
 
-
-        {/* ISA Allowance */}
-        {!isLoading && currentFYIsaDeposits > 0 && (
-          <div className="animate-in stagger-2 section-card" style={{ margin: '0 16px 16px', borderLeft: `3px solid ${allowanceColor}` }}>
-            {/* Title row */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-              <p style={{ fontWeight: 700, fontSize: '14px', color: '#dae2fd', margin: 0 }}>Annual ISA Allowance</p>
-              <span style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 900, fontSize: '20px', color: allowanceColor }}>
-                {allowancePct}%
-              </span>
-            </div>
-            {/* Amount display */}
-            <p style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 800, fontSize: '22px', color: '#dae2fd', margin: '0 0 12px', lineHeight: 1 }}>
-              {fmt(currentFYIsaDeposits)}{' '}
-              <span style={{ fontSize: '14px', fontWeight: 500, color: '#64748b' }}>/ {fmt(isaAllowance)}</span>
-            </p>
-            {/* Progress bar */}
-            <div style={{ background: 'rgba(173,198,255,0.08)', borderRadius: '4px', height: '8px', overflow: 'hidden' }}>
-              <div style={{
-                width: `${allowancePct}%`, height: '100%', borderRadius: '4px',
-                background: allowancePct >= 90
-                  ? 'linear-gradient(90deg,#ff6b6b,#ff4444)'
-                  : allowancePct >= 70
-                    ? 'linear-gradient(90deg,#ffb95f,#ff8c42)'
-                    : 'linear-gradient(90deg,#4edea3,#22c87a)',
-                transition: 'width 0.5s ease',
-              }} />
-            </div>
-          </div>
-        )}
-
-        {/* Accounts List */}
-        <div className="animate-in stagger-3" style={{ margin: '0 16px 16px' }}>
+        {/* Income Streams */}
+        <div className="animate-in stagger-2" style={{ margin: '0 16px 16px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
             <h3 style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 800, fontSize: '16px', color: '#dae2fd', margin: 0 }}>
-              Savings Accounts
+              Income Streams
             </h3>
           </div>
 
           {isLoading ? (
             <div style={{ textAlign: 'center', padding: '32px', color: '#64748b', fontSize: '14px' }}>
-              Loading accounts...
+              Loading income streams...
             </div>
-          ) : accounts.length === 0 ? (
+          ) : incomes.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '32px 16px', background: '#171f33', borderRadius: '16px', color: '#64748b', fontSize: '14px' }}>
-              No savings accounts found. Add data on the desktop Savings Tracker page.
+              No income streams added yet. Tap + Add Income to get started.
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {sortedAccounts.map((account, i) => {
-                const origIdx    = accounts.findIndex(a => a === account);
-                const color      = accountColor(account.accountType);
-                const initials   = accountInitials(account.bank || account.accountName);
-                const badge      = accountTypeBadge(account.accountType);
-                const pctOfTotal = metrics.totalBalance > 0
-                  ? Math.round(((account.currentBalance || 0) / metrics.totalBalance) * 100)
+              {incomes.map((income, i) => {
+                const color    = employerColorIndex(income.employer);
+                const initials = employerInitials(income.employer);
+                const badgeColor = typeColor(income.employmentType);
+                const totalPkg = (income.annualSalary || 0) + (income.annualBonus || 0);
+                const bonusShare = income.annualSalary > 0
+                  ? ((income.annualBonus || 0) / income.annualSalary * 100)
                   : 0;
 
                 return (
-                  <div key={i} className="account-row" style={{ cursor: 'pointer' }} onClick={() => navigate(`/mobile/savings/account/${origIdx}`)}>
-                    {/* Logo / initials */}
+                  <div key={i} className="provider-row" onClick={() => navigate(`/mobile/income/employer/${i}`)} style={{ cursor: 'pointer' }}>
                     <div style={{
                       width: '46px', height: '46px', borderRadius: '10px',
                       background: '#171f33', border: '1px solid rgba(60,74,66,0.15)',
@@ -256,37 +193,35 @@ export default function SavingsOverview() {
                       {initials}
                     </div>
 
-                    {/* Name + bank */}
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px' }}>
                         <h4 style={{
                           fontWeight: 700, fontSize: '15px', color: '#dae2fd', margin: 0,
-                          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '160px',
+                          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '150px',
                         }}>
-                          {account.accountName}
+                          {income.employer}
                         </h4>
                         <span style={{
-                          background: `rgba(${color === '#4edea3' ? '78,222,163' : color === '#ffb95f' ? '255,185,95' : color === '#f472b6' ? '244,114,182' : '173,198,255'},0.12)`,
-                          color,
-                          border: `1px solid ${color}40`,
+                          background: `rgba(${badgeColor === '#4edea3' ? '78,222,163' : badgeColor === '#ffb95f' ? '255,185,95' : badgeColor === '#f472b6' ? '244,114,182' : badgeColor === '#a78bfa' ? '167,139,250' : '173,198,255'},0.12)`,
+                          color: badgeColor,
+                          border: `1px solid ${badgeColor}40`,
                           borderRadius: '20px', padding: '3px 10px',
                           fontSize: '11px', fontWeight: 600, whiteSpace: 'nowrap',
                         }}>
-                          {badge}
+                          {income.employmentType || 'Employment'}
                         </span>
                       </div>
                       <p style={{ fontSize: '12px', color: '#bbcabf', margin: 0 }}>
-                        {account.bank || '—'}
+                        {income.startDate ? `Since ${new Date(income.startDate).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })}` : 'Income stream'}
                       </p>
                     </div>
 
-                    {/* Balance */}
                     <div style={{ textAlign: 'right', marginLeft: '14px', flexShrink: 0 }}>
                       <p style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 800, fontSize: '15px', color: '#dae2fd', margin: '0 0 2px' }}>
-                        {fmt(account.currentBalance)}
+                        {fmt(totalPkg)}
                       </p>
-                      <p style={{ fontSize: '11px', color: '#64748b', margin: 0 }}>
-                        {pctOfTotal}% of total
+                      <p style={{ fontSize: '11px', color: bonusShare > 0 ? '#4edea3' : '#64748b', margin: 0 }}>
+                        {bonusShare > 0 ? `+${bonusShare.toFixed(0)}% bonus` : 'Base only'}
                       </p>
                     </div>
                     <span className="material-symbols-outlined row-chevron">chevron_right</span>
@@ -298,7 +233,7 @@ export default function SavingsOverview() {
         </div>
 
         {/* AI Teaser Card */}
-        <div className="animate-in stagger-4" style={{
+        <div className="animate-in stagger-3" style={{
           margin: '0 16px 24px',
           position: 'relative', overflow: 'hidden',
           padding: '28px 24px', borderRadius: '20px',
@@ -312,44 +247,34 @@ export default function SavingsOverview() {
               <span className="material-symbols-outlined" style={{ fontSize: '22px', color: '#4edea3' }}>psychology</span>
             </div>
             <h3 style={{ fontFamily: 'Manrope, sans-serif', fontSize: '20px', fontWeight: 900, color: '#dae2fd', margin: '0 0 8px' }}>
-              Optimise Your Savings
+              Maximise Your Earnings
             </h3>
             <p style={{ fontSize: '13px', color: '#bbcabf', lineHeight: 1.6, maxWidth: '280px', margin: '0 0 16px' }}>
-              Our AI can identify ways to maximise your ISA allowance and grow your savings faster.
+              Our AI can identify salary benchmarks, tax optimisation opportunities, and strategies to grow your take-home pay.
             </p>
-            <button className="primary-btn" style={{ marginTop: '6px' }}>See Savings Insights</button>
+            <button className="primary-btn" style={{ marginTop: '6px' }}>See Income Insights</button>
           </div>
         </div>
 
       </div>
 
-      {/* FAB — Add Account */}
+      {/* FAB — Add Income */}
       <button
-        onClick={() => navigate('/mobile/savings/add')}
+        onClick={() => navigate('/mobile/income/add')}
         style={{
-          position: 'fixed',
-          bottom: '88px',
-          right: '20px',
-          background: '#4edea3',
-          color: '#003824',
-          border: 'none',
-          borderRadius: '16px',
-          padding: '14px 20px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          fontFamily: 'Inter, sans-serif',
-          fontWeight: 700,
-          fontSize: '15px',
-          cursor: 'pointer',
-          boxShadow: '0 4px 24px rgba(78,222,163,0.35)',
+          position: 'fixed', bottom: '88px', right: '20px',
+          background: '#4edea3', color: '#003824',
+          border: 'none', borderRadius: '16px', padding: '14px 20px',
+          display: 'flex', alignItems: 'center', gap: '8px',
+          fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '15px',
+          cursor: 'pointer', boxShadow: '0 4px 24px rgba(78,222,163,0.35)',
           zIndex: 50,
         }}
       >
         <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>add</span>
-        Add Account
+        Add Income
       </button>
 
-    </SavingsLayout>
+    </IncomeLayout>
   );
 }

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import dayjs from 'dayjs';
 import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
@@ -262,6 +262,43 @@ export function SavingsDataProvider({ children }) {
     load();
   }, [user, isDemoMode, demoData]);
 
+  async function updateAccount(idx, partial) {
+    const updated = accounts.map((a, i) => i === idx ? { ...a, ...partial } : a);
+    setAccounts(updated);
+    if (!isDemoMode && user) {
+      try {
+        const snap = await getDoc(doc(db, 'savingsTracker', user.uid));
+        const data = snap.exists() ? snap.data() : {};
+        const uploads = [...(data.uploads || [])];
+
+        // accounts is filtered (selected only), so idx != uploads index when some accounts are deselected.
+        // Match by accountName instead of position to ensure we update the right entry.
+        const oldName = accounts[idx]?.accountName;
+        const uploadIdx = uploads.findIndex(u => u.accountName === oldName);
+        if (uploadIdx !== -1) {
+          uploads[uploadIdx] = { ...uploads[uploadIdx], ...partial };
+        }
+
+        // If accountName changed, keep selectedAccounts in sync so the account
+        // continues to match the filter on next load.
+        let selectedAccounts = data.selectedAccounts;
+        if (selectedAccounts && partial.accountName && partial.accountName !== oldName) {
+          selectedAccounts = selectedAccounts.map(n => n === oldName ? partial.accountName : n);
+        }
+
+        const now = new Date().toISOString();
+        const saveData = { ...data, uploads, lastUpdated: now };
+        if (selectedAccounts !== undefined) saveData.selectedAccounts = selectedAccounts;
+
+        await setDoc(doc(db, 'savingsTracker', user.uid), saveData, { merge: true });
+        setLastUpdated(now);
+      } catch (e) {
+        console.error('SavingsDataContext: failed to update account', e);
+        setAccounts(accounts);
+      }
+    }
+  }
+
   // Enrich each account with a derived currentBalance for display
   const enrichedAccounts = accounts.map(a => ({
     ...a,
@@ -271,7 +308,7 @@ export function SavingsDataProvider({ children }) {
   const metrics = computeMetrics(accounts);
 
   return (
-    <SavingsDataContext.Provider value={{ accounts: enrichedAccounts, metrics, isLoading, isDemoMode, lastUpdated }}>
+    <SavingsDataContext.Provider value={{ accounts: enrichedAccounts, metrics, isLoading, isDemoMode, lastUpdated, updateAccount }}>
       {children}
     </SavingsDataContext.Provider>
   );
