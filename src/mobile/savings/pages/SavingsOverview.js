@@ -21,6 +21,8 @@ const TYPE_COLORS = {
   'easy access':   '#adc6ff',
   'current account': '#ffb95f',
   'fixed rate':    '#a78bfa',
+  'premium bonds': '#38bdf8',
+  'bonds':         '#38bdf8',
 };
 
 function accountColor(accountType = '') {
@@ -43,6 +45,7 @@ function accountTypeBadge(accountType = '') {
   if (t.includes('isa')) return 'ISA';
   if (t.includes('current')) return 'Current';
   if (t.includes('fixed')) return 'Fixed';
+  if (t.includes('premium bonds') || t.includes('bonds')) return 'Bonds';
   return 'Savings';
 }
 
@@ -237,7 +240,7 @@ export default function SavingsOverview() {
               {sortedAccounts.map((account, i) => {
                 const origIdx    = accounts.findIndex(a => a === account);
                 const color      = accountColor(account.accountType);
-                const initials   = accountInitials(account.bank || account.accountName);
+                const initials   = accountInitials(account.bank || account.accountName || '');
                 const badge      = accountTypeBadge(account.accountType);
                 const pctOfTotal = metrics.totalBalance > 0
                   ? Math.round(((account.currentBalance || 0) / metrics.totalBalance) * 100)
@@ -263,10 +266,10 @@ export default function SavingsOverview() {
                           fontWeight: 700, fontSize: '15px', color: '#dae2fd', margin: 0,
                           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '160px',
                         }}>
-                          {account.accountName}
+                          {account.bank || account.accountName}
                         </h4>
                         <span style={{
-                          background: `rgba(${color === '#4edea3' ? '78,222,163' : color === '#ffb95f' ? '255,185,95' : color === '#f472b6' ? '244,114,182' : '173,198,255'},0.12)`,
+                          background: `rgba(${color === '#4edea3' ? '78,222,163' : color === '#ffb95f' ? '255,185,95' : color === '#f472b6' ? '244,114,182' : color === '#38bdf8' ? '56,189,248' : color === '#a78bfa' ? '167,139,250' : '173,198,255'},0.12)`,
                           color,
                           border: `1px solid ${color}40`,
                           borderRadius: '20px', padding: '3px 10px',
@@ -276,7 +279,7 @@ export default function SavingsOverview() {
                         </span>
                       </div>
                       <p style={{ fontSize: '12px', color: '#bbcabf', margin: 0 }}>
-                        {account.bank || '—'}
+                        {account.accountName}
                       </p>
                     </div>
 
@@ -301,16 +304,15 @@ export default function SavingsOverview() {
         <div className="animate-in stagger-4" style={{
           margin: '0 16px 24px',
           position: 'relative', overflow: 'hidden',
-          padding: '28px 24px', borderRadius: '20px',
-          border: '1px solid rgba(78,222,163,0.2)',
+          padding: '28px 24px', borderRadius: '16px',
+          borderTop: '4px solid rgba(78,222,163,0.6)',
           background: 'linear-gradient(135deg, rgba(78,222,163,0.18) 0%, #222a3d 100%)',
         }}>
-          <div style={{ position: 'absolute', right: '-30px', bottom: '-30px', width: '120px', height: '120px', background: 'rgba(78,222,163,0.1)', borderRadius: '50%', filter: 'blur(40px)', pointerEvents: 'none' }} />
-          <div style={{ position: 'absolute', left: '-30px', top: '-30px', width: '100px', height: '100px', background: 'rgba(173,198,255,0.08)', borderRadius: '50%', filter: 'blur(35px)', pointerEvents: 'none' }} />
+          <div style={{ position: 'absolute', bottom: '-8px', right: '-8px', opacity: 0.1, pointerEvents: 'none', lineHeight: 1 }}>
+            <span className="material-symbols-outlined" style={{ fontSize: '140px', color: '#ffffff' }}>psychology</span>
+          </div>
+          <div style={{ position: 'absolute', top: '-40px', right: '-40px', width: '120px', height: '120px', background: 'rgba(78,222,163,0.05)', borderRadius: '50%', filter: 'blur(40px)', pointerEvents: 'none' }} />
           <div style={{ position: 'relative', zIndex: 1 }}>
-            <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: 'rgba(78,222,163,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '14px' }}>
-              <span className="material-symbols-outlined" style={{ fontSize: '22px', color: '#4edea3' }}>psychology</span>
-            </div>
             <h3 style={{ fontFamily: 'Manrope, sans-serif', fontSize: '20px', fontWeight: 900, color: '#dae2fd', margin: '0 0 8px' }}>
               Optimise Your Savings
             </h3>

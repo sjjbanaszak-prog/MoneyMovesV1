@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import PensionLayout from '../PensionLayout';
 import { usePensionData, parseDate, getTaxYearStart, taxYearLabel } from '../PensionDataContext';
 
@@ -49,6 +49,7 @@ function DonutChart({ providers, totalValue }) {
 
 // Dual-line SVG chart: total value (green) + cumulative contributions (blue)
 function DualLineChart({ valueSeries, contribSeries, labels }) {
+  const [hoveredIdx, setHoveredIdx] = useState(null);
   const W = 320, H = 90;
   const n = labels.length;
 
@@ -83,24 +84,103 @@ function DualLineChart({ valueSeries, contribSeries, labels }) {
   // X axis labels: first, middle, last
   const labelIndices = [0, Math.floor((n - 1) / 2), n - 1];
 
+  const hi = hoveredIdx;
+  // Clamp tooltip left so it doesn't overflow the card edges
+  const tooltipLeftPct = hi !== null ? Math.min(Math.max((hi / (n - 1)) * 100, 8), 92) : null;
+
   return (
     <>
-      <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ display: 'block', overflow: 'visible' }}>
-        <defs>
-          <linearGradient id="vGradIns" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%" stopColor="#4edea3" stopOpacity="0.2" />
-            <stop offset="100%" stopColor="#4edea3" stopOpacity="0" />
-          </linearGradient>
-          <linearGradient id="cGradIns" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%" stopColor="#adc6ff" stopOpacity="0.12" />
-            <stop offset="100%" stopColor="#adc6ff" stopOpacity="0" />
-          </linearGradient>
-        </defs>
-        {cPaths.area && <path d={cPaths.area} fill="url(#cGradIns)" />}
-        {vPaths.area && <path d={vPaths.area} fill="url(#vGradIns)" />}
-        {cPaths.line && <path d={cPaths.line} fill="none" stroke="#adc6ff" strokeWidth="1.5" />}
-        {vPaths.line && <path d={vPaths.line} fill="none" stroke="#4edea3" strokeWidth="2" className="chart-glow" />}
-      </svg>
+      <div style={{ position: 'relative' }}>
+        {/* Hover tooltip */}
+        {hi !== null && (
+          <div style={{
+            position: 'absolute',
+            bottom: 'calc(100% + 8px)',
+            left: `${tooltipLeftPct}%`,
+            transform: 'translateX(-50%)',
+            background: '#1a2744',
+            border: '1px solid rgba(173,198,255,0.15)',
+            borderRadius: '10px',
+            padding: '8px 12px',
+            zIndex: 20,
+            whiteSpace: 'nowrap',
+            pointerEvents: 'none',
+            boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
+          }}>
+            <p style={{ fontSize: '11px', fontWeight: 700, color: '#dae2fd', margin: '0 0 6px', fontFamily: 'Manrope, sans-serif' }}>
+              {labels[hi]}
+            </p>
+            <div style={{ display: 'flex', gap: '16px' }}>
+              <div>
+                <p style={{ fontSize: '10px', color: '#4edea3', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', margin: '0 0 2px' }}>Value</p>
+                <p style={{ fontSize: '12px', fontWeight: 700, color: '#4edea3', margin: 0 }}>{fmtK(valueSeries[hi])}</p>
+              </div>
+              <div>
+                <p style={{ fontSize: '10px', color: '#adc6ff', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', margin: '0 0 2px' }}>Contrib</p>
+                <p style={{ fontSize: '12px', fontWeight: 700, color: '#adc6ff', margin: 0 }}>{fmtK(contribSeries[hi])}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <svg
+          width="100%"
+          viewBox={`0 0 ${W} ${H}`}
+          style={{ display: 'block', overflow: 'visible' }}
+          onMouseLeave={() => setHoveredIdx(null)}
+        >
+          <defs>
+            <linearGradient id="vGradIns" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0%" stopColor="#4edea3" stopOpacity="0.2" />
+              <stop offset="100%" stopColor="#4edea3" stopOpacity="0" />
+            </linearGradient>
+            <linearGradient id="cGradIns" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0%" stopColor="#adc6ff" stopOpacity="0.12" />
+              <stop offset="100%" stopColor="#adc6ff" stopOpacity="0" />
+            </linearGradient>
+          </defs>
+
+          {cPaths.area && <path d={cPaths.area} fill="url(#cGradIns)" />}
+          {vPaths.area && <path d={vPaths.area} fill="url(#vGradIns)" />}
+          {cPaths.line && <path d={cPaths.line} fill="none" stroke="#adc6ff" strokeWidth="1.5" />}
+          {vPaths.line && <path d={vPaths.line} fill="none" stroke="#4edea3" strokeWidth="2" className="chart-glow" />}
+
+          {/* Vertical crosshair */}
+          {hi !== null && (
+            <line
+              x1={toX(hi)} y1={0} x2={toX(hi)} y2={H}
+              stroke="rgba(173,198,255,0.25)" strokeWidth="1" strokeDasharray="3,3"
+            />
+          )}
+
+          {/* Dots at hovered data points */}
+          {hi !== null && valueSeries[hi] > 0 && (
+            <circle cx={toX(hi)} cy={toY(valueSeries[hi])} r="4" fill="#0b1326" stroke="#4edea3" strokeWidth="2" />
+          )}
+          {hi !== null && contribSeries[hi] > 0 && (
+            <circle cx={toX(hi)} cy={toY(contribSeries[hi])} r="4" fill="#0b1326" stroke="#adc6ff" strokeWidth="2" />
+          )}
+
+          {/* Invisible hit strips — one per data point */}
+          {Array.from({ length: n }, (_, i) => {
+            const x     = toX(i);
+            const prev  = i > 0     ? toX(i - 1) : x;
+            const next  = i < n - 1 ? toX(i + 1) : x;
+            const left  = (x + prev) / 2;
+            const right = (x + next) / 2;
+            return (
+              <rect
+                key={i}
+                x={left} y={0}
+                width={Math.max(right - left, 1)} height={H}
+                fill="transparent"
+                onMouseEnter={() => setHoveredIdx(i)}
+              />
+            );
+          })}
+        </svg>
+      </div>
+
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px' }}>
         {labelIndices.map(i => (
           <span key={i} style={{ fontSize: '10px', color: '#64748b' }}>{labels[i]}</span>
@@ -123,6 +203,7 @@ function DualLineChart({ valueSeries, contribSeries, labels }) {
 
 export default function PensionInsights() {
   const { entries, metrics } = usePensionData();
+  const [timeframe, setTimeframe] = useState('12M');
 
   const providers = useMemo(() => {
     const total = metrics.totalValue || 0;
@@ -240,6 +321,21 @@ export default function PensionInsights() {
     return { valueSeries, contribSeries, labels, firstValue, lastValue, lastContrib };
   }, [entries]);
 
+  // Slice dualChartData to the selected timeframe for display
+  const displayData = useMemo(() => {
+    if (!dualChartData) return null;
+    if (timeframe === 'AT') return dualChartData;
+    const n = dualChartData.labels.length;
+    const count = Math.min(12, n);
+    const slice = (arr) => arr.slice(n - count);
+    return {
+      ...dualChartData,
+      valueSeries:  slice(dualChartData.valueSeries),
+      contribSeries: slice(dualChartData.contribSeries),
+      labels:        slice(dualChartData.labels),
+    };
+  }, [dualChartData, timeframe]);
+
   // Allowance utilisation grouped by UK tax year
   const allowanceYears = useMemo(() => {
     const yearTotals = {};
@@ -315,19 +411,36 @@ export default function PensionInsights() {
             <h3 style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 800, fontSize: '16px', color: '#dae2fd', margin: 0 }}>
               Growth History
             </h3>
-            {dualChartData && (
-              <span style={{ fontSize: '12px', color: '#4edea3', fontWeight: 600 }}>
-                {dualChartData.labels.length} months
-              </span>
-            )}
+            <div style={{ display: 'flex', background: 'rgba(173,198,255,0.08)', borderRadius: '20px', padding: '3px' }}>
+              {['12M', 'AT'].map(tf => (
+                <button
+                  key={tf}
+                  onClick={() => setTimeframe(tf)}
+                  style={{
+                    background: timeframe === tf ? '#4edea3' : 'transparent',
+                    color: timeframe === tf ? '#003824' : '#adc6ff',
+                    border: 'none',
+                    borderRadius: '16px',
+                    padding: '4px 12px',
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    transition: 'background 0.2s, color 0.2s',
+                    fontFamily: 'Inter, sans-serif',
+                  }}
+                >
+                  {tf}
+                </button>
+              ))}
+            </div>
           </div>
 
-          {dualChartData ? (
+          {displayData ? (
             <>
               <DualLineChart
-                valueSeries={dualChartData.valueSeries}
-                contribSeries={dualChartData.contribSeries}
-                labels={dualChartData.labels}
+                valueSeries={displayData.valueSeries}
+                contribSeries={displayData.contribSeries}
+                labels={displayData.labels}
               />
               <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '12px', background: 'rgba(173,198,255,0.04)', borderRadius: '10px', padding: '12px' }}>
                 <div>

@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { useParams, Navigate } from 'react-router-dom';
+import { useParams, useNavigate, Navigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 import { useSavingsData } from '../SavingsDataContext';
@@ -26,6 +26,8 @@ function accountColor(accountType = '') {
     'easy access':             '#adc6ff',
     'current account':         '#ffb95f',
     'fixed rate':              '#a78bfa',
+    'premium bonds':           '#38bdf8',
+    'bonds':                   '#38bdf8',
   };
   const key = accountType.toLowerCase();
   for (const [k, v] of Object.entries(TYPE_COLORS)) {
@@ -46,6 +48,7 @@ function accountTypeBadge(accountType = '') {
   if (t.includes('isa')) return 'ISA';
   if (t.includes('current')) return 'Current';
   if (t.includes('fixed')) return 'Fixed Rate';
+  if (t.includes('premium bonds') || t.includes('bonds')) return 'Bonds';
   return 'Savings';
 }
 
@@ -73,7 +76,7 @@ function formatDateShort(date) {
   return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
-// Pull all transactions from rawData, sorted descending by date
+// Pull all transactions from rawData + manualTransactions, sorted descending by date
 function getAllTransactions(account) {
   const { rawData = [], mapping = {}, dateFormat } = account;
   const dateCol   = mapping.date;
@@ -83,7 +86,7 @@ function getAllTransactions(account) {
   const amountCol = mapping.amount;
   const balCol    = mapping.balance;
 
-  return rawData
+  const rawTxs = rawData
     .map(row => {
       const dateRaw = row[dateCol];
       const date    = parseDate(dateRaw, dateFormat);
@@ -103,11 +106,22 @@ function getAllTransactions(account) {
       }
 
       const balance = balCol ? parseAmount(row[balCol]) : null;
-
       return { date, dateRaw, desc, credit, debit, balance };
     })
-    .filter(tx => tx.date)
-    .sort((a, b) => b.date - a.date);
+    .filter(tx => tx.date);
+
+  const manualTxs = (account.manualTransactions || []).map(tx => ({
+    date:    tx.date ? new Date(tx.date) : null,
+    dateRaw: tx.date,
+    desc:    tx.description || tx.type || 'Transaction',
+    credit:  tx.direction === 'credit' ? tx.amount : 0,
+    debit:   tx.direction === 'debit'  ? tx.amount : 0,
+    balance: tx.balanceAfter != null ? tx.balanceAfter : null,
+    notes:   tx.notes || null,
+    isManual: true,
+  })).filter(tx => tx.date);
+
+  return [...rawTxs, ...manualTxs].sort((a, b) => b.date - a.date);
 }
 
 // Compute net deposits (total credits minus total debits, excluding interest/dividends/transfers)
@@ -136,6 +150,15 @@ function computeNetDeposits(account) {
       const amt = parseAmount(row[amountCol]);
       if (amt > 0) totalCredits += amt;
       else totalDebits += Math.abs(amt);
+    }
+  });
+
+  // Also include manual transactions (exclude interest and ISA transfers)
+  (account.manualTransactions || []).forEach(tx => {
+    if (tx.direction === 'credit' && tx.type !== 'interest' && tx.type !== 'transfer_in') {
+      totalCredits += tx.amount;
+    } else if (tx.direction === 'debit' && tx.type !== 'transfer_out') {
+      totalDebits += tx.amount;
     }
   });
 
@@ -199,6 +222,20 @@ function SavingsHistoryChart({ account, color, currentBalance }) {
         const bucketIdx = ((d.getMonth()) - 3 + 12) % 12;
         buckets[bucketIdx].amount += credit;
       }
+    });
+
+    // Also include manual credit transactions for this FY
+    (account.manualTransactions || []).forEach(tx => {
+      if (tx.direction !== 'credit') return;
+      const d = tx.date ? new Date(tx.date) : null;
+      if (!d || isNaN(d.getTime())) return;
+      const dMonth = d.getMonth() + 1;
+      const dDay   = d.getDate();
+      const dYear  = d.getFullYear();
+      const txFYStart = (dMonth > 4 || (dMonth === 4 && dDay >= 6)) ? dYear : dYear - 1;
+      if (txFYStart !== currentFYStart) return;
+      const bucketIdx = ((d.getMonth()) - 3 + 12) % 12;
+      buckets[bucketIdx].amount += tx.amount;
     });
 
     return buckets;
@@ -337,8 +374,9 @@ function DetailRow({ label, value, valueColor, last }) {
 
 // ---- Main Component ----
 export default function SavingsAccountDetail() {
-  const { idx }                          = useParams();
-  const { accounts, updateAccount }      = useSavingsData();
+  const { idx }                                = useParams();
+  const navigate                               = useNavigate();
+  const { accounts, updateAccount }            = useSavingsData();
 
   // Current balance edit state
   const [isEditing, setIsEditing] = useState(false);
@@ -445,6 +483,14 @@ export default function SavingsAccountDetail() {
         if (amt > 0) credit = amt;
       }
       total += credit;
+    });
+    // Also include manual deposits in FY (excluding interest and ISA transfers)
+    (account.manualTransactions || []).forEach(tx => {
+      if (tx.direction !== 'credit') return;
+      if (tx.type === 'interest' || tx.type === 'transfer_in') return;
+      const d = tx.date ? new Date(tx.date) : null;
+      if (!d || d < fyStart) return;
+      total += tx.amount;
     });
     return Math.round(total);
   }, [account]);
@@ -729,6 +775,9 @@ export default function SavingsAccountDetail() {
                       {tx.balance !== null && (
                         <span style={{ marginLeft: '8px', color: '#475569' }}>· bal {fmt(tx.balance)}</span>
                       )}
+                      {tx.notes && (
+                        <span style={{ marginLeft: '8px', color: '#475569', fontStyle: 'italic' }}>{tx.notes}</span>
+                      )}
                     </p>
                   </div>
                   <p style={{ fontWeight: 700, fontSize: '14px', color: amtColor, margin: 0, flexShrink: 0 }}>
@@ -741,6 +790,24 @@ export default function SavingsAccountDetail() {
         </div>
 
       </div>
+
+      {/* FAB — Add Transaction */}
+      <button
+        onClick={() => navigate(`/mobile/savings/account/${idx}/add`)}
+        style={{
+          position: 'fixed', bottom: '88px', right: '20px',
+          background: '#4edea3', color: '#003824',
+          border: 'none', borderRadius: '16px', padding: '14px 20px',
+          display: 'flex', alignItems: 'center', gap: '8px',
+          fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '15px',
+          cursor: 'pointer', boxShadow: '0 4px 24px rgba(78,222,163,0.35)',
+          zIndex: 50,
+        }}
+      >
+        <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>add</span>
+        Add Transaction
+      </button>
+
     </SavingsDetailLayout>
   );
 }

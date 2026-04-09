@@ -27,27 +27,31 @@ export default function EditProfilePage() {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
 
-  const [fullName, setFullName] = useState('');
-  const [dob,      setDob]      = useState('');
-  const [industry, setIndustry] = useState('finance');
-  const [loading,  setLoading]  = useState(true);
-  const [saving,   setSaving]   = useState(false);
-  const [error,    setError]    = useState(null);
+  const [fullName,      setFullName]      = useState('');
+  const [dob,           setDob]           = useState('');
+  const [industry,      setIndustry]      = useState('finance');
+  const [loading,       setLoading]       = useState(true);
+  const [saving,        setSaving]        = useState(false);
+  const [error,         setError]         = useState(null);
 
-  const email = currentUser?.email || '';
+  // Saved values — used for the avatar display and dirty-check
+  const [savedFullName, setSavedFullName] = useState('');
+  const [savedDob,      setSavedDob]      = useState('');
+  const [savedIndustry, setSavedIndustry] = useState('finance');
+
+  const email      = currentUser?.email || '';
+  const hasChanges = fullName !== savedFullName || dob !== savedDob || industry !== savedIndustry;
 
   useEffect(() => {
     if (!currentUser) return;
     const ref = doc(db, 'users', currentUser.uid);
     getDoc(ref).then(snap => {
-      if (snap.exists()) {
-        const data = snap.data();
-        setFullName(data.fullName || currentUser.displayName || '');
-        setDob(data.dob          || '');
-        setIndustry(data.industry || 'finance');
-      } else {
-        setFullName(currentUser.displayName || '');
-      }
+      const name = snap.exists() ? (snap.data().fullName || currentUser.displayName || '') : (currentUser.displayName || '');
+      const d    = snap.exists() ? (snap.data().dob      || '') : '';
+      const ind  = snap.exists() ? (snap.data().industry || 'finance') : 'finance';
+      setFullName(name);      setSavedFullName(name);
+      setDob(d);              setSavedDob(d);
+      setIndustry(ind);       setSavedIndustry(ind);
     }).catch(() => {
       setError('Failed to load profile data.');
     }).finally(() => {
@@ -76,6 +80,9 @@ export default function EditProfilePage() {
     try {
       const ref = doc(db, 'users', currentUser.uid);
       await setDoc(ref, { fullName: fullName.trim(), dob: dob.trim(), industry }, { merge: true });
+      setSavedFullName(fullName.trim());
+      setSavedDob(dob.trim());
+      setSavedIndustry(industry);
       navigate('/mobile/settings');
     } catch (e) {
       setError('Failed to save changes. Please try again.');
@@ -149,7 +156,7 @@ export default function EditProfilePage() {
             </button>
           </div>
           <h2 style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 700, fontSize: '18px', color: '#dae2fd', margin: '0 0 2px' }}>
-            {loading ? '—' : (fullName || 'Your Name')}
+            {loading ? '—' : (savedFullName || 'Your Name')}
           </h2>
           <p style={{ fontSize: '12px', color: '#bbcabf', margin: 0 }}>MoneyMoves Member</p>
         </section>
@@ -234,39 +241,28 @@ export default function EditProfilePage() {
               <p style={{ fontSize: '13px', color: '#ffb4ab', margin: '0 0 16px', textAlign: 'center' }}>{error}</p>
             )}
 
-            {/* Save / Cancel */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '24px' }}>
+            {/* Save Changes */}
+            <div style={{ marginBottom: '24px' }}>
               <button
                 onClick={handleSave}
-                disabled={saving}
+                disabled={!hasChanges || saving}
                 style={{
                   width: '100%',
-                  background: saving ? 'rgba(78,222,163,0.5)' : '#4edea3',
+                  background: '#4edea3',
                   color: '#003824',
                   border: 'none', borderRadius: '14px',
-                  padding: '16px', cursor: saving ? 'not-allowed' : 'pointer',
+                  padding: '16px', cursor: (!hasChanges || saving) ? 'not-allowed' : 'pointer',
                   fontFamily: 'Manrope, sans-serif', fontWeight: 800, fontSize: '16px',
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
                   boxShadow: '0 0 20px rgba(78,222,163,0.25)',
-                  transition: 'background 0.2s',
+                  transition: 'opacity 0.2s',
+                  opacity: (!hasChanges || saving) ? 0.5 : 1,
                 }}
               >
                 {saving ? 'Saving…' : 'Save Changes'}
                 {!saving && (
                   <span className="material-symbols-outlined" style={{ fontSize: '20px', fontVariationSettings: "'FILL' 1" }}>check_circle</span>
                 )}
-              </button>
-              <button
-                onClick={() => navigate('/mobile/settings')}
-                style={{
-                  width: '100%',
-                  background: 'transparent', color: '#bbcabf',
-                  border: '1px solid rgba(60,74,66,0.15)', borderRadius: '14px',
-                  padding: '14px', cursor: 'pointer',
-                  fontFamily: 'Manrope, sans-serif', fontWeight: 600, fontSize: '15px',
-                }}
-              >
-                Cancel
               </button>
             </div>
           </>

@@ -144,6 +144,14 @@ function computeMetrics(accounts) {
         totalDeposited += credit;
       }
     });
+    // Also count manual credit transactions, excluding interest and ISA transfers
+    (account.manualTransactions || []).forEach(tx => {
+      if (tx.direction === 'credit' && tx.type !== 'interest' && tx.type !== 'transfer_in') {
+        totalDeposited += tx.amount;
+      } else if (tx.direction === 'debit' && tx.type !== 'transfer_out') {
+        totalDeposited -= tx.amount;
+      }
+    });
   });
   totalDeposited = Math.round(totalDeposited);
   const totalGrowth = Math.max(0, Math.round(totalBalance) - totalDeposited);
@@ -193,6 +201,17 @@ function computeMetrics(accounts) {
         if (amt > 0) credit = amt;
       }
       if (credit > 0) currentFYIsaDeposits += credit;
+    });
+
+    // Also count manual transactions for this ISA account
+    (account.manualTransactions || []).forEach(tx => {
+      if (tx.direction !== 'credit') return;
+      if (tx.type === 'interest' || tx.type === 'transfer_in') return;
+      if (!tx.date) return;
+      const txDate = dayjs(tx.date);
+      if (!txDate.isValid()) return;
+      if (!txDate.isSameOrAfter(taxYearStart) || !txDate.isSameOrBefore(taxYearEnd)) return;
+      currentFYIsaDeposits += tx.amount;
     });
   });
 
@@ -262,6 +281,50 @@ export function SavingsDataProvider({ children }) {
     load();
   }, [user, isDemoMode, demoData]);
 
+  async function addTransaction(idx, tx) {
+    const account = accounts[idx];
+    if (!account) return;
+
+    const currentBal = account.currentBalance || 0;
+    const newBalance = tx.balanceAfter != null
+      ? tx.balanceAfter
+      : tx.direction === 'credit'
+        ? currentBal + tx.amount
+        : Math.max(0, currentBal - tx.amount);
+
+    const manualTransactions = [
+      ...(account.manualTransactions || []),
+      {
+        date:        tx.date,
+        description: tx.description,
+        type:        tx.type,
+        amount:      tx.amount,
+        direction:   tx.direction,
+        ...(tx.balanceAfter != null ? { balanceAfter: tx.balanceAfter } : {}),
+        ...(tx.notes ? { notes: tx.notes } : {}),
+      },
+    ];
+
+    await updateAccount(idx, { manualTransactions, currentBalance: newBalance });
+  }
+
+  async function addAccount(newAccount) {
+    if (!user || isDemoMode) return;
+    try {
+      const snap = await getDoc(doc(db, 'savingsTracker', user.uid));
+      const data = snap.exists() ? snap.data() : {};
+      const uploads = [...(data.uploads || []), newAccount];
+      const selectedAccounts = [...(data.selectedAccounts || (data.uploads || []).map(u => u.accountName)), newAccount.accountName];
+      const now = new Date().toISOString();
+      await setDoc(doc(db, 'savingsTracker', user.uid), { ...data, uploads, selectedAccounts, lastUpdated: now }, { merge: true });
+      setAccounts(prev => [...prev, newAccount]);
+      setLastUpdated(now);
+    } catch (e) {
+      console.error('SavingsDataContext: failed to add account', e);
+      throw e;
+    }
+  }
+
   async function updateAccount(idx, partial) {
     const updated = accounts.map((a, i) => i === idx ? { ...a, ...partial } : a);
     setAccounts(updated);
@@ -308,7 +371,7 @@ export function SavingsDataProvider({ children }) {
   const metrics = computeMetrics(accounts);
 
   return (
-    <SavingsDataContext.Provider value={{ accounts: enrichedAccounts, metrics, isLoading, isDemoMode, lastUpdated, updateAccount }}>
+    <SavingsDataContext.Provider value={{ accounts: enrichedAccounts, metrics, isLoading, isDemoMode, lastUpdated, addTransaction, addAccount, updateAccount }}>
       {children}
     </SavingsDataContext.Provider>
   );

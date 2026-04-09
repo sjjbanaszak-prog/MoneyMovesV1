@@ -27,11 +27,15 @@ export default function AddContribution() {
   const amountNum   = parseFloat(amount) || 0;
   const annualLimit = 60000;
 
-  // Calculate current FY total from this provider
-  const currentFYStart = getTaxYearStart(new Date());
-  const currentFYLabel  = taxYearLabel(currentFYStart);
-  const ytdUsed = (entry.paymentHistory || []).reduce((s, p) => {
-    return getTaxYearStart(p.date) === currentFYStart ? s + (p.amount || 0) : s;
+  // Derive the FY from the date the user has entered, not today
+  const selectedFYStart = getTaxYearStart(parseDate(date) || new Date());
+  const selectedFYLabel = taxYearLabel(selectedFYStart);
+
+  // Sum contributions already recorded across ALL providers for that FY
+  const ytdUsed = entries.reduce((total, e) => {
+    return total + (e.paymentHistory || []).reduce((s, p) => {
+      return getTaxYearStart(p.date) === selectedFYStart ? s + (p.amount || 0) : s;
+    }, 0);
   }, 0);
 
   const remaining   = annualLimit - ytdUsed;
@@ -201,7 +205,7 @@ export default function AddContribution() {
         {/* Allowance Summary */}
         <div className="section-card" style={{ marginBottom: '24px' }}>
           <h4 style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 800, fontSize: '13px', color: '#adc6ff', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 12px' }}>
-            {currentFYLabel} Allowance
+            {selectedFYLabel} Allowance
           </h4>
           <div style={{ background: 'rgba(173,198,255,0.08)', borderRadius: '4px', height: '6px', marginBottom: '8px', overflow: 'hidden' }}>
             <div style={{

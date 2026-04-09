@@ -31,19 +31,14 @@ export default function AddPension() {
 
     const today = new Date().toISOString().split('T')[0];
     const newEntry = {
-      provider:     provider.trim(),
+      provider:       provider.trim(),
       accountType,
-      currentValue: valueNum,
-      deposits:     valueNum,
-      firstPayment: startDate || today,
-      lastPayment:  startDate || today,
-      paymentHistory: valueNum > 0 ? [{
-        date:        startDate || today,
-        amount:      valueNum,
-        description: 'Opening Balance',
-        type:        'opening',
-      }] : [],
-      valueHistory: valueNum > 0 ? [{
+      currentValue:   valueNum,
+      deposits:       0,          // no contributions recorded yet; built up via Add History
+      firstPayment:   startDate || null,
+      lastPayment:    startDate || null,
+      paymentHistory: [],         // opening balance is not a contribution — add history separately
+      valueHistory:   valueNum > 0 ? [{
         date:  new Date().toISOString(),
         value: valueNum,
       }] : [],
