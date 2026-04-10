@@ -173,11 +173,11 @@ export default function MortgageOverview() {
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {mortgages.map((mortgage, i) => {
-                const color    = propertyColorIndex(mortgage.name);
-                const initials = propertyInitials(mortgage.name);
+                const color    = propertyColorIndex(mortgage.lender || mortgage.name);
+                const initials = propertyInitials(mortgage.lender || mortgage.name);
                 const equity   = mortgage.propertyValue - mortgage.outstandingBalance;
-                const ltvPct   = Math.round((mortgage.outstandingBalance / mortgage.propertyValue) * 100);
-                const equityPct = 100 - ltvPct;
+                const equityPct = mortgage.propertyValue > 0
+                  ? Math.round((equity / mortgage.propertyValue) * 100) : 0;
 
                 return (
                   <Link
@@ -199,12 +199,12 @@ export default function MortgageOverview() {
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px' }}>
                           <h4 style={{ fontWeight: 700, fontSize: '15px', color: '#dae2fd', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '160px' }}>
-                            {mortgage.name}
+                            {mortgage.lender}
                           </h4>
                           <span className="badge-active">{mortgage.type}</span>
                         </div>
                         <p style={{ fontSize: '12px', color: '#bbcabf', margin: 0 }}>
-                          {mortgage.lender} · {ltvPct}% LTV
+                          {mortgage.name}
                         </p>
                       </div>
                       <div style={{ textAlign: 'right', marginLeft: '14px', flexShrink: 0 }}>

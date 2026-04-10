@@ -8,6 +8,7 @@ import SavingsOverview       from './pages/SavingsOverview';
 import SavingsAccountDetail  from './pages/SavingsAccountDetail';
 import AddSavingsAccount     from './pages/AddSavingsAccount';
 import AddTransaction        from './pages/AddTransaction';
+import AllTransactions       from './pages/AllTransactions';
 
 /**
  * SavingsApp
@@ -25,7 +26,8 @@ export default function SavingsApp() {
         <Route index                   element={<SavingsOverview />} />
         <Route path="add"              element={<AddSavingsAccount />} />
         <Route path="account/:idx"     element={<SavingsAccountDetail />} />
-        <Route path="account/:idx/add" element={<AddTransaction />} />
+        <Route path="account/:idx/add"          element={<AddTransaction />} />
+        <Route path="account/:idx/transactions" element={<AllTransactions />} />
         <Route path="calculator"       element={<Navigate to="/mobile/savings" replace />} />
         <Route path="comparisons"      element={<Navigate to="/mobile/savings" replace />} />
         <Route path="insights"         element={<Navigate to="/mobile/savings" replace />} />

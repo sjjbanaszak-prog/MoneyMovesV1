@@ -1,21 +1,27 @@
 import React, { useState } from 'react';
 import { useNavigate, useParams, Navigate } from 'react-router-dom';
+import dayjs from 'dayjs';
+import customParseFormat from 'dayjs/plugin/customParseFormat';
 import { useSavingsData } from '../SavingsDataContext';
 import SavingsDetailLayout from '../SavingsDetailLayout';
 
+dayjs.extend(customParseFormat);
+
+const ISA_LIMIT = 20000;
+
 const DEPOSIT_TYPES = [
-  { value: 'deposit',     label: 'Regular Savings'          },
-  { value: 'lump_sum',    label: 'Lump Sum Deposit'         },
-  { value: 'bonus',       label: 'Bonus / Gift'             },
-  { value: 'transfer_in', label: 'Transfer In (ISA Transfer)' },
-  { value: 'interest',    label: 'Interest Received'        },
+  { value: 'deposit',     label: 'Regular Savings'             },
+  { value: 'lump_sum',    label: 'Lump Sum Deposit'            },
+  { value: 'bonus',       label: 'Bonus / Gift'                },
+  { value: 'transfer_in', label: 'Transfer In (ISA Transfer)'  },
+  { value: 'interest',    label: 'Interest Received'           },
 ];
 
 const WITHDRAWAL_TYPES = [
-  { value: 'withdrawal',   label: 'Withdrawal'     },
-  { value: 'transfer_out', label: 'Transfer Out'   },
-  { value: 'direct_debit', label: 'Direct Debit'   },
-  { value: 'fee',          label: 'Fee / Charge'   },
+  { value: 'withdrawal',   label: 'Withdrawal'   },
+  { value: 'transfer_out', label: 'Transfer Out' },
+  { value: 'direct_debit', label: 'Direct Debit' },
+  { value: 'fee',          label: 'Fee / Charge' },
 ];
 
 const labelStyle = {
@@ -27,6 +33,72 @@ const labelStyle = {
   display: 'block',
   marginBottom: '8px',
 };
+
+// Returns the year in which the UK tax year started for a given date string (YYYY-MM-DD)
+function getTaxYearStart(dateStr) {
+  if (!dateStr) return null;
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return null;
+  const year  = d.getFullYear();
+  const month = d.getMonth() + 1;
+  const day   = d.getDate();
+  return (month < 4 || (month === 4 && day < 6)) ? year - 1 : year;
+}
+
+function taxYearLabel(fyStart) {
+  if (fyStart == null) return '';
+  return `${fyStart}/${String(fyStart + 1).slice(2)}`;
+}
+
+function parseAmount(value) {
+  if (value == null || value === '') return 0;
+  if (typeof value === 'number') return isNaN(value) ? 0 : value;
+  return parseFloat(String(value).replace(/[£$€\s,]/g, '')) || 0;
+}
+
+// Sum ISA deposits across all ISA accounts for the given tax year start
+function computeIsaUsedInFY(accounts, fyStart) {
+  if (fyStart == null) return 0;
+
+  return accounts
+    .filter(a => (a.accountType || '').toLowerCase().includes('isa'))
+    .reduce((total, account) => {
+      const { rawData = [], mapping = {}, dateFormat, manualTransactions = [] } = account;
+
+      rawData.forEach(row => {
+        if (!mapping.date) return;
+        const dateVal = row[mapping.date];
+        if (!dateVal) return;
+        const d = dateFormat
+          ? dayjs(String(dateVal), dateFormat, true)
+          : dayjs(String(dateVal));
+        if (!d.isValid()) return;
+        if (getTaxYearStart(d.format('YYYY-MM-DD')) !== fyStart) return;
+
+        const desc = (mapping.description ? String(row[mapping.description] || '') : '').toLowerCase();
+        if (desc.includes('interest') || desc.includes('transfer')) return;
+
+        let credit = 0;
+        if (mapping.credit) {
+          credit = parseAmount(row[mapping.credit]);
+        } else if (mapping.amount) {
+          const amt = parseAmount(row[mapping.amount]);
+          if (amt > 0) credit = amt;
+        }
+        total += credit;
+      });
+
+      manualTransactions.forEach(tx => {
+        if (tx.direction !== 'credit') return;
+        if (tx.type === 'interest' || tx.type === 'transfer_in') return;
+        if (!tx.date) return;
+        if (getTaxYearStart(tx.date) !== fyStart) return;
+        total += tx.amount || 0;
+      });
+
+      return total;
+    }, 0);
+}
 
 export default function AddTransaction() {
   const { idx } = useParams();
@@ -47,9 +119,9 @@ export default function AddTransaction() {
   const [isSaving,     setIsSaving]     = useState(false);
   const [error,        setError]        = useState(null);
 
-  const amountNum      = parseFloat(amount) || 0;
+  const amountNum       = parseFloat(amount) || 0;
   const balanceAfterNum = balanceAfter !== '' ? parseFloat(balanceAfter) : null;
-  const previewBalance = balanceAfterNum != null
+  const previewBalance  = balanceAfterNum != null
     ? balanceAfterNum
     : direction === 'credit'
       ? currentBalance + amountNum
@@ -58,15 +130,20 @@ export default function AddTransaction() {
   const isDeposit = direction === 'credit';
   const types     = isDeposit ? DEPOSIT_TYPES : WITHDRAWAL_TYPES;
 
-  // When direction switches, reset type to the first of the new set
   function handleDirectionChange(dir) {
     setDirection(dir);
     setType(dir === 'credit' ? 'deposit' : 'withdrawal');
   }
 
-  // ISA allowance note — show for deposits into ISA accounts (excluding interest/transfer)
-  const isIsa = (account.accountType || '').toLowerCase().includes('isa');
-  const showIsaNote = isIsa && isDeposit && type !== 'interest' && type !== 'transfer_in';
+  // ISA allowance calculations
+  const isIsa          = (account.accountType || '').toLowerCase().includes('isa');
+  const countsToIsa    = isIsa && isDeposit && type !== 'interest' && type !== 'transfer_in';
+  const selectedFYStart = getTaxYearStart(date);
+  const selectedFYLabel = taxYearLabel(selectedFYStart);
+  const isaUsed         = isIsa ? computeIsaUsedInFY(accounts, selectedFYStart) : 0;
+  const isaPreviewUsed  = countsToIsa ? isaUsed + amountNum : isaUsed;
+  const isaPreviewPct   = Math.min(100, (isaPreviewUsed / ISA_LIMIT) * 100);
+  const isaWillExceed   = countsToIsa && amountNum > 0 && isaPreviewUsed > ISA_LIMIT;
 
   async function handleConfirm() {
     if (isSaving || amountNum <= 0) return;
@@ -80,7 +157,7 @@ export default function AddTransaction() {
         date,
         description: description.trim() || typeLabel,
         type,
-        amount:       amountNum,
+        amount:    amountNum,
         direction,
         ...(balanceAfterNum != null ? { balanceAfter: balanceAfterNum } : {}),
         ...(description.trim() ? { notes: description.trim() } : {}),
@@ -108,46 +185,37 @@ export default function AddTransaction() {
           </span>
         </div>
 
-        {/* Direction Toggle */}
-        <div className="animate-in stagger-1" style={{
-          display: 'flex', background: '#131b2e', borderRadius: '14px',
-          padding: '4px', marginBottom: '16px', gap: '4px',
-        }}>
-          <button
-            onClick={() => handleDirectionChange('credit')}
-            style={{
-              flex: 1, padding: '12px 0', borderRadius: '10px', border: 'none',
-              cursor: 'pointer', fontFamily: 'Manrope, sans-serif', fontWeight: 800, fontSize: '14px',
-              background: isDeposit ? '#4edea3' : 'transparent',
-              color:      isDeposit ? '#003824' : '#64748b',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-              transition: 'all 0.2s',
-            }}
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>arrow_downward</span>
-            Deposit
-          </button>
-          <button
-            onClick={() => handleDirectionChange('debit')}
-            style={{
-              flex: 1, padding: '12px 0', borderRadius: '10px', border: 'none',
-              cursor: 'pointer', fontFamily: 'Manrope, sans-serif', fontWeight: 800, fontSize: '14px',
-              background: !isDeposit ? '#ff6b6b' : 'transparent',
-              color:      !isDeposit ? '#fff' : '#64748b',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-              transition: 'all 0.2s',
-            }}
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>arrow_upward</span>
-            Withdrawal
-          </button>
-        </div>
-
         {/* Form Card */}
         <div className="animate-in stagger-2 section-card" style={{ marginBottom: '16px' }}>
-          <h3 style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 800, fontSize: '15px', color: '#dae2fd', margin: '0 0 20px' }}>
+          <h3 style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 800, fontSize: '15px', color: '#dae2fd', margin: '0 0 14px' }}>
             Transaction Details
           </h3>
+
+          {/* Direction Toggle */}
+          <div style={{ display: 'flex', gap: '6px', marginBottom: '20px' }}>
+            {[
+              { dir: 'credit', label: 'Deposit' },
+              { dir: 'debit',  label: 'Withdrawal' },
+            ].map(({ dir, label }) => (
+              <button
+                key={dir}
+                onClick={() => handleDirectionChange(dir)}
+                style={{
+                  flex: 1, border: 'none', borderRadius: '8px', padding: '10px 0',
+                  fontSize: '13px', fontWeight: 700, cursor: 'pointer',
+                  fontFamily: 'Inter, sans-serif',
+                  background: direction === dir
+                    ? (dir === 'credit' ? 'rgba(78,222,163,0.15)' : 'rgba(255,107,107,0.15)')
+                    : 'rgba(173,198,255,0.06)',
+                  color: direction === dir
+                    ? (dir === 'credit' ? '#4edea3' : '#ff6b6b')
+                    : '#64748b',
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
 
           {/* Amount */}
           <div style={{ marginBottom: '16px' }}>
@@ -228,20 +296,6 @@ export default function AddTransaction() {
           </div>
         </div>
 
-        {/* ISA allowance note */}
-        {showIsaNote && (
-          <div style={{
-            background: 'rgba(78,222,163,0.06)', border: '1px solid rgba(78,222,163,0.15)',
-            borderRadius: '12px', padding: '14px 16px', marginBottom: '16px',
-            display: 'flex', gap: '10px', alignItems: 'flex-start',
-          }}>
-            <span className="material-symbols-outlined" style={{ fontSize: '18px', color: '#4edea3', flexShrink: 0, marginTop: '1px' }}>verified</span>
-            <p style={{ fontSize: '13px', color: '#bbcabf', margin: 0, lineHeight: 1.55 }}>
-              This deposit will count toward your <strong style={{ color: '#4edea3' }}>£20,000 annual ISA allowance</strong> for the current tax year.
-            </p>
-          </div>
-        )}
-
         {/* Balance preview */}
         {amountNum > 0 && (
           <div className="section-card" style={{ marginBottom: '16px' }}>
@@ -271,6 +325,46 @@ export default function AddTransaction() {
               </div>
             </div>
           </div>
+        )}
+
+        {/* ISA Allowance Card */}
+        {countsToIsa && (
+          <>
+            {isaWillExceed && (
+              <div className="animate-in" style={{
+                background: 'rgba(255,107,107,0.08)', border: '1px solid rgba(255,107,107,0.2)',
+                borderRadius: '12px', padding: '14px 16px', marginBottom: '16px',
+                display: 'flex', gap: '10px', alignItems: 'flex-start',
+              }}>
+                <span className="material-symbols-outlined" style={{ fontSize: '18px', color: '#ff6b6b', flexShrink: 0, marginTop: '1px' }}>warning</span>
+                <p style={{ fontSize: '13px', color: '#ff6b6b', margin: 0, lineHeight: 1.55 }}>
+                  This deposit would exceed your ISA allowance. Remaining available: <strong>£{Math.max(0, ISA_LIMIT - isaUsed).toLocaleString('en-GB')}</strong>
+                </p>
+              </div>
+            )}
+
+            <div className="section-card" style={{ marginBottom: '16px' }}>
+              <h4 style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 800, fontSize: '13px', color: '#adc6ff', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 12px' }}>
+                {selectedFYLabel} ISA Allowance
+              </h4>
+              <div style={{ background: 'rgba(173,198,255,0.08)', borderRadius: '4px', height: '6px', marginBottom: '8px', overflow: 'hidden' }}>
+                <div style={{
+                  width: `${isaPreviewPct}%`,
+                  height: '100%', borderRadius: '4px',
+                  background: isaWillExceed ? '#ff6b6b' : '#4edea3',
+                  transition: 'width 0.3s ease, background 0.3s ease',
+                }} />
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: '12px', color: '#bbcabf' }}>
+                  £{Math.round(isaPreviewUsed).toLocaleString('en-GB')} used
+                </span>
+                <span style={{ fontSize: '12px', color: '#bbcabf' }}>
+                  £{ISA_LIMIT.toLocaleString('en-GB')} limit
+                </span>
+              </div>
+            </div>
+          </>
         )}
 
         {/* Info Box */}

@@ -466,8 +466,8 @@ export default function ProviderDetail() {
                   fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', padding: 0,
                 }}
               >
-                <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>edit</span>
                 Edit
+                <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>edit</span>
               </button>
             ) : (
               <div style={{ display: 'flex', gap: '8px' }}>
@@ -567,9 +567,9 @@ export default function ProviderDetail() {
             </h3>
             {sortedHistory.length > 5 && (
               <Link to={`/mobile/pension/provider/${idx}/contributions`} style={{ textDecoration: 'none' }}>
-                <button style={{ background: 'none', border: 'none', color: '#4edea3', fontSize: '13px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <button style={{ background: 'none', border: 'none', color: '#adc6ff', fontSize: '12px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
                   View All
-                  <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>arrow_forward</span>
+                  <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>arrow_forward</span>
                 </button>
               </Link>
             )}

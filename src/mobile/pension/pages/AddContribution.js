@@ -185,25 +185,8 @@ export default function AddContribution() {
           </div>
         )}
 
-        {/* Info Box */}
-        <div style={{
-          background: 'rgba(173,198,255,0.06)',
-          border: '1px solid rgba(173,198,255,0.1)',
-          borderRadius: '12px',
-          padding: '14px 16px',
-          marginBottom: '16px',
-          display: 'flex',
-          gap: '10px',
-          alignItems: 'flex-start',
-        }}>
-          <span className="material-symbols-outlined" style={{ fontSize: '18px', color: '#adc6ff', flexShrink: 0, marginTop: '1px' }}>info</span>
-          <p style={{ fontSize: '13px', color: '#bbcabf', margin: 0, lineHeight: 1.55 }}>
-            Contributions are recorded for tracking purposes. Contact your pension provider directly to process actual payments.
-          </p>
-        </div>
-
         {/* Allowance Summary */}
-        <div className="section-card" style={{ marginBottom: '24px' }}>
+        <div className="section-card" style={{ marginBottom: '16px' }}>
           <h4 style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 800, fontSize: '13px', color: '#adc6ff', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 12px' }}>
             {selectedFYLabel} Allowance
           </h4>
@@ -223,6 +206,23 @@ export default function AddContribution() {
               £{annualLimit.toLocaleString('en-GB')} limit
             </span>
           </div>
+        </div>
+
+        {/* Info Box */}
+        <div style={{
+          background: 'rgba(173,198,255,0.06)',
+          border: '1px solid rgba(173,198,255,0.1)',
+          borderRadius: '12px',
+          padding: '14px 16px',
+          marginBottom: '24px',
+          display: 'flex',
+          gap: '10px',
+          alignItems: 'flex-start',
+        }}>
+          <span className="material-symbols-outlined" style={{ fontSize: '18px', color: '#adc6ff', flexShrink: 0, marginTop: '1px' }}>info</span>
+          <p style={{ fontSize: '13px', color: '#bbcabf', margin: 0, lineHeight: 1.55 }}>
+            Contributions are recorded for tracking purposes. Contact your pension provider directly to process actual payments.
+          </p>
         </div>
 
         {/* Confirm */}

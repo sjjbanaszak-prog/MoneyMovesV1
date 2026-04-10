@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { useParams, useNavigate, Navigate } from 'react-router-dom';
+import { useParams, useNavigate, Navigate, Link } from 'react-router-dom';
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 import { useSavingsData } from '../SavingsDataContext';
@@ -653,8 +653,8 @@ export default function SavingsAccountDetail() {
                 onClick={handleEditDetails}
                 style={{ background: 'none', border: 'none', color: '#adc6ff', fontSize: '12px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', padding: 0 }}
               >
-                <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>edit</span>
                 Edit
+                <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>edit</span>
               </button>
             ) : (
               <div style={{ display: 'flex', gap: '8px' }}>
@@ -742,9 +742,19 @@ export default function SavingsAccountDetail() {
 
         {/* Recent Transactions */}
         <div className="animate-in stagger-4 section-card" style={{ marginBottom: '24px' }}>
-          <h3 style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 800, fontSize: '15px', color: '#dae2fd', margin: '0 0 14px' }}>
-            Recent Transactions
-          </h3>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+            <h3 style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 800, fontSize: '15px', color: '#dae2fd', margin: 0 }}>
+              Recent Transactions
+            </h3>
+            {allTx.length > 5 && (
+              <Link to={`/mobile/savings/account/${idx}/transactions`} style={{ textDecoration: 'none' }}>
+                <button style={{ background: 'none', border: 'none', color: '#adc6ff', fontSize: '12px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  View All
+                  <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>arrow_forward</span>
+                </button>
+              </Link>
+            )}
+          </div>
 
           {recentFive.length === 0 ? (
             <p style={{ fontSize: '13px', color: '#64748b', textAlign: 'center', padding: '16px 0', margin: 0 }}>

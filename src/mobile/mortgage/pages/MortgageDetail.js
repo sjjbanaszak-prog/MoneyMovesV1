@@ -508,18 +508,6 @@ export default function MortgageDetail() {
             Equity Progress
           </h3>
           <EquityBar equity={equity} outstanding={mortgage.outstandingBalance} />
-          <div style={{ marginTop: '14px', background: 'rgba(173,198,255,0.04)', borderRadius: '10px', padding: '12px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-              <p style={{ fontSize: '11px', color: '#bbcabf', margin: 0 }}>Monthly payment</p>
-              <p style={{ fontWeight: 700, fontSize: '14px', color: '#4edea3', margin: 0 }}>{fmtFull(mortgage.monthlyPayment)}</p>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <p style={{ fontSize: '11px', color: '#bbcabf', margin: 0 }}>Total paid to date</p>
-              <p style={{ fontWeight: 700, fontSize: '14px', color: '#dae2fd', margin: 0 }}>
-                {fmt((mortgage.paymentHistory || []).reduce((s, p) => s + (p.amount || 0), 0))}
-              </p>
-            </div>
-          </div>
         </div>
 
         {/* Mortgage Details */}
@@ -561,9 +549,9 @@ export default function MortgageDetail() {
             </h3>
             {sortedPayments.length > 5 && (
               <Link to={`/mobile/mortgage/${idx}/payments`} style={{ textDecoration: 'none' }}>
-                <button style={{ background: 'none', border: 'none', color: '#4edea3', fontSize: '13px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <button style={{ background: 'none', border: 'none', color: '#adc6ff', fontSize: '12px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
                   View All
-                  <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>arrow_forward</span>
+                  <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>arrow_forward</span>
                 </button>
               </Link>
             )}

@@ -133,6 +133,12 @@
 .input-field::placeholder {
   color: #64748b;
 }
+input[type="date"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  box-sizing: border-box;
+}
 
 /* ---- Buttons ---- */
 .primary-btn {
