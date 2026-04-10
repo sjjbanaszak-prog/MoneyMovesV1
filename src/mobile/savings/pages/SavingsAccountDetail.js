@@ -76,9 +76,13 @@ function formatDateShort(date) {
   return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
-// Pull all transactions from rawData + manualTransactions, sorted descending by date
+// Pull all transactions from rawData + manualTransactions, sorted descending by date.
+// Respects deletedRawIndices and rawOverrides set via the All Transactions page.
 function getAllTransactions(account) {
-  const { rawData = [], mapping = {}, dateFormat } = account;
+  const {
+    rawData = [], mapping = {}, dateFormat,
+    deletedRawIndices = [], rawOverrides = {},
+  } = account;
   const dateCol   = mapping.date;
   const descCol   = mapping.description;
   const creditCol = mapping.credit;
@@ -86,8 +90,26 @@ function getAllTransactions(account) {
   const amountCol = mapping.amount;
   const balCol    = mapping.balance;
 
+  const deletedSet = new Set(deletedRawIndices);
+
   const rawTxs = rawData
-    .map(row => {
+    .map((row, rawIdx) => {
+      if (deletedSet.has(rawIdx)) return null;
+
+      const override = rawOverrides[rawIdx];
+      if (override) {
+        const date = parseDate(override.date);
+        if (!date) return null;
+        return {
+          date,
+          dateRaw: override.date,
+          desc:    override.description || '',
+          credit:  override.direction === 'credit' ? override.amount : 0,
+          debit:   override.direction === 'debit'  ? override.amount : 0,
+          balance: null,
+        };
+      }
+
       const dateRaw = row[dateCol];
       const date    = parseDate(dateRaw, dateFormat);
       const desc    = row[descCol] || '';
@@ -108,7 +130,7 @@ function getAllTransactions(account) {
       const balance = balCol ? parseAmount(row[balCol]) : null;
       return { date, dateRaw, desc, credit, debit, balance };
     })
-    .filter(tx => tx.date);
+    .filter(Boolean);
 
   const manualTxs = (account.manualTransactions || []).map(tx => ({
     date:    tx.date ? new Date(tx.date) : null,
@@ -400,7 +422,7 @@ export default function SavingsAccountDetail() {
 
   const netDeposited   = useMemo(() => computeNetDeposits(account), [account]);
   const currentBalance = account.currentBalance || 0;
-  const totalGrowth    = Math.max(0, currentBalance - netDeposited);
+  const totalGrowth    = currentBalance - netDeposited;
   const growthPct      = netDeposited > 0 ? (totalGrowth / netDeposited) * 100 : 0;
 
   // FY label for chart header
@@ -611,8 +633,8 @@ export default function SavingsAccountDetail() {
                     <p style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 900, fontSize: '24px', color, margin: '0 0 2px' }}>
                       {fmt(currentBalance)}
                     </p>
-                    <p style={{ fontSize: '11px', color: growthPct >= 0 ? '#4edea3' : '#ff6b6b', margin: 0 }}>
-                      {growthPct >= 0 ? '+' : ''}{growthPct.toFixed(1)}% total growth
+                    <p style={{ fontSize: '11px', color: growthPct > 0 ? '#4edea3' : growthPct < 0 ? '#ff6b6b' : '#ffb95f', margin: 0 }}>
+                      {growthPct >= 0 ? '+' : ''}{growthPct.toFixed(2)}% total growth
                     </p>
                   </>
                 )}
@@ -777,20 +799,17 @@ export default function SavingsAccountDetail() {
                   }}
                 >
                   <div style={{ minWidth: 0, marginRight: '12px' }}>
-                    <p style={{ fontWeight: 600, fontSize: '14px', color: '#dae2fd', margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '200px' }}>
+                    <p style={{ fontWeight: 600, fontSize: '13px', color: '#dae2fd', margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '200px' }}>
                       {tx.desc || 'Transaction'}
                     </p>
                     <p style={{ fontSize: '12px', color: '#64748b', margin: 0 }}>
                       {formatDateShort(tx.date)}
-                      {tx.balance !== null && (
-                        <span style={{ marginLeft: '8px', color: '#475569' }}>· bal {fmt(tx.balance)}</span>
-                      )}
                       {tx.notes && (
                         <span style={{ marginLeft: '8px', color: '#475569', fontStyle: 'italic' }}>{tx.notes}</span>
                       )}
                     </p>
                   </div>
-                  <p style={{ fontWeight: 700, fontSize: '14px', color: amtColor, margin: 0, flexShrink: 0 }}>
+                  <p style={{ fontWeight: 700, fontSize: '13px', color: amtColor, margin: 0, flexShrink: 0 }}>
                     {amtPrefix}{fmtFull(amount)}
                   </p>
                 </div>

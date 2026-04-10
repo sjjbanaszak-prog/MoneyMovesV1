@@ -406,9 +406,6 @@ export default function AllTransactions() {
                               </p>
                               <p style={{ fontSize: '11px', color: '#64748b', margin: 0 }}>
                                 {formatDateShort(tx.date)}
-                                {tx.balance != null && (
-                                  <span style={{ marginLeft: '6px', color: '#475569' }}>· bal {fmtShort(tx.balance)}</span>
-                                )}
                                 {tx.notes && (
                                   <span style={{ marginLeft: '6px', color: '#475569', fontStyle: 'italic' }}>{tx.notes}</span>
                                 )}
@@ -441,7 +438,7 @@ export default function AllTransactions() {
                                   </button>
                                 </>
                               )}
-                              <p style={{ fontWeight: 700, fontSize: '14px', color: amtColor, margin: 0 }}>
+                              <p style={{ fontWeight: 700, fontSize: '13px', color: amtColor, margin: 0 }}>
                                 {amtPrefix}{fmt(amount)}
                               </p>
                             </div>

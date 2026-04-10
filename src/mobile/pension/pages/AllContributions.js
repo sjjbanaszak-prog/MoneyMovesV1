@@ -283,7 +283,7 @@ export default function AllContributions() {
                                   </button>
                                 </>
                               )}
-                              <p style={{ fontWeight: 700, fontSize: '14px', color: '#4edea3', margin: 0 }}>
+                              <p style={{ fontWeight: 700, fontSize: '13px', color: '#4edea3', margin: 0 }}>
                                 {fmt(p.amount)}
                               </p>
                             </div>

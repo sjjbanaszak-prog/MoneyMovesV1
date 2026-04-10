@@ -429,7 +429,7 @@ export default function PensionAIAnalysis() {
               Total Growth
             </p>
             <p style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 800, fontSize: '20px', color: '#dae2fd', margin: '0 0 2px' }}>
-              {metrics.growthPct >= 0 ? '+' : ''}{(metrics.growthPct || 0).toFixed(1)}%
+              {metrics.growthPct >= 0 ? '+' : ''}{(metrics.growthPct || 0).toFixed(2)}%
             </p>
             <p style={{ fontSize: '11px', color: '#bbcabf', margin: 0 }}>vs total deposited</p>
           </div>

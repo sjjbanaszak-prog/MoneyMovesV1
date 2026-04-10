@@ -97,6 +97,48 @@ function deriveCurrentBalance(account) {
 }
 
 /**
+ * Compute net deposits for a single account (credits minus debits, excluding
+ * interest, dividends, and transfers). Mirrors computeNetDeposits in SavingsAccountDetail.js.
+ */
+function computeAccountNetDeposits(account) {
+  const { rawData = [], mapping = {} } = account;
+  const descCol   = mapping.description;
+  const creditCol = mapping.credit;
+  const debitCol  = mapping.debit;
+  const amountCol = mapping.amount;
+
+  let totalCredits = 0;
+  let totalDebits  = 0;
+
+  rawData.forEach(row => {
+    const desc = String(row[descCol] || '').toLowerCase();
+    if (desc.includes('interest') || desc.includes('dividend') || desc.includes('transfer')) return;
+
+    if (creditCol && row[creditCol] != null && row[creditCol] !== '') {
+      totalCredits += parseAmount(row[creditCol]);
+    }
+    if (debitCol && row[debitCol] != null && row[debitCol] !== '') {
+      totalDebits += parseAmount(row[debitCol]);
+    }
+    if (!creditCol && !debitCol && amountCol) {
+      const amt = parseAmount(row[amountCol]);
+      if (amt > 0) totalCredits += amt;
+      else totalDebits += Math.abs(amt);
+    }
+  });
+
+  (account.manualTransactions || []).forEach(tx => {
+    if (tx.direction === 'credit' && tx.type !== 'interest' && tx.type !== 'transfer_in') {
+      totalCredits += tx.amount;
+    } else if (tx.direction === 'debit' && tx.type !== 'transfer_out') {
+      totalDebits += tx.amount;
+    }
+  });
+
+  return totalCredits - totalDebits;
+}
+
+/**
  * Get credit transactions for an account using its column mapping.
  * Handles both separate credit/debit columns and a single signed amount column.
  */
@@ -136,26 +178,19 @@ function computeMetrics(accounts) {
   const isaBalance  = isaAccounts.reduce((s, a) => s + deriveCurrentBalance(a), 0);
   const nonIsaBalance = totalBalance - isaBalance;
 
-  // Total deposits (all accounts, exclude interest)
+  // Net deposits and growth — computed per account and summed, matching SavingsAccountDetail logic
   let totalDeposited = 0;
+  let totalGrowth    = 0;
   accounts.forEach(account => {
-    getCreditTransactions(account).forEach(({ desc, credit }) => {
-      if (!desc.toLowerCase().includes('interest')) {
-        totalDeposited += credit;
-      }
-    });
-    // Also count manual credit transactions, excluding interest and ISA transfers
-    (account.manualTransactions || []).forEach(tx => {
-      if (tx.direction === 'credit' && tx.type !== 'interest' && tx.type !== 'transfer_in') {
-        totalDeposited += tx.amount;
-      } else if (tx.direction === 'debit' && tx.type !== 'transfer_out') {
-        totalDeposited -= tx.amount;
-      }
-    });
+    const balance    = deriveCurrentBalance(account);
+    const netDep     = computeAccountNetDeposits(account);
+    const growth     = balance - netDep;
+    totalDeposited  += netDep;
+    totalGrowth     += growth;
   });
   totalDeposited = Math.round(totalDeposited);
-  const totalGrowth = Math.max(0, Math.round(totalBalance) - totalDeposited);
-  const growthPct   = totalDeposited > 0 ? (totalGrowth / totalDeposited) * 100 : 0;
+  totalGrowth    = Math.round(totalGrowth);
+  const growthPct = totalDeposited > 0 ? (totalGrowth / totalDeposited) * 100 : 0;
 
   // ISA deposits in current UK tax year — mirrors SavingsMetricCards.js logic exactly
   const now = new Date();

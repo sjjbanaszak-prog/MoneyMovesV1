@@ -573,14 +573,14 @@ export default function MortgageDetail() {
                 }}
               >
                 <div>
-                  <p style={{ fontWeight: 600, fontSize: '14px', color: '#dae2fd', margin: '0 0 2px' }}>
+                  <p style={{ fontWeight: 600, fontSize: '13px', color: '#dae2fd', margin: '0 0 2px' }}>
                     {p.description || 'Monthly Payment'}
                   </p>
                   <p style={{ fontSize: '12px', color: '#64748b', margin: 0 }}>
                     {formatDateShort(p.date)}
                   </p>
                 </div>
-                <p style={{ fontWeight: 700, fontSize: '14px', color: '#4edea3', margin: 0 }}>
+                <p style={{ fontWeight: 700, fontSize: '13px', color: '#4edea3', margin: 0 }}>
                   {fmtFull(p.amount)}
                 </p>
               </div>

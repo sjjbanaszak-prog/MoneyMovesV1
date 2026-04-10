@@ -5,7 +5,7 @@ import PensionDetailLayout from '../PensionDetailLayout';
 
 function fmt(n)    { return '£' + (n || 0).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 function fmtShort(n) { return '£' + Math.round(n || 0).toLocaleString('en-GB'); }
-function fmtPct(n) { const s = n >= 0 ? '+' : ''; return `${s}${n.toFixed(1)}%`; }
+function fmtPct(n) { const s = n >= 0 ? '+' : ''; return `${s}${n.toFixed(2)}%`; }
 
 function providerInitials(name = '') {
   const words = name.trim().split(/\s+/);
@@ -64,7 +64,7 @@ function computeIRR(paymentHistory, currentValue) {
 function formatIRR(rate) {
   if (rate === null || rate === undefined || !isFinite(rate)) return '—';
   const pct = rate * 100;
-  return `${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%`;
+  return `${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%`;
 }
 
 // ---- Account type options ----
@@ -588,14 +588,14 @@ export default function ProviderDetail() {
                 borderBottom: i < recentFive.length - 1 ? '1px solid rgba(173,198,255,0.06)' : 'none',
               }}>
                 <div>
-                  <p style={{ fontWeight: 600, fontSize: '14px', color: '#dae2fd', margin: '0 0 2px' }}>
+                  <p style={{ fontWeight: 600, fontSize: '13px', color: '#dae2fd', margin: '0 0 2px' }}>
                     {p.description || 'Contribution'}
                   </p>
                   <p style={{ fontSize: '12px', color: '#64748b', margin: 0 }}>
                     {formatDate(p.date)}
                   </p>
                 </div>
-                <p style={{ fontWeight: 700, fontSize: '14px', color: '#4edea3', margin: 0 }}>
+                <p style={{ fontWeight: 700, fontSize: '13px', color: '#4edea3', margin: 0 }}>
                   {fmt(p.amount)}
                 </p>
               </div>

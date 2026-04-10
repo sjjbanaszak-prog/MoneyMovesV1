@@ -11,7 +11,7 @@ function fmt(n) {
 }
 function fmtPct(n) {
   const sign = n >= 0 ? '+' : '';
-  return `${sign}${n.toFixed(1)}%`;
+  return `${sign}${n.toFixed(2)}%`;
 }
 
 // Derive a consistent colour index from a string

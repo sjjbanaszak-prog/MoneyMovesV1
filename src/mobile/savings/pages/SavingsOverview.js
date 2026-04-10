@@ -9,6 +9,42 @@ import { formatLastUpdated } from '../../utils/formatLastUpdated';
 function fmt(n) {
   return '£' + Math.round(n || 0).toLocaleString('en-GB');
 }
+function fmtPct(n) {
+  const sign = n >= 0 ? '+' : '';
+  return `${sign}${n.toFixed(2)}%`;
+}
+
+function parseAmount(value) {
+  if (value == null || value === '') return 0;
+  if (typeof value === 'number') return isNaN(value) ? 0 : value;
+  return parseFloat(String(value).replace(/[£$€\s,]/g, '')) || 0;
+}
+
+// Mirrors computeAccountNetDeposits in SavingsDataContext
+function computeNetDeposits(account) {
+  const { rawData = [], mapping = {} } = account;
+  const descCol   = mapping.description;
+  const creditCol = mapping.credit;
+  const debitCol  = mapping.debit;
+  const amountCol = mapping.amount;
+
+  let credits = 0, debits = 0;
+  rawData.forEach(row => {
+    const desc = String(row[descCol] || '').toLowerCase();
+    if (desc.includes('interest') || desc.includes('dividend') || desc.includes('transfer')) return;
+    if (creditCol && row[creditCol] != null && row[creditCol] !== '') credits += parseAmount(row[creditCol]);
+    if (debitCol  && row[debitCol]  != null && row[debitCol]  !== '') debits  += parseAmount(row[debitCol]);
+    if (!creditCol && !debitCol && amountCol) {
+      const amt = parseAmount(row[amountCol]);
+      if (amt > 0) credits += amt; else debits += Math.abs(amt);
+    }
+  });
+  (account.manualTransactions || []).forEach(tx => {
+    if (tx.direction === 'credit' && tx.type !== 'interest' && tx.type !== 'transfer_in') credits += tx.amount;
+    else if (tx.direction === 'debit' && tx.type !== 'transfer_out') debits += tx.amount;
+  });
+  return credits - debits;
+}
 
 // Map account type → display colour
 const TYPE_COLORS = {
@@ -163,7 +199,7 @@ export default function SavingsOverview() {
               {!isLoading && totalBalance > 0 && (
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-                    <span style={{ fontSize: '10px', color: '#64748b', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Deposits</span>
+                    <span style={{ fontSize: '10px', color: '#64748b', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Net Deposits</span>
                     <span style={{ fontSize: '10px', color: '#64748b', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Growth</span>
                   </div>
                   <div style={{ display: 'flex', height: '5px', borderRadius: '3px', overflow: 'hidden', background: 'rgba(173,198,255,0.1)' }}>
@@ -238,13 +274,14 @@ export default function SavingsOverview() {
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {sortedAccounts.map((account, i) => {
-                const origIdx    = accounts.findIndex(a => a === account);
-                const color      = accountColor(account.accountType);
-                const initials   = accountInitials(account.bank || account.accountName || '');
-                const badge      = accountTypeBadge(account.accountType);
-                const pctOfTotal = metrics.totalBalance > 0
-                  ? Math.round(((account.currentBalance || 0) / metrics.totalBalance) * 100)
-                  : 0;
+                const origIdx     = accounts.findIndex(a => a === account);
+                const color       = accountColor(account.accountType);
+                const initials    = accountInitials(account.bank || account.accountName || '');
+                const badge       = accountTypeBadge(account.accountType);
+                const balance     = account.currentBalance || 0;
+                const netDep      = computeNetDeposits(account);
+                const growth      = balance - netDep;
+                const growthPct   = netDep > 0 ? (growth / netDep) * 100 : 0;
 
                 return (
                   <div key={i} className="account-row" style={{ cursor: 'pointer' }} onClick={() => navigate(`/mobile/savings/account/${origIdx}`)}>
@@ -286,10 +323,10 @@ export default function SavingsOverview() {
                     {/* Balance */}
                     <div style={{ textAlign: 'right', marginLeft: '14px', flexShrink: 0 }}>
                       <p style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 800, fontSize: '15px', color: '#dae2fd', margin: '0 0 2px' }}>
-                        {fmt(account.currentBalance)}
+                        {fmt(balance)}
                       </p>
-                      <p style={{ fontSize: '11px', color: '#64748b', margin: 0 }}>
-                        {pctOfTotal}% of total
+                      <p style={{ fontSize: '11px', color: growthPct > 0 ? '#4edea3' : growthPct < 0 ? '#ff6b6b' : '#ffb95f', margin: 0 }}>
+                        {fmtPct(growthPct)}
                       </p>
                     </div>
                     <span className="material-symbols-outlined row-chevron">chevron_right</span>
