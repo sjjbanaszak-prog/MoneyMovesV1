@@ -118,13 +118,18 @@
 }
 
 /* ---- Form inputs ---- */
+/* Prevent iOS Safari from zooming on focus — must be >= 16px */
+input, select, textarea {
+  font-size: 16px !important;
+}
+
 .input-field {
   background: #060e20;
   border-radius: 10px;
   padding: 14px 16px;
   color: #dae2fd;
   font-family: 'Inter', sans-serif;
-  font-size: 15px;
+  font-size: 16px;
   border: 1px solid rgba(173, 198, 255, 0.12);
   outline: none;
   width: 100%;
