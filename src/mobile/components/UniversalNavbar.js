@@ -24,20 +24,28 @@ const TABS = [
 
 const SECTIONS = ['pension', 'mortgage', 'savings', 'income'];
 
-// Sections whose tabs are display-only (not yet navigable)
-const DISABLED_SECTIONS = ['income'];
+// Segments enabled per section. Omitting a section means all tabs are enabled.
+// Segments listed here are navigable; all others are greyed-out and non-clickable.
+const ENABLED_SEGMENTS = {
+  income: ['', '/calculator'],
+};
 
 export default function UniversalNavbar() {
   const { pathname } = useLocation();
 
-  const section   = SECTIONS.find(s => pathname.startsWith(`/mobile/${s}`)) || 'pension';
-  const base      = `/mobile/${section}`;
-  const isDisabled = DISABLED_SECTIONS.includes(section);
+  const section = SECTIONS.find(s => pathname.startsWith(`/mobile/${s}`)) || 'pension';
+  const base    = `/mobile/${section}`;
+  const enabledSet = ENABLED_SEGMENTS[section] || null; // null = all enabled
 
   function isActive(segment) {
     const full = base + segment;
     if (segment === '') return pathname === base || pathname === `${base}/`;
     return pathname.startsWith(full);
+  }
+
+  function isEnabled(segment) {
+    if (!enabledSet) return true;
+    return enabledSet.includes(segment);
   }
 
   return (
@@ -54,11 +62,12 @@ export default function UniversalNavbar() {
       gap: '4px',
     }}>
       {TABS.map(tab => {
-        const active = isActive(tab.segment);
+        const active  = isActive(tab.segment);
+        const enabled = isEnabled(tab.segment);
         const btn = (
           <button
             className={`nav-btn${active ? ' active' : ''}`}
-            style={{ width: '100%', cursor: isDisabled ? 'default' : 'pointer', opacity: isDisabled && !active ? 0.4 : 1 }}
+            style={{ width: '100%', cursor: enabled ? 'pointer' : 'default', opacity: enabled ? 1 : 0.35 }}
           >
             <span className="material-symbols-outlined" style={{ fontSize: '22px' }}>
               {tab.icon}
@@ -67,7 +76,7 @@ export default function UniversalNavbar() {
           </button>
         );
 
-        if (isDisabled) {
+        if (!enabled) {
           return <div key={tab.segment} style={{ flex: 1 }}>{btn}</div>;
         }
         return (

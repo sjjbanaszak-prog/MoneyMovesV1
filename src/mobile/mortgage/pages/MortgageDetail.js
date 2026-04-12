@@ -318,12 +318,19 @@ function MortgagePaymentChart({ mortgage }) {
 }
 
 // ---- Equity progress bar ----
-function EquityBar({ equity, outstanding }) {
+function EquityBar({ equity, outstanding, equityFromPayments, equityFromGrowth }) {
   const total  = equity + outstanding || 1;
   const equPct = Math.round((equity / total) * 100);
   const outPct = 100 - equPct;
+
+  // Second bar: split of equity between payments and growth
+  const hasGrowthSplit = equityFromPayments != null && equityFromGrowth != null && equity > 0;
+  const paymentsPct = hasGrowthSplit ? Math.round((equityFromPayments / equity) * 100) : 100;
+  const growthPct   = hasGrowthSplit ? 100 - paymentsPct : 0;
+
   return (
     <div>
+      {/* Bar 1: Equity vs Outstanding */}
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
         <span style={{ fontSize: '10px', color: '#64748b', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Equity</span>
         <span style={{ fontSize: '10px', color: '#64748b', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Outstanding</span>
@@ -332,10 +339,32 @@ function EquityBar({ equity, outstanding }) {
         <div style={{ width: `${equPct}%`, background: 'linear-gradient(90deg, #4edea3, #22c87a)', transition: 'width 0.6s ease' }} />
         <div style={{ flex: 1, background: 'rgba(173,198,255,0.15)' }} />
       </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px', marginBottom: '16px' }}>
         <span style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 700, fontSize: '13px', color: '#4edea3' }}>{equPct}%</span>
         <span style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 700, fontSize: '13px', color: '#adc6ff' }}>{outPct}% LTV</span>
       </div>
+
+      {/* Bar 2: Equity split — Payments vs Growth */}
+      {hasGrowthSplit && (
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+            <span style={{ fontSize: '10px', color: '#64748b', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Payments</span>
+            <span style={{ fontSize: '10px', color: '#64748b', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Growth</span>
+          </div>
+          <div style={{ display: 'flex', height: '8px', borderRadius: '4px', overflow: 'hidden', background: 'rgba(173,198,255,0.1)' }}>
+            <div style={{ width: `${paymentsPct}%`, background: 'linear-gradient(90deg, #adc6ff, #7aa5ff)', transition: 'width 0.6s ease' }} />
+            {growthPct > 0 && (
+              <div style={{ flex: 1, background: 'linear-gradient(90deg, #4edea3, #22c87a)' }} />
+            )}
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px' }}>
+            <span style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 700, fontSize: '13px', color: '#adc6ff' }}>{fmt(equityFromPayments)}</span>
+            <span style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 700, fontSize: '13px', color: growthPct > 0 ? '#4edea3' : '#64748b' }}>
+              {growthPct > 0 ? fmt(equityFromGrowth) : '–'}
+            </span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -368,6 +397,12 @@ export default function MortgageDetail() {
   const initials = propertyInitials(mortgage.name);
 
   const equity   = (mortgage.propertyValue || 0) - (mortgage.outstandingBalance || 0);
+
+  // Equity split: payments = deposit + capital repaid; growth = property appreciation
+  const purchasePrice      = mortgage.purchasePrice || mortgage.propertyValue || 0;
+  const equityFromPayments = Math.max(0, purchasePrice - (mortgage.outstandingBalance || 0));
+  const equityFromGrowth   = Math.max(0, (mortgage.propertyValue || 0) - purchasePrice);
+
   const ltvPct   = mortgage.propertyValue > 0
     ? Math.round((mortgage.outstandingBalance / mortgage.propertyValue) * 100)
     : 0;
@@ -507,7 +542,12 @@ export default function MortgageDetail() {
           <h3 style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 800, fontSize: '15px', color: '#dae2fd', margin: '0 0 16px' }}>
             Equity Progress
           </h3>
-          <EquityBar equity={equity} outstanding={mortgage.outstandingBalance} />
+          <EquityBar
+            equity={equity}
+            outstanding={mortgage.outstandingBalance}
+            equityFromPayments={equityFromPayments}
+            equityFromGrowth={equityFromGrowth}
+          />
         </div>
 
         {/* Mortgage Details */}
