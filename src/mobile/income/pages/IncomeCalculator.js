@@ -131,6 +131,8 @@ function DeductionRow({ label, value, pct, color }) {
   );
 }
 
+// ── Sankey Diagram ────────────────────────────────────────────────────────────
+
 // ── Main Component ────────────────────────────────────────────────────────────
 
 export default function IncomeCalculator() {
@@ -155,6 +157,7 @@ export default function IncomeCalculator() {
   const [hasEmployerMatch,setHasEmployerMatch]= useState(true);
   const [employerMatch,   setEmployerMatch]   = useState('3');
 
+  const [taxYear,         setTaxYear]         = useState('2026/27');
   const [taxCode,         setTaxCode]         = useState('1257L');
   const [isScotland,      setIsScotland]      = useState(false);
 
@@ -188,6 +191,7 @@ export default function IncomeCalculator() {
       if (p.pensionScheme   != null) setPensionScheme(p.pensionScheme);
       if (p.hasEmployerMatch!= null) setHasEmployerMatch(p.hasEmployerMatch);
       if (p.employerMatch   != null) setEmployerMatch(String(p.employerMatch));
+      if (p.taxYear         != null) setTaxYear(p.taxYear);
       if (p.taxCode         != null) setTaxCode(p.taxCode);
       if (p.isScotland      != null) setIsScotland(p.isScotland);
       if (p.hasStudentLoan  != null) setHasStudentLoan(p.hasStudentLoan);
@@ -204,6 +208,7 @@ export default function IncomeCalculator() {
           annualIncome, hasBonus, bonus,
           pensionEnabled, pensionMode, pensionAmount, pensionScheme,
           hasEmployerMatch, employerMatch,
+          taxYear,
           taxCode, isScotland,
           hasStudentLoan, studentLoanPlan,
         },
@@ -219,6 +224,7 @@ export default function IncomeCalculator() {
     annualIncome, hasBonus, bonus,
     pensionEnabled, pensionMode, pensionAmount, pensionScheme,
     hasEmployerMatch, employerMatch,
+    taxYear,
     taxCode, isScotland,
     hasStudentLoan, studentLoanPlan,
   ]);
@@ -238,6 +244,7 @@ export default function IncomeCalculator() {
       annualIncome:        income,
       bonusAmount:         parseFloat(bonus) || 0,
       hasBonusCommission:  hasBonus,
+      taxYear:             taxYear,
       taxCode:             taxCode || '1257L',
       pensionContribution: pensionEnabled ? (parseFloat(pensionAmount) || 0) : 0,
       pensionType:         pensionMode,
@@ -253,7 +260,7 @@ export default function IncomeCalculator() {
     annualIncome, hasBonus, bonus,
     pensionEnabled, pensionMode, pensionAmount, pensionScheme,
     hasEmployerMatch, employerMatch,
-    taxCode, hasStudentLoan, studentLoanPlan,
+    taxYear, taxCode, hasStudentLoan, studentLoanPlan,
   ]);
 
   const results = useMemo(() => calculateIncomeTax(calcInputs), [calcInputs]);
@@ -268,9 +275,6 @@ export default function IncomeCalculator() {
   if (step === 0) {
     const pensionSuffix = pensionMode === 'percentage' ? '%' : '£';
     const pensionPrefix = pensionMode === 'percentage' ? null : '£';
-
-    const liveMonthly = Math.round(results.monthlyTakeHome);
-    const liveRate    = results.effectiveTaxRate.toFixed(1);
 
     return (
       <IncomeLayout>
@@ -445,6 +449,21 @@ export default function IncomeCalculator() {
                 Taxation Profile
               </p>
 
+              {/* Tax Year */}
+              <div style={{ marginBottom: '14px', position: 'relative' }}>
+                <label style={labelStyle}>Tax Year</label>
+                <select
+                  value={taxYear}
+                  onChange={e => setTaxYear(e.target.value)}
+                  style={{ ...inputStyle, appearance: 'none', paddingRight: '36px', cursor: 'pointer' }}
+                >
+                  {['2022/23','2023/24','2024/25','2025/26','2026/27'].map(yr => (
+                    <option key={yr} value={yr}>{yr}</option>
+                  ))}
+                </select>
+                <span className="material-symbols-outlined" style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: '#64748b', fontSize: '18px', pointerEvents: 'none' }}>expand_more</span>
+              </div>
+
               {/* Tax Code */}
               <div style={{ marginBottom: '14px' }}>
                 <label style={labelStyle}>Tax Code</label>
@@ -456,7 +475,7 @@ export default function IncomeCalculator() {
                   style={{ ...inputStyle }}
                 />
                 <p style={{ fontSize: '11px', color: '#64748b', margin: '6px 0 0' }}>
-                  1257L is the standard code for 2025/26 (£12,570 personal allowance)
+                  1257L is the standard code for {taxYear} (£12,570 personal allowance)
                 </p>
               </div>
 
@@ -516,37 +535,6 @@ export default function IncomeCalculator() {
               )}
             </div>
 
-            {/* ── Live Summary (glassmorphism) ── */}
-            {canCalculate && (
-              <div style={{
-                background: 'rgba(11,19,38,0.7)',
-                backdropFilter: 'blur(20px)',
-                border: '1px solid rgba(78,222,163,0.15)',
-                borderRadius: '16px', padding: '20px',
-                marginBottom: '14px', position: 'relative', overflow: 'hidden',
-              }}>
-                <div style={{ position: 'absolute', right: '-16px', top: '-16px', width: '80px', height: '80px', background: 'rgba(78,222,163,0.06)', borderRadius: '50%', filter: 'blur(30px)', pointerEvents: 'none' }} />
-                <div style={{ position: 'relative', zIndex: 1 }}>
-                  <p style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 4px' }}>Estimated Take-Home</p>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginBottom: '16px' }}>
-                    <p style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 900, fontSize: '36px', color: '#4edea3', margin: 0, lineHeight: 1 }}>
-                      {fmt(liveMonthly)}
-                    </p>
-                    <span style={{ fontSize: '14px', fontWeight: 700, color: '#64748b' }}>/mo</span>
-                  </div>
-                  <div style={{ marginBottom: '8px' }}>
-                    <div style={{ height: '4px', width: '100%', background: 'rgba(173,198,255,0.08)', borderRadius: '2px', overflow: 'hidden', marginBottom: '6px' }}>
-                      <div style={{ width: `${Math.max(0, 100 - parseFloat(liveRate))}%`, height: '100%', background: '#4edea3', transition: 'width 0.5s' }} />
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span style={{ fontSize: '10px', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>Effective Tax Rate</span>
-                      <span style={{ fontSize: '12px', color: '#4edea3', fontWeight: 700 }}>{liveRate}%</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
             {/* ── CTA ── */}
             <button
               onClick={() => canCalculate && setStep(1)}
@@ -601,12 +589,12 @@ export default function IncomeCalculator() {
 
   // Period scaling
   const PERIODS = [
-    { key: 'weekly',  label: 'Weekly',  divisor: 52,  suffix: '/wk' },
-    { key: 'monthly', label: 'Monthly', divisor: 12,  suffix: '/mo' },
-    { key: 'annual',  label: 'Annual',  divisor: 1,   suffix: '/yr' },
+    { key: 'weekly',  label: 'Weekly',  divisor: 52 },
+    { key: 'monthly', label: 'Monthly', divisor: 12 },
+    { key: 'annual',  label: 'Annual',  divisor: 1  },
   ];
   const activePeriod = PERIODS.find(p => p.key === period);
-  const { divisor, suffix } = activePeriod;
+  const { divisor } = activePeriod;
 
   function scale(annualVal) { return annualVal / divisor; }
   function fmtS(annualVal) { return fmtFull(scale(annualVal)); }
@@ -659,7 +647,6 @@ export default function IncomeCalculator() {
                 <p style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 900, fontSize: '28px', color: '#003824', margin: 0, lineHeight: 1 }}>
                   {fmt(scale(r.takeHomePay))}
                 </p>
-                <p style={{ fontSize: '11px', color: 'rgba(0,56,36,0.55)', margin: '6px 0 0' }}>{suffix}</p>
               </div>
               <div style={{ background: 'rgba(0,56,36,0.1)', borderRadius: '14px', padding: '14px' }}>
                 <p style={{ fontSize: '11px', color: 'rgba(0,56,36,0.6)', margin: '0 0 4px' }}>Gross {activePeriod.label}</p>
@@ -721,17 +708,15 @@ export default function IncomeCalculator() {
               <div style={{ background: '#222a3d', borderRadius: '16px', padding: '16px', borderLeft: '4px solid #ffb95f' }}>
                 <p style={{ fontSize: '11px', color: '#bbcabf', margin: '0 0 8px' }}>Your Contribution</p>
                 <p style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 900, fontSize: '20px', color: '#ffb95f', margin: '0 0 4px' }}>{fmt(scale(r.employeePension))}</p>
-                <p style={{ fontSize: '11px', color: '#64748b', margin: 0 }}>{suffix}</p>
               </div>
               <div style={{ background: '#222a3d', borderRadius: '16px', padding: '16px', borderLeft: '4px solid #4edea3' }}>
                 <p style={{ fontSize: '11px', color: '#bbcabf', margin: '0 0 8px' }}>Employer Adds</p>
-                <p style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 900, fontSize: '20px', color: '#4edea3', margin: '0 0 4px' }}>{fmt(scale(r.employerPension))}</p>
-                <p style={{ fontSize: '11px', color: '#64748b', margin: 0 }}>{suffix}</p>
+                <p style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 900, fontSize: '20px', color: '#4edea3', margin: 0 }}>{fmt(scale(r.employerPension))}</p>
               </div>
 
               {r.totalPensionContribution > 0 && (
                 <div style={{ gridColumn: '1 / -1', background: 'rgba(78,222,163,0.06)', border: '1px solid rgba(78,222,163,0.15)', borderRadius: '12px', padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <p style={{ fontSize: '12px', color: '#bbcabf', margin: 0 }}>Total Pension Pot Growth {suffix}</p>
+                  <p style={{ fontSize: '12px', color: '#bbcabf', margin: 0 }}>Total Pension Pot Growth</p>
                   <p style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 800, fontSize: '15px', color: '#4edea3', margin: 0 }}>{fmt(scale(r.totalPensionContribution))}</p>
                 </div>
               )}

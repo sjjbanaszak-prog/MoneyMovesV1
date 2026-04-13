@@ -63,6 +63,154 @@ export const QUALIFYING_EARNINGS = {
   upperLimit: 50270     // Upper earnings threshold
 };
 
+// ============================================================================
+// PER TAX YEAR RATE TABLES (2022/23 – 2026/27)
+// ============================================================================
+
+/**
+ * Rate tables keyed by tax year string (e.g. '2026/27').
+ *
+ * NI notes:
+ *  2022/23 — PT raised from £9,880 to £12,570 on 6 Jul 2022; HMRC annualised PT = £11,908.
+ *            Main rate was 13.25% (6 Apr–5 Nov) then 12% (6 Nov–5 Apr); blended ≈ 12.73%.
+ *            Additional rate was 3.25% then 2%; blended ≈ 2.73%.
+ *  2023/24 — Main rate was 12% (6 Apr–5 Jan 2024) then cut to 10% (6 Jan–5 Apr 2024); blended ≈ 11.5%.
+ *  2024/25 onwards — 8% employee main rate (from 6 April 2024).
+ *
+ * Student loan Plan 5 was introduced August 2023 (not applicable for 2022/23).
+ */
+export const TAX_YEAR_DATA = {
+  '2022/23': {
+    taxRates: {
+      personalAllowance:       12570,
+      basicRateLimit:          37700,
+      higherRateThreshold:     50270,
+      additionalRateThreshold: 150000, // £150k threshold, before April 2023 reduction
+      basicRate:    0.20,
+      higherRate:   0.40,
+      additionalRate: 0.45,
+    },
+    niRates: {
+      // PT raised from £9,880 to £12,570 on 6 Jul 2022; HMRC annualised equivalent = £11,908
+      primaryThreshold:   11908,
+      upperEarningsLimit: 50270,
+      // 13.25% (213 days) then 12% (150 days) → blended 12.73%
+      mainRate:           0.1273,
+      // 3.25% (213 days) then 2% (150 days) → blended 2.73%
+      additionalRate:     0.0273,
+    },
+    studentLoanThresholds: {
+      plan1:        { threshold: 20195, rate: 0.09 },
+      plan2:        { threshold: 27295, rate: 0.09 },
+      plan4:        { threshold: 25375, rate: 0.09 },
+      plan5:        null, // not yet introduced
+      postgraduate: { threshold: 21000, rate: 0.06 },
+    },
+    qualifyingEarnings: { lowerLimit: 6240, upperLimit: 50270 },
+  },
+  '2023/24': {
+    taxRates: {
+      personalAllowance:       12570,
+      basicRateLimit:          37700,
+      higherRateThreshold:     50270,
+      additionalRateThreshold: 125140, // reduced from £150k
+      basicRate:    0.20,
+      higherRate:   0.40,
+      additionalRate: 0.45,
+    },
+    niRates: {
+      primaryThreshold:   12570,
+      upperEarningsLimit: 50270,
+      // 12% (275 days, Apr–Dec 2023) then 10% (90 days, Jan–Mar 2024) → blended 11.5%
+      mainRate:           0.115,
+      additionalRate:     0.02,
+    },
+    studentLoanThresholds: {
+      plan1:        { threshold: 22015, rate: 0.09 },
+      plan2:        { threshold: 27295, rate: 0.09 },
+      plan4:        { threshold: 27660, rate: 0.09 },
+      plan5:        { threshold: 25000, rate: 0.09 }, // introduced Aug 2023
+      postgraduate: { threshold: 21000, rate: 0.06 },
+    },
+    qualifyingEarnings: { lowerLimit: 6240, upperLimit: 50270 },
+  },
+  '2024/25': {
+    taxRates: {
+      personalAllowance:       12570,
+      basicRateLimit:          37700,
+      higherRateThreshold:     50270,
+      additionalRateThreshold: 125140,
+      basicRate:    0.20,
+      higherRate:   0.40,
+      additionalRate: 0.45,
+    },
+    niRates: {
+      primaryThreshold:   12570,
+      upperEarningsLimit: 50270,
+      mainRate:           0.08, // cut from 10% to 8% April 2024
+      additionalRate:     0.02,
+    },
+    studentLoanThresholds: {
+      plan1:        { threshold: 24990, rate: 0.09 },
+      plan2:        { threshold: 27295, rate: 0.09 },
+      plan4:        { threshold: 31395, rate: 0.09 },
+      plan5:        { threshold: 25000, rate: 0.09 },
+      postgraduate: { threshold: 21000, rate: 0.06 },
+    },
+    qualifyingEarnings: { lowerLimit: 6240, upperLimit: 50270 },
+  },
+  '2025/26': {
+    taxRates: {
+      personalAllowance:       12570,
+      basicRateLimit:          37700,
+      higherRateThreshold:     50270,
+      additionalRateThreshold: 125140,
+      basicRate:    0.20,
+      higherRate:   0.40,
+      additionalRate: 0.45,
+    },
+    niRates: {
+      primaryThreshold:   12570,
+      upperEarningsLimit: 50270,
+      mainRate:           0.08,
+      additionalRate:     0.02,
+    },
+    studentLoanThresholds: {
+      plan1:        { threshold: 26065, rate: 0.09 },
+      plan2:        { threshold: 28470, rate: 0.09 },
+      plan4:        { threshold: 32745, rate: 0.09 },
+      plan5:        { threshold: 25000, rate: 0.09 },
+      postgraduate: { threshold: 21000, rate: 0.06 },
+    },
+    qualifyingEarnings: { lowerLimit: 6240, upperLimit: 50270 },
+  },
+  '2026/27': {
+    taxRates: {
+      personalAllowance:       12570,
+      basicRateLimit:          37700,
+      higherRateThreshold:     50270,
+      additionalRateThreshold: 125140,
+      basicRate:    0.20,
+      higherRate:   0.40,
+      additionalRate: 0.45,
+    },
+    niRates: {
+      primaryThreshold:   12570,
+      upperEarningsLimit: 50270,
+      mainRate:           0.08,
+      additionalRate:     0.02,
+    },
+    studentLoanThresholds: {
+      plan1:        { threshold: 26065, rate: 0.09 },
+      plan2:        { threshold: 28470, rate: 0.09 },
+      plan4:        { threshold: 32745, rate: 0.09 },
+      plan5:        { threshold: 25000, rate: 0.09 },
+      postgraduate: { threshold: 21000, rate: 0.06 },
+    },
+    qualifyingEarnings: { lowerLimit: 6240, upperLimit: 50270 },
+  },
+};
+
 /**
  * Benefits in Kind constants for 2025/26
  * @constant
@@ -125,8 +273,10 @@ export const parseTaxCode = (code) => {
   // BR code: Basic Rate - no allowance, all income taxed at 20%
   if (letterPart === 'BR') return { allowance: 0, isBasicRate: true };
 
-  // K code: Indicates negative allowance (untaxed income to collect)
-  if (letterPart === 'K') return { allowance: 0, extraIncome: numericPart * 10 };
+  // K code: Indicates negative allowance (untaxed income to collect).
+  // K always appears as the first character; suffix letters (e.g. X = week 1/month 1 basis)
+  // must not prevent recognition — check the code starts with K, not that letterPart === 'K'.
+  if (cleanCode.charAt(0) === 'K') return { allowance: 0, extraIncome: numericPart * 10 };
 
   // 0T code: No allowance
   if (cleanCode.includes('0T')) return { allowance: 0 };
@@ -460,6 +610,14 @@ export const calculateBenefitsInKind = (benefitsList = []) => {
  * // Returns full calculation breakdown
  */
 export const calculateIncomeTax = (inputData) => {
+  // Resolve tax year rate tables
+  const taxYear = inputData.taxYear || '2026/27';
+  const yearData = TAX_YEAR_DATA[taxYear] || TAX_YEAR_DATA['2026/27'];
+  const TR  = yearData.taxRates;
+  const NIR = yearData.niRates;
+  const SLT = yearData.studentLoanThresholds;
+  const QE  = yearData.qualifyingEarnings;
+
   // Parse and validate inputs
   const annualIncome = parseFloat(inputData.annualIncome) || 0;
   const bonusAmount = parseFloat(inputData.bonusAmount) || 0;
@@ -495,7 +653,8 @@ export const calculateIncomeTax = (inputData) => {
   // Use base salary only (excluding bonus) for qualifying earnings calculation
   let qualifyingEarnings = salaryForPension;
   if (inputData.pensionScheme === 'qualifying_earnings') {
-    qualifyingEarnings = calculateQualifyingEarnings(salaryForPension);
+    const cappedQE = Math.min(Math.max(salaryForPension, QE.lowerLimit), QE.upperLimit);
+    qualifyingEarnings = Math.max(0, cappedQE - QE.lowerLimit);
   }
 
   // Calculate employee pension contribution
@@ -589,21 +748,21 @@ export const calculateIncomeTax = (inputData) => {
 
   let incomeTax = 0;
   if (taxableAfterAllowance > 0) {
-    // Basic rate band: 20% on first £37,700
-    if (taxableAfterAllowance <= TAX_RATES.basicRateLimit) {
-      incomeTax = taxableAfterAllowance * TAX_RATES.basicRate;
+    // Basic rate band
+    if (taxableAfterAllowance <= TR.basicRateLimit) {
+      incomeTax = taxableAfterAllowance * TR.basicRate;
     }
-    // Higher rate band: 40% on £37,701 - £87,570 (after allowance)
-    else if (taxableAfterAllowance <= (TAX_RATES.additionalRateThreshold - personalAllowance)) {
-      const basicTax = TAX_RATES.basicRateLimit * TAX_RATES.basicRate;
-      const higherTax = (taxableAfterAllowance - TAX_RATES.basicRateLimit) * TAX_RATES.higherRate;
+    // Higher rate band
+    else if (taxableAfterAllowance <= (TR.additionalRateThreshold - personalAllowance)) {
+      const basicTax = TR.basicRateLimit * TR.basicRate;
+      const higherTax = (taxableAfterAllowance - TR.basicRateLimit) * TR.higherRate;
       incomeTax = basicTax + higherTax;
     }
-    // Additional rate band: 45% on income over £125,140
+    // Additional rate band
     else {
-      const basicTax = TAX_RATES.basicRateLimit * TAX_RATES.basicRate;
-      const higherTax = ((TAX_RATES.additionalRateThreshold - personalAllowance) - TAX_RATES.basicRateLimit) * TAX_RATES.higherRate;
-      const additionalTax = (taxableAfterAllowance - (TAX_RATES.additionalRateThreshold - personalAllowance)) * TAX_RATES.additionalRate;
+      const basicTax = TR.basicRateLimit * TR.basicRate;
+      const higherTax = ((TR.additionalRateThreshold - personalAllowance) - TR.basicRateLimit) * TR.higherRate;
+      const additionalTax = (taxableAfterAllowance - (TR.additionalRateThreshold - personalAllowance)) * TR.additionalRate;
       incomeTax = basicTax + higherTax + additionalTax;
     }
   }
@@ -613,15 +772,12 @@ export const calculateIncomeTax = (inputData) => {
   // ============================================================================
 
   let nationalInsurance = 0;
-  if (niableIncome > NI_RATES.primaryThreshold) {
-    // Main rate: 8% on earnings between £12,571 - £50,270
-    if (niableIncome <= NI_RATES.upperEarningsLimit) {
-      nationalInsurance = (niableIncome - NI_RATES.primaryThreshold) * NI_RATES.mainRate;
-    }
-    // Additional rate: 2% on earnings above £50,270
-    else {
-      const mainNI = (NI_RATES.upperEarningsLimit - NI_RATES.primaryThreshold) * NI_RATES.mainRate;
-      const additionalNI = (niableIncome - NI_RATES.upperEarningsLimit) * NI_RATES.additionalRate;
+  if (niableIncome > NIR.primaryThreshold) {
+    if (niableIncome <= NIR.upperEarningsLimit) {
+      nationalInsurance = (niableIncome - NIR.primaryThreshold) * NIR.mainRate;
+    } else {
+      const mainNI = (NIR.upperEarningsLimit - NIR.primaryThreshold) * NIR.mainRate;
+      const additionalNI = (niableIncome - NIR.upperEarningsLimit) * NIR.additionalRate;
       nationalInsurance = mainNI + additionalNI;
     }
   }
@@ -632,7 +788,7 @@ export const calculateIncomeTax = (inputData) => {
 
   let studentLoanRepayment = 0;
   if (inputData.hasStudentLoan && grossIncome > 0) {
-    const plan = STUDENT_LOAN_THRESHOLDS[inputData.studentLoanPlan];
+    const plan = SLT[inputData.studentLoanPlan];
     if (plan && grossIncome > plan.threshold) {
       studentLoanRepayment = (grossIncome - plan.threshold) * plan.rate;
     }
@@ -648,13 +804,13 @@ export const calculateIncomeTax = (inputData) => {
     pensionTaxRelief = employeePension * 0.20;
 
     // Higher rate relief: additional 20% if higher rate taxpayer
-    if (taxableAfterAllowance > TAX_RATES.basicRateLimit) {
-      const higherRateAmount = Math.min(employeePension, taxableAfterAllowance - TAX_RATES.basicRateLimit);
+    if (taxableAfterAllowance > TR.basicRateLimit) {
+      const higherRateAmount = Math.min(employeePension, taxableAfterAllowance - TR.basicRateLimit);
       pensionTaxRelief += higherRateAmount * 0.20;
 
       // Additional rate relief: additional 5% if additional rate taxpayer
-      if (taxableAfterAllowance > (TAX_RATES.additionalRateThreshold - personalAllowance)) {
-        const additionalRateAmount = Math.min(employeePension, taxableAfterAllowance - (TAX_RATES.additionalRateThreshold - personalAllowance));
+      if (taxableAfterAllowance > (TR.additionalRateThreshold - personalAllowance)) {
+        const additionalRateAmount = Math.min(employeePension, taxableAfterAllowance - (TR.additionalRateThreshold - personalAllowance));
         pensionTaxRelief += additionalRateAmount * 0.05;
       }
     }
