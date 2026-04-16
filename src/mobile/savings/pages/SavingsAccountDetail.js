@@ -187,27 +187,61 @@ function computeNetDeposits(account) {
   return Math.round(totalCredits - totalDebits);
 }
 
-// ---- Monthly savings history bar chart (FY: Apr → Mar) ----
-function SavingsHistoryChart({ account, color, currentBalance }) {
+// ---- Monthly savings history bar chart ----
+function SavingsHistoryChart({ account, color, currentBalance, mode = 'fy' }) {
   const [hoveredIdx, setHoveredIdx] = useState(null);
 
-  const today = new Date();
-  const nowMonth = today.getMonth() + 1; // 1-indexed
-  const nowDay   = today.getDate();
-  const currentFYStart = (nowMonth > 4 || (nowMonth === 4 && nowDay >= 6))
-    ? today.getFullYear()
-    : today.getFullYear() - 1;
-  const fyLabel = `${currentFYStart}/${String(currentFYStart + 1).slice(-2)}`;
+  const today      = new Date();
+  const nowYear    = today.getFullYear();
+  const nowMonth   = today.getMonth() + 1; // 1-indexed
+  const nowMonthIdx = today.getMonth();     // 0-indexed
+  const nowDay     = today.getDate();
 
-  // Bucket index for today within the FY (0 = Apr, ..., 11 = Mar)
-  const currentBucketIdx = (() => {
-    const m = today.getMonth();
-    const d = today.getDate();
-    if (m === 3 && d < 6) return 11; // April 1-5: end of previous FY
-    return (m - 3 + 12) % 12;
-  })();
+  const currentFYStart = (nowMonth > 4 || (nowMonth === 4 && nowDay >= 6))
+    ? nowYear
+    : nowYear - 1;
+
+  const currentBucketIdx = mode === 'cy'
+    ? nowMonthIdx
+    : (nowMonthIdx === 3 && nowDay < 6) ? 11 : (nowMonthIdx - 3 + 12) % 12;
+
+  const periodLabel = mode === 'cy'
+    ? String(nowYear)
+    : `${currentFYStart}/${String(currentFYStart + 1).slice(-2)}`;
 
   const monthlyData = useMemo(() => {
+    const { rawData = [], mapping = {}, dateFormat } = account;
+    const creditCol = mapping.credit;
+    const amountCol = mapping.amount;
+
+    if (mode === 'cy') {
+      const buckets = Array.from({ length: 12 }, (_, i) => ({
+        label:  new Date(nowYear, i, 1).toLocaleString('en-GB', { month: 'short' }),
+        amount: 0,
+      }));
+      rawData.forEach(row => {
+        if (!row[mapping.date]) return;
+        const d = parseDate(row[mapping.date], dateFormat);
+        if (!d || d.getFullYear() !== nowYear) return;
+        let credit = 0;
+        if (creditCol && row[creditCol] != null && row[creditCol] !== '') {
+          credit = parseAmount(row[creditCol]);
+        } else if (amountCol) {
+          const amt = parseAmount(row[amountCol]);
+          if (amt > 0) credit = amt;
+        }
+        if (credit > 0) buckets[d.getMonth()].amount += credit;
+      });
+      (account.manualTransactions || []).forEach(tx => {
+        if (tx.direction !== 'credit') return;
+        const d = tx.date ? new Date(tx.date) : null;
+        if (!d || isNaN(d.getTime()) || d.getFullYear() !== nowYear) return;
+        buckets[d.getMonth()].amount += tx.amount;
+      });
+      return buckets;
+    }
+
+    // FY mode: April-indexed buckets
     const buckets = Array.from({ length: 12 }, (_, i) => {
       const calMonth = (3 + i) % 12;
       const year = calMonth >= 3 ? currentFYStart : currentFYStart + 1;
@@ -216,23 +250,15 @@ function SavingsHistoryChart({ account, color, currentBalance }) {
         amount: 0,
       };
     });
-
-    const { rawData = [], mapping = {}, dateFormat } = account;
-    const creditCol = mapping.credit;
-    const amountCol = mapping.amount;
-
     rawData.forEach(row => {
       if (!row[mapping.date]) return;
       const d = parseDate(row[mapping.date], dateFormat);
       if (!d) return;
-
-      // Determine which FY this transaction belongs to
       const dMonth = d.getMonth() + 1;
       const dDay   = d.getDate();
       const dYear  = d.getFullYear();
       const txFYStart = (dMonth > 4 || (dMonth === 4 && dDay >= 6)) ? dYear : dYear - 1;
       if (txFYStart !== currentFYStart) return;
-
       let credit = 0;
       if (creditCol && row[creditCol] != null && row[creditCol] !== '') {
         credit = parseAmount(row[creditCol]);
@@ -245,8 +271,6 @@ function SavingsHistoryChart({ account, color, currentBalance }) {
         buckets[bucketIdx].amount += credit;
       }
     });
-
-    // Also include manual credit transactions for this FY
     (account.manualTransactions || []).forEach(tx => {
       if (tx.direction !== 'credit') return;
       const d = tx.date ? new Date(tx.date) : null;
@@ -259,9 +283,8 @@ function SavingsHistoryChart({ account, color, currentBalance }) {
       const bucketIdx = ((d.getMonth()) - 3 + 12) % 12;
       buckets[bucketIdx].amount += tx.amount;
     });
-
     return buckets;
-  }, [account, currentFYStart]);
+  }, [account, mode, currentFYStart, nowYear]);
 
   // Value-trajectory line (same as pension ContributionBarChart)
   const linePath = useMemo(() => {
@@ -320,7 +343,7 @@ function SavingsHistoryChart({ account, color, currentBalance }) {
           boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
         }}>
           <p style={{ fontSize: '11px', fontWeight: 700, color: '#dae2fd', margin: '0 0 4px', fontFamily: 'Manrope, sans-serif' }}>
-            {monthlyData[hoveredIdx].label} {fyLabel}
+            {monthlyData[hoveredIdx].label} {periodLabel}
           </p>
           <p style={{ fontSize: '12px', fontWeight: 600, color: '#4edea3', margin: 0 }}>
             {fmt(monthlyData[hoveredIdx].amount)}
@@ -412,6 +435,7 @@ export default function SavingsAccountDetail() {
   const [editAccountName,   setEditAccountName]   = useState('');
   const [editInterestRate,  setEditInterestRate]  = useState('');
   const [isSavingDetails,   setIsSavingDetails]   = useState(false);
+  const [periodType,        setPeriodType]        = useState('fy');
 
   const account = accounts[Number(idx)];
   if (!account) return <Navigate to="/mobile/savings" replace />;
@@ -512,6 +536,36 @@ export default function SavingsAccountDetail() {
       if (tx.type === 'interest' || tx.type === 'transfer_in') return;
       const d = tx.date ? new Date(tx.date) : null;
       if (!d || d < fyStart) return;
+      total += tx.amount;
+    });
+    return Math.round(total);
+  }, [account]);
+
+  const cyTotal = useMemo(() => {
+    const nowY = new Date().getFullYear();
+    const { rawData = [], mapping = {}, dateFormat } = account;
+    const creditCol = mapping.credit;
+    const amountCol = mapping.amount;
+    let total = 0;
+    rawData.forEach(row => {
+      const d = parseDate(row[mapping.date], dateFormat);
+      if (!d || d.getFullYear() !== nowY) return;
+      const desc = String(row[mapping.description] || '').toLowerCase();
+      if (desc.includes('interest') || desc.includes('dividend') || desc.includes('transfer')) return;
+      let credit = 0;
+      if (creditCol && row[creditCol] != null && row[creditCol] !== '') {
+        credit = parseAmount(row[creditCol]);
+      } else if (amountCol) {
+        const amt = parseAmount(row[amountCol]);
+        if (amt > 0) credit = amt;
+      }
+      total += credit;
+    });
+    (account.manualTransactions || []).forEach(tx => {
+      if (tx.direction !== 'credit') return;
+      if (tx.type === 'interest' || tx.type === 'transfer_in') return;
+      const d = tx.date ? new Date(tx.date) : null;
+      if (!d || d.getFullYear() !== nowY) return;
       total += tx.amount;
     });
     return Math.round(total);
@@ -649,13 +703,25 @@ export default function SavingsAccountDetail() {
             <h3 style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 800, fontSize: '15px', color: '#dae2fd', margin: 0 }}>
               Savings History
             </h3>
-            <span style={{ fontSize: '12px', color: '#adc6ff', fontWeight: 600 }}>{fyLabel}</span>
+            <div style={{ display: 'flex', background: '#060e20', borderRadius: '8px', padding: '2px', gap: '2px' }}>
+              {['fy', 'cy'].map(t => (
+                <button key={t} onClick={() => setPeriodType(t)} style={{
+                  padding: '4px 10px', borderRadius: '6px', border: 'none', cursor: 'pointer',
+                  background: periodType === t ? '#4edea3' : 'transparent',
+                  color: periodType === t ? '#003824' : '#bbcabf',
+                  fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '11px',
+                  textTransform: 'uppercase', letterSpacing: '0.05em', transition: 'all 0.15s',
+                }}>
+                  {t.toUpperCase()}
+                </button>
+              ))}
+            </div>
           </div>
-          <SavingsHistoryChart account={account} color={color} currentBalance={currentBalance} />
+          <SavingsHistoryChart account={account} color={color} currentBalance={currentBalance} mode={periodType} />
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '12px', padding: '12px', background: 'rgba(173,198,255,0.04)', borderRadius: '10px' }}>
             <div>
-              <p style={{ fontSize: '11px', color: '#bbcabf', margin: '0 0 2px' }}>FY deposits</p>
-              <p style={{ fontWeight: 700, fontSize: '14px', color: '#4edea3', margin: 0 }}>{fmt(fyTotal)}</p>
+              <p style={{ fontSize: '11px', color: '#bbcabf', margin: '0 0 2px' }}>{periodType === 'fy' ? 'FY deposits' : 'CY deposits'}</p>
+              <p style={{ fontWeight: 700, fontSize: '14px', color: '#4edea3', margin: 0 }}>{fmt(periodType === 'fy' ? fyTotal : cyTotal)}</p>
             </div>
             <div style={{ textAlign: 'right' }}>
               <p style={{ fontSize: '11px', color: '#bbcabf', margin: '0 0 2px' }}>Net deposits</p>

@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { doc, getDoc } from 'firebase/firestore';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth, db } from '../../../firebase';
 import PensionLayout from '../PensionLayout';
@@ -121,6 +121,7 @@ export default function PensionCalculator() {
   const [user,               setUser]               = useState(null);
   const [incomeMonthlyContrib, setIncomeMonthlyContrib] = useState(0);
   const [hasIncomeData,      setHasIncomeData]      = useState(false);
+  const [saveStatus,         setSaveStatus]         = useState(null); // null | 'saving' | 'saved' | 'error'
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, u => setUser(u));
@@ -162,6 +163,35 @@ export default function PensionCalculator() {
       setHasIncomeData(monthly > 0);
     }).catch(() => {});
   }, [user]);
+
+  // Load saved calculator params (takes precedence over metric/profile seeding)
+  useEffect(() => {
+    if (!user) return;
+    getDoc(doc(db, 'pensionScenarios', user.uid)).then(snap => {
+      if (!snap.exists()) return;
+      const p = snap.data().calculatorParams;
+      if (!p) return;
+      if (p.currentAge    != null) { setCurrentAge(p.currentAge);    agesSeeded.current = true; }
+      if (p.retirementAge != null) { setRetirementAge(p.retirementAge); }
+      if (p.returnRate    != null) setReturnRate(p.returnRate);
+      // currentPot is always seeded from live metrics — never restored from saved params
+    }).catch(() => {});
+  }, [user]);
+
+  const saveParams = useCallback(async () => {
+    if (!user) return;
+    setSaveStatus('saving');
+    try {
+      await setDoc(doc(db, 'pensionScenarios', user.uid), {
+        calculatorParams: { currentAge, retirementAge, returnRate },
+      }, { merge: true });
+      setSaveStatus('saved');
+      setTimeout(() => setSaveStatus(null), 2500);
+    } catch {
+      setSaveStatus('error');
+      setTimeout(() => setSaveStatus(null), 2500);
+    }
+  }, [user, currentAge, retirementAge, returnRate]);
 
   // Seed currentPot from real data once it loads
   useEffect(() => {
@@ -506,10 +536,32 @@ export default function PensionCalculator() {
               borderRadius: '14px', padding: '14px', color: '#dae2fd',
               fontFamily: 'Manrope, sans-serif', fontWeight: 700, fontSize: '15px',
               cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+              marginBottom: '10px',
             }}
           >
             <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>tune</span>
             Adjust Parameters
+          </button>
+
+          <button
+            onClick={saveParams}
+            disabled={saveStatus === 'saving' || !user}
+            style={{
+              width: '100%',
+              background: saveStatus === 'saved' ? 'rgba(78,222,163,0.15)' : saveStatus === 'error' ? 'rgba(255,107,107,0.15)' : 'rgba(173,198,255,0.08)',
+              border: `1px solid ${saveStatus === 'saved' ? '#4edea3' : saveStatus === 'error' ? '#ff6b6b' : 'rgba(173,198,255,0.2)'}`,
+              borderRadius: '14px', padding: '14px', color: saveStatus === 'saved' ? '#4edea3' : saveStatus === 'error' ? '#ff6b6b' : '#adc6ff',
+              fontFamily: 'Manrope, sans-serif', fontWeight: 700, fontSize: '15px',
+              cursor: saveStatus === 'saving' || !user ? 'default' : 'pointer',
+              opacity: saveStatus === 'saving' || !user ? 0.6 : 1,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+              transition: 'all 0.2s',
+            }}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
+              {saveStatus === 'saving' ? 'sync' : saveStatus === 'saved' ? 'check_circle' : saveStatus === 'error' ? 'error' : 'save'}
+            </span>
+            {saveStatus === 'saving' ? 'Saving…' : saveStatus === 'saved' ? 'Parameters Saved' : saveStatus === 'error' ? 'Save Failed' : 'Save Parameters'}
           </button>
 
         </div>

@@ -146,42 +146,75 @@ function EditableValue({ label, value, color, onSave }) {
 }
 
 // ---- Principal / Interest bar chart ----
-// Bars are driven entirely by paymentHistory entries for the current calendar year.
-// Only months with recorded payments show a solid bar. Future months show a faint placeholder.
-function MortgagePaymentChart({ mortgage }) {
+function MortgagePaymentChart({ mortgage, mode = 'fy' }) {
   const [hoveredIdx, setHoveredIdx] = useState(null);
 
-  const today           = new Date();
-  const currentYear     = today.getFullYear();
-  const currentMonthIdx = today.getMonth();
+  const today    = new Date();
+  const nowYear  = today.getFullYear();
+  const nowMonth = today.getMonth(); // 0-indexed
+  const nowDay   = today.getDate();
+  const fyStart  = (nowMonth > 3 || (nowMonth === 3 && nowDay >= 6)) ? nowYear : nowYear - 1;
 
-  // Estimated principal/interest split (used for the stacked colour ratio in the bar)
-  const monthlyInterest  = (mortgage.outstandingBalance || 0) * ((mortgage.interestRate || 0) / 100 / 12);
-  const monthlyPayment   = mortgage.monthlyPayment || 0;
-  const monthlyPrincipal = Math.max(0, monthlyPayment - monthlyInterest);
-  const interestFrac     = monthlyPayment > 0 ? monthlyInterest / monthlyPayment : 0.5;
+  const { months, periodTotal, currentBucketIdx, periodLabel } = useMemo(() => {
+    const history = mortgage.paymentHistory || [];
 
-  // Sum all payments recorded per calendar month this year
-  const paymentsByMonth = Array.from({ length: 12 }, (_, i) => {
-    const total = (mortgage.paymentHistory || []).reduce((s, p) => {
-      if (!p.date) return s;
-      const d = new Date(p.date);
-      return d.getFullYear() === currentYear && d.getMonth() === i ? s + (p.amount || 0) : s;
-    }, 0);
-    return total > 0 ? total : null; // null = no payment recorded
-  });
+    if (mode === 'cy') {
+      const buckets = Array.from({ length: 12 }, (_, i) => {
+        const total = history.reduce((s, p) => {
+          if (!p.date) return s;
+          const d = new Date(p.date);
+          return d.getFullYear() === nowYear && d.getMonth() === i ? s + (p.amount || 0) : s;
+        }, 0);
+        return {
+          label:     new Date(nowYear, i, 1).toLocaleString('en-GB', { month: 'short' }),
+          isFuture:  i > nowMonth,
+          isCurrent: i === nowMonth,
+          payment:   total > 0 ? total : null,
+        };
+      });
+      return {
+        months:           buckets,
+        periodTotal:      buckets.reduce((s, b) => s + (b.payment || 0), 0),
+        currentBucketIdx: nowMonth,
+        periodLabel:      String(nowYear),
+      };
+    }
 
-  const maxBar = Math.max(...paymentsByMonth.filter(v => v !== null), monthlyPayment || 1);
+    // FY: April (bucket 0) → March (bucket 11)
+    const currentBucket = (nowMonth === 3 && nowDay < 6) ? 11 : (nowMonth - 3 + 12) % 12;
+    const buckets = Array.from({ length: 12 }, (_, i) => {
+      const calMonth = (3 + i) % 12;
+      const year     = calMonth >= 3 ? fyStart : fyStart + 1;
+      const total    = history.reduce((s, p) => {
+        if (!p.date) return s;
+        const d  = new Date(p.date);
+        const dM = d.getMonth() + 1;
+        const dD = d.getDate();
+        const dY = d.getFullYear();
+        const txFY = (dM > 4 || (dM === 4 && dD >= 6)) ? dY : dY - 1;
+        return txFY === fyStart && d.getMonth() === calMonth ? s + (p.amount || 0) : s;
+      }, 0);
+      return {
+        label:     new Date(year, calMonth, 1).toLocaleString('en-GB', { month: 'short' }),
+        isFuture:  i > currentBucket,
+        isCurrent: i === currentBucket,
+        payment:   total > 0 ? total : null,
+      };
+    });
+    return {
+      months:           buckets,
+      periodTotal:      buckets.reduce((s, b) => s + (b.payment || 0), 0),
+      currentBucketIdx: currentBucket,
+      periodLabel:      `${fyStart}/${String(fyStart + 1).slice(-2)}`,
+    };
+  }, [mortgage.paymentHistory, mode, nowYear, nowMonth, nowDay, fyStart]);
 
-  const months = Array.from({ length: 12 }, (_, i) => ({
-    label:      new Date(currentYear, i, 1).toLocaleString('en-GB', { month: 'short' }),
-    isFuture:   i > currentMonthIdx,
-    isCurrent:  i === currentMonthIdx,
-    payment:    paymentsByMonth[i],
-  }));
+  // Estimated principal/interest split
+  const monthlyInterest = (mortgage.outstandingBalance || 0) * ((mortgage.interestRate || 0) / 100 / 12);
+  const monthlyPayment  = mortgage.monthlyPayment || 0;
+  const interestFrac    = monthlyPayment > 0 ? monthlyInterest / monthlyPayment : 0.5;
 
-  // FY total and all-time total
-  const fyTotal  = paymentsByMonth.reduce((s, v) => s + (v || 0), 0);
+  const maxBar   = Math.max(...months.map(m => m.payment).filter(v => v !== null), monthlyPayment || 1);
   const allTotal = (mortgage.paymentHistory || []).reduce((s, p) => s + (p.amount || 0), 0);
 
   const tooltipLeft = hoveredIdx !== null
@@ -212,7 +245,7 @@ function MortgagePaymentChart({ mortgage }) {
             boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
           }}>
             <p style={{ fontSize: '11px', fontWeight: 700, color: '#dae2fd', margin: '0 0 6px', fontFamily: 'Manrope, sans-serif' }}>
-              {months[hoveredIdx].label} {currentYear}
+              {months[hoveredIdx].label} {periodLabel}
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: '16px' }}>
@@ -298,12 +331,12 @@ function MortgagePaymentChart({ mortgage }) {
         </div>
       </div>
 
-      {/* Summary row — FY total and All payments */}
+      {/* Summary row */}
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '12px', padding: '12px', background: 'rgba(173,198,255,0.04)', borderRadius: '10px' }}>
         <div>
-          <p style={{ fontSize: '11px', color: '#bbcabf', margin: '0 0 2px' }}>FY total</p>
+          <p style={{ fontSize: '11px', color: '#bbcabf', margin: '0 0 2px' }}>{periodLabel} total</p>
           <p style={{ fontWeight: 700, fontSize: '14px', color: '#4edea3', margin: 0 }}>
-            {'£' + Math.round(fyTotal).toLocaleString('en-GB')}
+            {'£' + Math.round(periodTotal).toLocaleString('en-GB')}
           </p>
         </div>
         <div style={{ textAlign: 'right' }}>
@@ -389,6 +422,7 @@ export default function MortgageDetail() {
   const { idx }                        = useParams();
   const navigate                       = useNavigate();
   const { mortgages, updateMortgage }  = useMortgageData();
+  const [periodType, setPeriodType]    = useState('fy');
 
   const mortgage = mortgages[Number(idx)];
   if (!mortgage) return <Navigate to="/mobile/mortgage" replace />;
@@ -532,9 +566,21 @@ export default function MortgageDetail() {
             <h3 style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 800, fontSize: '15px', color: '#dae2fd', margin: 0 }}>
               Payments
             </h3>
-            <span style={{ fontSize: '12px', color: '#adc6ff', fontWeight: 600 }}>{new Date().getFullYear()}</span>
+            <div style={{ display: 'flex', background: '#060e20', borderRadius: '8px', padding: '2px', gap: '2px' }}>
+              {['fy', 'cy'].map(t => (
+                <button key={t} onClick={() => setPeriodType(t)} style={{
+                  padding: '4px 10px', borderRadius: '6px', border: 'none', cursor: 'pointer',
+                  background: periodType === t ? '#4edea3' : 'transparent',
+                  color: periodType === t ? '#003824' : '#bbcabf',
+                  fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '11px',
+                  textTransform: 'uppercase', letterSpacing: '0.05em', transition: 'all 0.15s',
+                }}>
+                  {t.toUpperCase()}
+                </button>
+              ))}
+            </div>
           </div>
-          <MortgagePaymentChart mortgage={mortgage} />
+          <MortgagePaymentChart mortgage={mortgage} mode={periodType} />
         </div>
 
         {/* Equity Progress */}

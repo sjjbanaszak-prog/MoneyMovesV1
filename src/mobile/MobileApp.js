@@ -1,6 +1,7 @@
 import React, { useLayoutEffect } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import './mobile.css';
+import MobileDashboard    from './pages/MobileDashboard';
 import PensionApp         from './pension/PensionApp';
 import SavingsApp         from './savings/SavingsApp';
 import MortgageApp        from './mortgage/MortgageApp';
@@ -39,8 +40,11 @@ export default function MobileApp() {
     <>
     <ScrollToTop />
     <Routes>
-      {/* Default landing → pension overview */}
-      <Route index element={<Navigate to="/mobile/pension" replace />} />
+      {/* Default landing → dashboard */}
+      <Route index element={<Navigate to="/mobile/dashboard" replace />} />
+
+      {/* Dashboard */}
+      <Route path="dashboard" element={<MobileDashboard />} />
 
       {/* Pension section — owns all /mobile/pension/* routes */}
       <Route path="pension/*" element={<PensionApp />} />

@@ -6,7 +6,7 @@ import { useAuth } from '../../contexts/AuthContext';
 const IS_PREMIUM = false;
 
 const NAV_ITEMS = [
-  { label: 'Dashboard', icon: 'grid_view',        path: '/mobile/pension',  match: null,              disabled: true },
+  { label: 'Dashboard', icon: 'grid_view',        path: '/mobile/dashboard', match: '/mobile/dashboard' },
   { label: 'Pension',   icon: 'account_balance',  path: '/mobile/pension',  match: '/mobile/pension'  },
   { label: 'Mortgage',  icon: 'home',             path: '/mobile/mortgage', match: '/mobile/mortgage' },
   { label: 'Savings',   icon: 'savings',          path: '/mobile/savings',  match: '/mobile/savings'  },
@@ -23,10 +23,6 @@ export default function MobileNavDrawer() {
   const toggle = () => setIsOpen(prev => !prev);
 
   function isActive(item) {
-    // Dashboard highlights when none of the specific sections match
-    if (item.match === null) {
-      return !NAV_ITEMS.some(n => n.match && pathname.startsWith(n.match));
-    }
     return pathname.startsWith(item.match);
   }
 

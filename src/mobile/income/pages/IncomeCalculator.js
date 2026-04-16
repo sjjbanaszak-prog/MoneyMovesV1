@@ -443,6 +443,32 @@ export default function IncomeCalculator() {
               )}
             </div>
 
+            {/* ── Student Loan card ── */}
+            <div style={{ ...cardStyle }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: hasStudentLoan ? '16px' : 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span className="material-symbols-outlined" style={{ color: '#adc6ff', fontSize: '20px' }}>school</span>
+                  <p style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 800, fontSize: '15px', color: '#dae2fd', margin: 0 }}>Student Loan</p>
+                </div>
+                <Toggle value={hasStudentLoan} onChange={setHasStudentLoan} />
+              </div>
+              {hasStudentLoan && (
+                <div style={{ position: 'relative' }}>
+                  <label style={labelStyle}>Repayment Plan</label>
+                  <select
+                    value={studentLoanPlan}
+                    onChange={e => setStudentLoanPlan(e.target.value)}
+                    style={{ ...inputStyle, appearance: 'none', paddingRight: '36px', cursor: 'pointer' }}
+                  >
+                    {STUDENT_LOAN_PLANS.map(p => (
+                      <option key={p.value} value={p.value}>{p.label}</option>
+                    ))}
+                  </select>
+                  <span className="material-symbols-outlined" style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: '#64748b', fontSize: '18px', pointerEvents: 'none' }}>expand_more</span>
+                </div>
+              )}
+            </div>
+
             {/* ── Tax Profile card ── */}
             <div style={{ ...cardStyle, borderTop: '4px solid #0566d9' }}>
               <p style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 700, fontSize: '12px', color: '#adc6ff', textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 16px' }}>
@@ -507,32 +533,6 @@ export default function IncomeCalculator() {
                   </p>
                 )}
               </div>
-            </div>
-
-            {/* ── Student Loan card ── */}
-            <div style={{ ...cardStyle }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: hasStudentLoan ? '16px' : 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span className="material-symbols-outlined" style={{ color: '#adc6ff', fontSize: '20px' }}>school</span>
-                  <p style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 800, fontSize: '15px', color: '#dae2fd', margin: 0 }}>Student Loan</p>
-                </div>
-                <Toggle value={hasStudentLoan} onChange={setHasStudentLoan} />
-              </div>
-              {hasStudentLoan && (
-                <div style={{ position: 'relative' }}>
-                  <label style={labelStyle}>Repayment Plan</label>
-                  <select
-                    value={studentLoanPlan}
-                    onChange={e => setStudentLoanPlan(e.target.value)}
-                    style={{ ...inputStyle, appearance: 'none', paddingRight: '36px', cursor: 'pointer' }}
-                  >
-                    {STUDENT_LOAN_PLANS.map(p => (
-                      <option key={p.value} value={p.value}>{p.label}</option>
-                    ))}
-                  </select>
-                  <span className="material-symbols-outlined" style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: '#64748b', fontSize: '18px', pointerEvents: 'none' }}>expand_more</span>
-                </div>
-              )}
             </div>
 
             {/* ── CTA ── */}
