@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import PensionLayout from '../PensionLayout';
 import { usePensionData, parseDate, getTaxYearStart } from '../PensionDataContext';
+import PremiumGate from '../../components/PremiumGate';
 
 function fmtShort(n) { return '£' + Math.round(n || 0).toLocaleString('en-GB'); }
 
@@ -379,6 +380,10 @@ export default function PensionAIAnalysis() {
 
   return (
     <PensionLayout>
+      <PremiumGate
+        featureName="Pension AI Analysis"
+        description="AI-powered recommendations tailored to your pension data and retirement goals."
+      >
       <div style={{ padding: '0 0 16px' }}>
 
         {/* Header */}
@@ -494,6 +499,7 @@ export default function PensionAIAnalysis() {
         </div>
 
       </div>
+      </PremiumGate>
     </PensionLayout>
   );
 }

@@ -15,7 +15,7 @@ const Login = () => {
   const location = useLocation();
   const lastSubmitRef = useRef(0);
 
-  const from = location.state?.from?.pathname || '/';
+  const from = location.state?.from?.pathname || '/mobile/dashboard';
 
   // Redirect if already logged in
   useEffect(() => {

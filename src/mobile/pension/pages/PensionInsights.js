@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import PensionLayout from '../PensionLayout';
 import { usePensionData, parseDate, getTaxYearStart, taxYearLabel } from '../PensionDataContext';
+import PremiumGate from '../../components/PremiumGate';
 
 const COLOR_PALETTE = ['#4edea3', '#adc6ff', '#ffb95f', '#f472b6', '#a78bfa', '#38bdf8'];
 
@@ -368,6 +369,10 @@ export default function PensionInsights() {
 
   return (
     <PensionLayout>
+      <PremiumGate
+        featureName="Pension Insights"
+        description="Deep-dive analytics on your pension growth, contributions, and projected retirement income."
+      >
       <div style={{ padding: '0 0 16px' }}>
 
         {/* Header */}
@@ -411,22 +416,18 @@ export default function PensionInsights() {
             <h3 style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 800, fontSize: '16px', color: '#dae2fd', margin: 0 }}>
               Growth History
             </h3>
-            <div style={{ display: 'flex', background: 'rgba(173,198,255,0.08)', borderRadius: '20px', padding: '3px' }}>
+            <div style={{ display: 'flex', background: '#060e20', borderRadius: '8px', padding: '2px', gap: '2px' }}>
               {['12M', 'AT'].map(tf => (
                 <button
                   key={tf}
                   onClick={() => setTimeframe(tf)}
                   style={{
+                    padding: '4px 10px', borderRadius: '6px', border: 'none', cursor: 'pointer',
                     background: timeframe === tf ? '#4edea3' : 'transparent',
-                    color: timeframe === tf ? '#003824' : '#adc6ff',
-                    border: 'none',
-                    borderRadius: '16px',
-                    padding: '4px 12px',
-                    fontSize: '12px',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    transition: 'background 0.2s, color 0.2s',
-                    fontFamily: 'Inter, sans-serif',
+                    color: timeframe === tf ? '#003824' : '#bbcabf',
+                    fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '11px',
+                    textTransform: 'uppercase', letterSpacing: '0.05em',
+                    transition: 'all 0.15s',
                   }}
                 >
                   {tf}
@@ -488,6 +489,7 @@ export default function PensionInsights() {
         </div>
 
       </div>
+      </PremiumGate>
     </PensionLayout>
   );
 }

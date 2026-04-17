@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDemoMode } from '../../../contexts/DemoModeContext';
+import { useUserPlan } from '../../../contexts/UserPlanContext';
 import { usePensionData, parseDate } from '../PensionDataContext';
 import PensionLayout from '../PensionLayout';
 import { formatLastUpdated } from '../../utils/formatLastUpdated';
+import UpgradeSheet from '../../components/UpgradeSheet';
 
 // ---- helpers ----
 function fmt(n) {
@@ -82,7 +84,9 @@ function DemoToggle() {
 // ---- Main Component ----
 export default function PensionOverview() {
   const navigate = useNavigate();
+  const { isPremium } = useUserPlan();
   const { entries, metrics, isLoading, lastUpdated } = usePensionData();
+  const [upgradeSheet, setUpgradeSheet] = useState(null);
   const ANNUAL_ALLOWANCE = 60000;
 
   // Sort providers by most recent contribution descending, keeping original index for routing
@@ -335,9 +339,22 @@ export default function PensionOverview() {
             <p style={{ fontSize: '13px', color: '#bbcabf', lineHeight: 1.6, maxWidth: '280px', margin: '0 0 16px' }}>
               Our AI has identified potential opportunities to improve your pension strategy.
             </p>
-            <Link to="/mobile/pension/ai" style={{ textDecoration: 'none', display: 'block' }}>
-              <button className="primary-btn" style={{ marginTop: '6px' }}>See Deeper Insights</button>
-            </Link>
+            {isPremium ? (
+              <Link to="/mobile/pension/ai" style={{ textDecoration: 'none', display: 'block' }}>
+                <button className="primary-btn" style={{ marginTop: '6px' }}>See Deeper Insights</button>
+              </Link>
+            ) : (
+              <button
+                className="primary-btn"
+                style={{ marginTop: '6px' }}
+                onClick={() => setUpgradeSheet({
+                  featureName: 'Pension AI Analysis',
+                  description: 'AI-powered recommendations tailored to your pension data and retirement goals.',
+                })}
+              >
+                Unlock AI Insights
+              </button>
+            )}
           </div>
         </div>
 
@@ -345,7 +362,16 @@ export default function PensionOverview() {
 
       {/* FAB — Add Pension */}
       <button
-        onClick={() => navigate('/mobile/pension/add')}
+        onClick={() => {
+          if (!isPremium && entries.length >= 1) {
+            setUpgradeSheet({
+              featureName: 'Add More Pension Accounts',
+              description: `You've used 1 of 1 pension account on the Free plan. Upgrade to add unlimited providers.`,
+            });
+          } else {
+            navigate('/mobile/pension/add');
+          }
+        }}
         style={{
           position: 'fixed',
           bottom: '88px',
@@ -369,6 +395,13 @@ export default function PensionOverview() {
         <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>add</span>
         Add Pension
       </button>
+
+      <UpgradeSheet
+        isOpen={!!upgradeSheet}
+        onClose={() => setUpgradeSheet(null)}
+        featureName={upgradeSheet?.featureName || ''}
+        description={upgradeSheet?.description}
+      />
 
     </PensionLayout>
   );

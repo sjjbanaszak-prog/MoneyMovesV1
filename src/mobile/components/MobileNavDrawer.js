@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-
-// Hardcoded until subscription system is implemented — must match MobileSettingsPage.js
-const IS_PREMIUM = false;
+import { useUserPlan } from '../../contexts/UserPlanContext';
 
 const NAV_ITEMS = [
   { label: 'Dashboard', icon: 'grid_view',        path: '/mobile/dashboard', match: '/mobile/dashboard' },
@@ -19,6 +17,7 @@ export default function MobileNavDrawer() {
   const { pathname } = useLocation();
   const { currentUser } = useAuth();
 
+  const { isPremium } = useUserPlan();
   const close  = () => setIsOpen(false);
   const toggle = () => setIsOpen(prev => !prev);
 
@@ -168,11 +167,11 @@ export default function MobileNavDrawer() {
               display: 'inline-flex', alignItems: 'center',
               padding: '3px 10px', borderRadius: '999px',
               fontSize: '9px', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase',
-              background: IS_PREMIUM ? 'rgba(78,222,163,0.1)' : '#2d3449',
-              color: IS_PREMIUM ? '#4edea3' : '#adc6ff',
-              border: IS_PREMIUM ? '1px solid rgba(78,222,163,0.3)' : '1px solid rgba(60,74,66,0.2)',
+              background: isPremium ? 'rgba(78,222,163,0.1)' : '#2d3449',
+              color: isPremium ? '#4edea3' : '#adc6ff',
+              border: isPremium ? '1px solid rgba(78,222,163,0.3)' : '1px solid rgba(60,74,66,0.2)',
             }}>
-              {IS_PREMIUM ? 'Premium Member' : 'Free Tier'}
+              {isPremium ? 'Premium Member' : 'Free Tier'}
             </span>
           </div>
         </div>

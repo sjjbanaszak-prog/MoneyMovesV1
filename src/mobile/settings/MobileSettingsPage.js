@@ -2,15 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { doc, getDoc } from 'firebase/firestore';
 import { useAuth } from '../../contexts/AuthContext';
+import { useUserPlan } from '../../contexts/UserPlanContext';
 import { db } from '../../firebase';
 import MobileNavDrawer from '../components/MobileNavDrawer';
-
-// Hardcoded until subscription system is implemented
-const IS_PREMIUM = false;
 
 export default function MobileSettingsPage() {
   const navigate = useNavigate();
   const { currentUser, logout } = useAuth();
+  const { isPremium } = useUserPlan();
   const [notificationsOn, setNotificationsOn] = useState(true);
   const [displayName, setDisplayName] = useState(
     currentUser?.displayName || currentUser?.email?.split('@')[0] || 'MoneyMoves User'
@@ -81,7 +80,7 @@ export default function MobileSettingsPage() {
             <h2 style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 900, fontSize: '22px', color: '#dae2fd', margin: '0 0 8px' }}>
               {displayName}
             </h2>
-            {IS_PREMIUM ? (
+            {isPremium ? (
               <span style={{
                 display: 'inline-flex', alignItems: 'center',
                 padding: '4px 12px', borderRadius: '999px',
@@ -104,7 +103,7 @@ export default function MobileSettingsPage() {
         </section>
 
         {/* Upgrade / Subscription Card */}
-        {IS_PREMIUM ? (
+        {isPremium ? (
           <section style={{
             position: 'relative', overflow: 'hidden',
             borderRadius: '14px', marginBottom: '24px',

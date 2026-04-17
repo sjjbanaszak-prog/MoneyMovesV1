@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDemoMode } from '../../../contexts/DemoModeContext';
+import { useUserPlan } from '../../../contexts/UserPlanContext';
 import { useSavingsData } from '../SavingsDataContext';
 import SavingsLayout from '../SavingsLayout';
 import { formatLastUpdated } from '../../utils/formatLastUpdated';
+import UpgradeSheet from '../../components/UpgradeSheet';
 
 // ---- Helpers ----
 function fmt(n) {
@@ -130,7 +132,9 @@ function DemoToggle() {
 // ---- Main Component ----
 export default function SavingsOverview() {
   const navigate = useNavigate();
+  const { isPremium } = useUserPlan();
   const { accounts, metrics, isLoading, lastUpdated } = useSavingsData();
+  const [upgradeSheet, setUpgradeSheet] = useState(null);
 
   const { totalBalance, currentFYIsaDeposits, isaAllowance, totalDeposited, totalGrowth, growthPct } = metrics;
   const allowancePct   = Math.min(100, Math.round((currentFYIsaDeposits / isaAllowance) * 100));
@@ -362,9 +366,25 @@ export default function SavingsOverview() {
 
       </div>
 
+      <UpgradeSheet
+        isOpen={!!upgradeSheet}
+        onClose={() => setUpgradeSheet(null)}
+        featureName={upgradeSheet?.featureName || ''}
+        description={upgradeSheet?.description}
+      />
+
       {/* FAB — Add Account */}
       <button
-        onClick={() => navigate('/mobile/savings/add')}
+        onClick={() => {
+          if (!isPremium && accounts.length >= 1) {
+            setUpgradeSheet({
+              featureName: 'Add More Savings Accounts',
+              description: `You've used 1 of 1 savings account on the Free plan. Upgrade to track unlimited accounts.`,
+            });
+          } else {
+            navigate('/mobile/savings/add');
+          }
+        }}
         style={{
           position: 'fixed',
           bottom: '88px',

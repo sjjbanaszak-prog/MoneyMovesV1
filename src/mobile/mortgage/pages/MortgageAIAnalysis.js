@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import MortgageLayout from '../MortgageLayout';
 import { useMortgageData } from '../MortgageDataContext';
+import PremiumGate from '../../components/PremiumGate';
 
 function fmtShort(n) { return '£' + Math.round(n || 0).toLocaleString('en-GB'); }
 function fmtPct(n, dp = 1) { return `${(n || 0).toFixed(dp)}%`; }
@@ -290,6 +291,10 @@ export default function MortgageAIAnalysis() {
 
   return (
     <MortgageLayout>
+      <PremiumGate
+        featureName="Mortgage AI Analysis"
+        description="AI-powered analysis of your mortgage strategy with personalised recommendations."
+      >
       <div style={{ padding: '0 0 16px' }}>
 
         {/* Header */}
@@ -407,6 +412,7 @@ export default function MortgageAIAnalysis() {
         </div>
 
       </div>
+      </PremiumGate>
     </MortgageLayout>
   );
 }

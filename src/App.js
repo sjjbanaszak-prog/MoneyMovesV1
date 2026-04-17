@@ -7,6 +7,7 @@ import {
 } from "react-router-dom";
 import "./styles/SharedStyles.css"; // Import shared styles globally
 import { AuthProvider } from "./contexts/AuthContext";
+import { UserPlanProvider } from "./contexts/UserPlanContext";
 import { DemoModeProvider } from "./contexts/DemoModeContext";
 import { ReportProblemProvider } from "./contexts/ReportProblemContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
@@ -53,6 +54,7 @@ const App = () => {
   return (
     <Router>
       <AuthProvider>
+        <UserPlanProvider>
         <DemoModeProvider>
           <ReportProblemProvider>
             <Routes>
@@ -80,7 +82,7 @@ const App = () => {
                     <Navbar />
                     <div className="app-main-content">
                       <Routes>
-                        <Route path="/" element={<LandingPage />} />
+                        <Route path="/" element={<Navigate to="/mobile/dashboard" replace />} />
                         <Route
                           path="/PensionPots"
                           element={
@@ -112,6 +114,7 @@ const App = () => {
           <ReportProblemModal />
           </ReportProblemProvider>
         </DemoModeProvider>
+        </UserPlanProvider>
       </AuthProvider>
     </Router>
   );

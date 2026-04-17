@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import MortgageLayout from '../MortgageLayout';
 import { useMortgageData } from '../MortgageDataContext';
 import { calculateMonthlyPayment } from '../../../modules/utils/mortgageUtils';
+import PremiumGate from '../../components/PremiumGate';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -333,6 +334,10 @@ export default function MortgageCompare() {
 
   return (
     <MortgageLayout>
+      <PremiumGate
+        featureName="Mortgage Compare"
+        description="Compare mortgage deals and model different rates to find your best remortgage strategy."
+      >
       <div style={s.page}>
 
         {/* ── Info Modal ───────────────────────────────────────────────── */}
@@ -553,6 +558,7 @@ export default function MortgageCompare() {
         </div>
 
       </div>
+      </PremiumGate>
     </MortgageLayout>
   );
 }

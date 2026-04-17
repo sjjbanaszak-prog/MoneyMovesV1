@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useRef, useCallback } from 'react';
 import MortgageLayout from '../MortgageLayout';
 import { useMortgageData } from '../MortgageDataContext';
+import PremiumGate from '../../components/PremiumGate';
 
 function fmtK(n) {
   if (!n) return '£0';
@@ -294,6 +295,10 @@ export default function MortgageInsights() {
 
   return (
     <MortgageLayout>
+      <PremiumGate
+        featureName="Mortgage Insights"
+        description="Track your mortgage paydown progress with detailed analytics and interest breakdowns."
+      >
       <div style={{ padding: '0 0 16px' }}>
 
         {/* Header */}
@@ -394,6 +399,7 @@ export default function MortgageInsights() {
         </div>
 
       </div>
+      </PremiumGate>
     </MortgageLayout>
   );
 }

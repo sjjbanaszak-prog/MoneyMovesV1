@@ -121,6 +121,8 @@ export default function PensionCalculator() {
   const [user,               setUser]               = useState(null);
   const [incomeMonthlyContrib, setIncomeMonthlyContrib] = useState(0);
   const [hasIncomeData,      setHasIncomeData]      = useState(false);
+  const [monthlyContrib,     setMonthlyContrib]     = useState(''); // editable manual field
+  const contribSeeded = useRef(false);
   const [saveStatus,         setSaveStatus]         = useState(null); // null | 'saving' | 'saved' | 'error'
 
   useEffect(() => {
@@ -161,6 +163,11 @@ export default function PensionCalculator() {
       const monthly = result.totalPensionContribution / 12;
       setIncomeMonthlyContrib(monthly);
       setHasIncomeData(monthly > 0);
+      // Pre-seed the editable field only if the user hasn't manually set a value yet
+      if (!contribSeeded.current && monthly > 0) {
+        setMonthlyContrib(String(Math.round(monthly * 100) / 100));
+        contribSeeded.current = true;
+      }
     }).catch(() => {});
   }, [user]);
 
@@ -174,6 +181,7 @@ export default function PensionCalculator() {
       if (p.currentAge    != null) { setCurrentAge(p.currentAge);    agesSeeded.current = true; }
       if (p.retirementAge != null) { setRetirementAge(p.retirementAge); }
       if (p.returnRate    != null) setReturnRate(p.returnRate);
+      if (p.monthlyContrib != null) { setMonthlyContrib(String(p.monthlyContrib)); contribSeeded.current = true; }
       // currentPot is always seeded from live metrics — never restored from saved params
     }).catch(() => {});
   }, [user]);
@@ -183,7 +191,7 @@ export default function PensionCalculator() {
     setSaveStatus('saving');
     try {
       await setDoc(doc(db, 'pensionScenarios', user.uid), {
-        calculatorParams: { currentAge, retirementAge, returnRate },
+        calculatorParams: { currentAge, retirementAge, returnRate, monthlyContrib: parseFloat(monthlyContrib) || 0 },
       }, { merge: true });
       setSaveStatus('saved');
       setTimeout(() => setSaveStatus(null), 2500);
@@ -229,7 +237,7 @@ export default function PensionCalculator() {
   }, []); // eslint-disable-line
 
   const potVal    = parseFloat(currentPot) || 0;
-  const contribVal = incomeMonthlyContrib;
+  const contribVal = parseFloat(monthlyContrib) || 0;
   const years     = retirementAge - currentAge;
 
   const projected = useMemo(
@@ -313,45 +321,63 @@ export default function PensionCalculator() {
               </div>
             </div>
 
-            {/* ── Contributions card (linked from Income Calculator) ── */}
-            <div style={{ ...cardStyle, borderLeft: `4px solid ${hasIncomeData ? '#ffb95f' : '#2d3449'}`, opacity: hasIncomeData ? 1 : 0.55 }}>
+            {/* ── Contributions card ── */}
+            <div style={{ ...cardStyle, borderLeft: '4px solid #ffb95f' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-                <span className="material-symbols-outlined" style={{ color: hasIncomeData ? '#ffb95f' : '#64748b', fontSize: '20px' }}>savings</span>
-                <p style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 800, fontSize: '15px', color: hasIncomeData ? '#dae2fd' : '#64748b', margin: 0 }}>Monthly Contributions</p>
+                <span className="material-symbols-outlined" style={{ color: '#ffb95f', fontSize: '20px' }}>savings</span>
+                <p style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 800, fontSize: '15px', color: '#dae2fd', margin: 0 }}>Monthly Contributions</p>
               </div>
 
               <div style={{ position: 'relative', marginBottom: '8px' }}>
                 <span style={{
                   position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)',
-                  color: hasIncomeData ? '#ffb95f' : '#3d5068',
-                  fontWeight: 700, fontFamily: 'Manrope, sans-serif', fontSize: '20px',
+                  color: '#ffb95f',
+                  fontWeight: 700, fontFamily: 'Manrope, sans-serif', fontSize: '18px',
                   pointerEvents: 'none',
                 }}>£</span>
                 <input
-                  type="text"
-                  readOnly
-                  value={hasIncomeData
-                    ? contribVal.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-                    : '0.00'}
+                  type="number"
+                  value={monthlyContrib}
+                  onChange={e => { setMonthlyContrib(e.target.value); contribSeeded.current = true; }}
+                  placeholder="0"
                   style={{
                     ...inputStyle,
                     paddingLeft: '34px',
-                    fontSize: '22px',
+                    fontSize: '20px',
                     fontFamily: 'Manrope, sans-serif',
-                    color: hasIncomeData ? '#dae2fd' : '#3d5068',
-                    cursor: 'default',
                   }}
                 />
               </div>
 
-              <p style={{ fontSize: '11px', color: '#64748b', margin: 0 }}>
-                {hasIncomeData
-                  ? `${fmt(contribVal * 12)} per year · ${fmt(totalContributions)} total over ${years} yrs`
-                  : 'Save your parameters in the Income Calculator to link your pension contributions here'}
-              </p>
+              {contribVal > 0 && (
+                <p style={{ fontSize: '11px', color: '#64748b', margin: '0 0 6px' }}>
+                  {fmt(contribVal * 12)} per year · {fmt(totalContributions)} total over {years} yrs
+                </p>
+              )}
+
               {hasIncomeData && (
-                <p style={{ fontSize: '11px', color: '#64748b', margin: '4px 0 0', fontStyle: 'italic' }}>
-                  Seeded from your income calculator
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '4px' }}>
+                  <p style={{ fontSize: '11px', color: '#64748b', margin: 0, fontStyle: 'italic' }}>
+                    Income Calculator: {fmt(incomeMonthlyContrib)}/mo
+                  </p>
+                  {Math.round(contribVal) !== Math.round(incomeMonthlyContrib) && (
+                    <button
+                      onClick={() => setMonthlyContrib(String(Math.round(incomeMonthlyContrib * 100) / 100))}
+                      style={{
+                        background: 'none', border: 'none', padding: 0,
+                        fontSize: '11px', color: '#ffb95f', fontWeight: 600,
+                        cursor: 'pointer', textDecoration: 'underline',
+                      }}
+                    >
+                      Use this
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {!hasIncomeData && (
+                <p style={{ fontSize: '11px', color: '#64748b', margin: '4px 0 0' }}>
+                  Enter your total monthly pension contributions (employee + employer)
                 </p>
               )}
             </div>

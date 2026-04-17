@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import '../mobile-theme.css';
 import MobileNavDrawer from '../components/MobileNavDrawer';
 import { useDemoMode } from '../../contexts/DemoModeContext';
 import { PensionDataProvider, usePensionData, parseDate } from '../pension/PensionDataContext';
@@ -177,32 +178,34 @@ function NetWorthLineChart({ series, labels }) {
   );
 }
 
-// ── Asset row ─────────────────────────────────────────────────────────────────
+// ── Finance row (pension provider style, scaled for dashboard cards) ──────────
 
-function AssetRow({ icon, iconColor, title, subtitle, value, to }) {
+function FinanceRow({ initials, initialsColor, title, subtitle, value, valueColor, to }) {
   const inner = (
-    <div style={{
-      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      padding: '14px 16px', background: '#131b2e', borderRadius: '16px',
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-        <div style={{
-          width: '40px', height: '40px', borderRadius: '50%',
-          background: '#1e293b',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          flexShrink: 0,
-        }}>
-          <span className="material-symbols-outlined" style={{ color: iconColor || '#adc6ff', fontSize: '18px' }}>{icon}</span>
-        </div>
-        <div>
-          <p style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 700, fontSize: '14px', color: '#dae2fd', margin: 0 }}>{title}</p>
-          <p style={{ fontSize: '11px', color: '#64748b', margin: 0 }}>{subtitle}</p>
-        </div>
+    <div className="provider-row">
+      <div style={{
+        width: '38px', height: '38px', borderRadius: '10px',
+        background: '#171f33',
+        border: '1px solid rgba(60,74,66,0.15)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        flexShrink: 0, marginRight: '12px',
+        fontFamily: 'Manrope, sans-serif', fontWeight: 900, fontSize: '12px',
+        color: initialsColor,
+      }}>
+        {initials}
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
-        <p style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 700, fontSize: '15px', color: '#dae2fd', margin: 0 }}>{value}</p>
-        <span className="material-symbols-outlined" style={{ color: '#3c4a42', fontSize: '16px' }}>chevron_right</span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 700, fontSize: '14px', color: '#dae2fd', margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {title}
+        </p>
+        <p style={{ fontSize: '11px', color: '#bbcabf', margin: 0 }}>{subtitle}</p>
       </div>
+      <div style={{ textAlign: 'right', marginLeft: '12px', flexShrink: 0 }}>
+        <p style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 800, fontSize: '14px', color: valueColor || '#dae2fd', margin: 0 }}>
+          {value}
+        </p>
+      </div>
+      <span className="material-symbols-outlined row-chevron">chevron_right</span>
     </div>
   );
   if (to) return <Link to={to} style={{ textDecoration: 'none', display: 'block' }}>{inner}</Link>;
@@ -368,16 +371,15 @@ function DashboardContent() {
 
   // ── Asset allocation bar segments ─────────────────────────────────────────
   const assetSegments = useMemo(() => [
-    { value: totalPropertyValue, color: '#10b981' },
-    { value: totalValue || 0,   color: '#4edea3' },
-    { value: savingsBalance,    color: '#6ffbbe' },
+    { value: totalPropertyValue, color: '#ffb95f' }, // matches PR initials colour
+    { value: totalValue || 0,   color: '#4edea3' }, // matches PE initials colour
+    { value: savingsBalance,    color: '#adc6ff' }, // matches SA initials colour
   ].filter(s => s.value > 0), [totalPropertyValue, totalValue, savingsBalance]);
 
   const debtSegments = useMemo(() =>
-    mortgages
-      .map((m, i) => ({ value: m.outstandingBalance || 0, color: i === 0 ? '#ffb4ab' : '#ff6b6b' }))
+    [{ value: totalMortgageDebt, color: '#ffb4ab' }] // matches MO initials colour
       .filter(s => s.value > 0),
-    [mortgages]
+    [totalMortgageDebt]
   );
 
   // ── Insight metrics ────────────────────────────────────────────────────────
@@ -493,22 +495,18 @@ function DashboardContent() {
             <h3 style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 800, fontSize: '16px', color: '#dae2fd', margin: 0 }}>
               Net Worth History
             </h3>
-            <div style={{ display: 'flex', background: 'rgba(173,198,255,0.08)', borderRadius: '20px', padding: '3px' }}>
+            <div style={{ display: 'flex', background: '#060e20', borderRadius: '8px', padding: '2px', gap: '2px' }}>
               {['1Y', '5Y', 'AT'].map(tf => (
                 <button
                   key={tf}
                   onClick={() => setTimeframe(tf)}
                   style={{
+                    padding: '4px 10px', borderRadius: '6px', border: 'none', cursor: 'pointer',
                     background: timeframe === tf ? '#4edea3' : 'transparent',
-                    color: timeframe === tf ? '#003824' : '#adc6ff',
-                    border: 'none',
-                    borderRadius: '16px',
-                    padding: '4px 12px',
-                    fontSize: '12px',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    transition: 'background 0.2s, color 0.2s',
-                    fontFamily: 'Inter, sans-serif',
+                    color: timeframe === tf ? '#003824' : '#bbcabf',
+                    fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '11px',
+                    textTransform: 'uppercase', letterSpacing: '0.05em',
+                    transition: 'all 0.15s',
                   }}
                 >
                   {tf}
@@ -555,34 +553,45 @@ function DashboardContent() {
             </div>
           )}
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {mortgages.map((m, i) => (
-              <AssetRow
-                key={i}
-                icon="home"
-                iconColor="#adc6ff"
-                title={m.name}
-                subtitle="Property Value"
-                value={fmt(m.propertyValue || 0)}
-                to={`/mobile/mortgage/${i}`}
-              />
-            ))}
-            <AssetRow
-              icon="account_balance"
-              iconColor="#adc6ff"
-              title="Pension"
-              subtitle="Total Pot Value"
-              value={fmt(totalValue || 0)}
-              to="/mobile/pension"
-            />
-            <AssetRow
-              icon="savings"
-              iconColor="#adc6ff"
-              title="Savings"
-              subtitle="Cash & ISA"
-              value={fmt(savingsBalance)}
-              to="/mobile/savings"
-            />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {totalAssets === 0 ? (
+              <p style={{ fontSize: '13px', color: '#64748b', textAlign: 'center', padding: '16px 0', margin: 0 }}>
+                No assets tracked
+              </p>
+            ) : (
+              <>
+                {totalPropertyValue > 0 && (
+                  <FinanceRow
+                    initials="PR"
+                    initialsColor="#ffb95f"
+                    title="Property"
+                    subtitle="Property Value"
+                    value={fmt(totalPropertyValue)}
+                    to="/mobile/mortgage"
+                  />
+                )}
+                {(totalValue || 0) > 0 && (
+                  <FinanceRow
+                    initials="PE"
+                    initialsColor="#4edea3"
+                    title="Pension"
+                    subtitle="Total Pot Value"
+                    value={fmt(totalValue || 0)}
+                    to="/mobile/pension"
+                  />
+                )}
+                {savingsBalance > 0 && (
+                  <FinanceRow
+                    initials="SA"
+                    initialsColor="#adc6ff"
+                    title="Savings"
+                    subtitle="Cash & ISA"
+                    value={fmt(savingsBalance)}
+                    to="/mobile/savings"
+                  />
+                )}
+              </>
+            )}
           </div>
         </div>
 
@@ -612,45 +621,21 @@ function DashboardContent() {
             </div>
           )}
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {mortgages.length === 0 ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {totalMortgageDebt === 0 ? (
               <p style={{ fontSize: '13px', color: '#64748b', textAlign: 'center', padding: '16px 0', margin: 0 }}>
                 No liabilities tracked
               </p>
             ) : (
-              mortgages.map((m, i) => (
-                <Link key={i} to={`/mobile/mortgage/${i}`} style={{ textDecoration: 'none', display: 'block' }}>
-                  <div style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    padding: '14px 16px', background: '#131b2e', borderRadius: '16px',
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <div style={{
-                        width: '40px', height: '40px', borderRadius: '50%',
-                        background: '#1e293b',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        flexShrink: 0,
-                      }}>
-                        <span className="material-symbols-outlined" style={{ color: '#bbcabf', fontSize: '18px' }}>real_estate_agent</span>
-                      </div>
-                      <div>
-                        <p style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 700, fontSize: '14px', color: '#dae2fd', margin: 0 }}>
-                          {m.name}
-                        </p>
-                        <p style={{ fontSize: '11px', color: '#64748b', margin: 0 }}>
-                          {[m.lender, m.interestRate != null && `${m.interestRate}%`, m.type].filter(Boolean).join(' · ')}
-                        </p>
-                      </div>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
-                      <p style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 700, fontSize: '15px', color: '#ffb4ab', margin: 0 }}>
-                        {fmt(m.outstandingBalance || 0)}
-                      </p>
-                      <span className="material-symbols-outlined" style={{ color: '#3c4a42', fontSize: '16px' }}>chevron_right</span>
-                    </div>
-                  </div>
-                </Link>
-              ))
+              <FinanceRow
+                initials="MO"
+                initialsColor="#ffb4ab"
+                title="Mortgage"
+                subtitle="Outstanding Balance"
+                value={fmt(totalMortgageDebt)}
+                valueColor="#ffb4ab"
+                to="/mobile/mortgage"
+              />
             )}
           </div>
         </div>

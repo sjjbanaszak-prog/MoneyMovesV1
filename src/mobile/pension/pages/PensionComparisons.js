@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import PensionLayout from '../PensionLayout';
 import { usePensionData } from '../PensionDataContext';
+import PremiumGate from '../../components/PremiumGate';
 
 const TABS = ['Scenarios', 'Benchmark'];
 
@@ -75,6 +76,10 @@ export default function PensionComparisons() {
 
   return (
     <PensionLayout>
+      <PremiumGate
+        featureName="Pension Comparisons"
+        description="Compare your pension against peers and benchmarks to see how you stack up."
+      >
       <div style={{ padding: '0 0 16px' }}>
 
         {/* Header */}
@@ -168,6 +173,7 @@ export default function PensionComparisons() {
         )}
 
       </div>
+      </PremiumGate>
     </PensionLayout>
   );
 }
