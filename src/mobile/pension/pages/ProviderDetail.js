@@ -73,49 +73,54 @@ const ACCOUNT_TYPES = [
   'AVC', 'Defined Benefit', 'Stakeholder', 'LISA',
 ];
 
-// Monthly bar chart — groups paymentHistory by month for the current FY
+// Monthly bar chart — groups paymentHistory by month for a selected FY or CY.
 // Overlays a transparent value-trajectory line behind the bars.
-// The line starts at the estimated opening FY value (currentValue minus FY contributions)
-// and ends at currentValue for the current month, updating as the user edits either.
-function ContributionBarChart({ paymentHistory, currentValue, color }) {
-  const today = new Date();
-  const currentFYStart = getTaxYearStart(today);
+function ContributionBarChart({ paymentHistory, currentValue, color, mode, selectedYear }) {
+  // All date-sensitive logic is inside the memo so `today` is always fresh.
+  const { monthlyData, currentBucketIdx } = useMemo(() => {
+    const today = new Date();
+    let buckets, bucketIdx;
 
-  // Bucket index for today's position within the FY (0 = Apr, 1 = May, ..., 11 = Mar).
-  // April 1–5 are still in the PREVIOUS tax year (before the April 6 cutoff), so the
-  // line should sit at bucket 11 (March = end of that FY), not jump to bucket 0 (April).
-  const currentBucketIdx = (() => {
-    const m = today.getMonth(); // 0-indexed
-    const d = today.getDate();
-    if (m === 3 && d < 6) return 11; // April 1–5: end of previous FY
-    return (m - 3 + 12) % 12;
-  })();
-
-  const monthlyData = useMemo(() => {
-    const buckets = Array.from({ length: 12 }, (_, i) => {
-      const calMonth = (3 + i) % 12;
-      const year = calMonth >= 3 ? currentFYStart : currentFYStart + 1;
-      return {
-        label: new Date(year, calMonth, 1).toLocaleString('en-GB', { month: 'short' }),
+    if (mode === 'fy') {
+      const isCurrentFY = selectedYear === getTaxYearStart(today);
+      buckets = Array.from({ length: 12 }, (_, i) => {
+        const calMonth = (3 + i) % 12;
+        const year = calMonth >= 3 ? selectedYear : selectedYear + 1;
+        return { label: new Date(year, calMonth, 1).toLocaleString('en-GB', { month: 'short' }), amount: 0 };
+      });
+      // Bucket index for today within FY; April 1–5 still belong to the previous FY.
+      bucketIdx = isCurrentFY
+        ? (today.getMonth() === 3 && today.getDate() < 6 ? 11 : (today.getMonth() - 3 + 12) % 12)
+        : 11;
+    } else {
+      const isCurrentCY = selectedYear === today.getFullYear();
+      buckets = Array.from({ length: 12 }, (_, i) => ({
+        label: new Date(selectedYear, i, 1).toLocaleString('en-GB', { month: 'short' }),
         amount: 0,
-      };
-    });
+      }));
+      bucketIdx = isCurrentCY ? today.getMonth() : 11;
+    }
 
     (paymentHistory || []).forEach(p => {
       if (!p.date) return;
       const dt = parseDate(p.date);
       if (!dt) return;
-      const fyStart = getTaxYearStart(dt);
-      if (fyStart !== currentFYStart) return;
-      const bucketIdx = ((dt.getMonth()) - 3 + 12) % 12;
-      if (buckets[bucketIdx]) buckets[bucketIdx].amount += p.amount || 0;
+      if (mode === 'fy') {
+        if (getTaxYearStart(dt) !== selectedYear) return;
+        const bi = (dt.getMonth() - 3 + 12) % 12;
+        if (buckets[bi]) buckets[bi].amount += p.amount || 0;
+      } else {
+        if (dt.getFullYear() !== selectedYear) return;
+        const bi = dt.getMonth();
+        if (buckets[bi]) buckets[bi].amount += p.amount || 0;
+      }
     });
 
-    return buckets;
-  }, [paymentHistory, currentFYStart]);
+    return { monthlyData: buckets, currentBucketIdx: bucketIdx };
+  }, [paymentHistory, mode, selectedYear]);
 
   // Build the value-trajectory line:
-  //   values[0]   = estimated opening FY value (currentValue minus all FY contributions)
+  //   values[0]   = estimated opening period value (currentValue minus period contributions)
   //   values[i+1] = opening value + cumulative contributions through month i
   //   values[last]= currentValue (anchors the line to what the user has set)
   const linePath = useMemo(() => {
@@ -216,6 +221,9 @@ export default function ProviderDetail() {
   const [editVal, setEditVal]     = useState('');
   const [isSaving, setIsSaving]   = useState(false);
 
+  // ---- contributions period state ----
+  const [periodType, setPeriodType] = useState('fy'); // 'fy' | 'cy'
+
   // ---- account details edit state ----
   const [isEditingDetails, setIsEditingDetails]         = useState(false);
   const [editAccountType, setEditAccountType]           = useState('');
@@ -248,6 +256,18 @@ export default function ProviderDetail() {
   const currentFYTotal = (entry.paymentHistory || []).reduce((s, p) => {
     return getTaxYearStart(p.date) === currentFYStart ? s + (p.amount || 0) : s;
   }, 0);
+
+  const currentCY = new Date().getFullYear();
+
+  // Total contributions for the current FY or CY depending on toggle
+  const periodTotal = useMemo(() => {
+    return (entry.paymentHistory || []).reduce((s, p) => {
+      const dt = parseDate(p.date);
+      if (!dt) return s;
+      if (periodType === 'fy') return getTaxYearStart(dt) === currentFYStart ? s + (p.amount || 0) : s;
+      return dt.getFullYear() === currentCY ? s + (p.amount || 0) : s;
+    }, 0);
+  }, [entry.paymentHistory, periodType, currentFYStart, currentCY]);
 
   const growth = (entry.currentValue || 0) - (entry.deposits || 0);
   const growthPct = entry.deposits > 0 ? (growth / entry.deposits) * 100 : 0;
@@ -429,21 +449,47 @@ export default function ProviderDetail() {
 
         {/* Contribution Timeline */}
         <div className="animate-in stagger-2 section-card" style={{ marginBottom: '16px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <h3 style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 800, fontSize: '15px', color: '#dae2fd', margin: 0 }}>
+          {/* Header row: title + FY/CY toggle + year dropdown */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', gap: '8px' }}>
+            <h3 style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 800, fontSize: '15px', color: '#dae2fd', margin: 0, flexShrink: 0 }}>
               Contributions
             </h3>
-            <span style={{ fontSize: '12px', color: '#adc6ff', fontWeight: 600 }}>{currentFYLabel}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              {/* FY / CY pill toggle */}
+              <div style={{ display: 'flex', background: '#060e20', borderRadius: '8px', padding: '2px', gap: '2px' }}>
+                {['fy', 'cy'].map(t => (
+                  <button
+                    key={t}
+                    onClick={() => setPeriodType(t)}
+                    style={{
+                      padding: '4px 10px', borderRadius: '6px', border: 'none', cursor: 'pointer',
+                      background: periodType === t ? '#4edea3' : 'transparent',
+                      color: periodType === t ? '#003824' : '#bbcabf',
+                      fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '11px',
+                      textTransform: 'uppercase', letterSpacing: '0.05em',
+                      transition: 'all 0.15s',
+                    }}
+                  >
+                    {t.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
+
           <ContributionBarChart
             paymentHistory={entry.paymentHistory}
             currentValue={entry.currentValue}
             color={color}
+            mode={periodType}
+            selectedYear={periodType === 'fy' ? currentFYStart : currentCY}
           />
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '12px', padding: '12px', background: 'rgba(173,198,255,0.04)', borderRadius: '10px' }}>
             <div>
-              <p style={{ fontSize: '11px', color: '#bbcabf', margin: '0 0 2px' }}>FY total</p>
-              <p style={{ fontWeight: 700, fontSize: '14px', color: '#4edea3', margin: 0 }}>{fmtShort(currentFYTotal)}</p>
+              <p style={{ fontSize: '11px', color: '#bbcabf', margin: '0 0 2px' }}>
+                {periodType === 'fy' ? taxYearLabel(currentFYStart) : String(currentCY)} total
+              </p>
+              <p style={{ fontWeight: 700, fontSize: '14px', color: '#4edea3', margin: 0 }}>{fmtShort(periodTotal)}</p>
             </div>
             <div style={{ textAlign: 'right' }}>
               <p style={{ fontSize: '11px', color: '#bbcabf', margin: '0 0 2px' }}>All contributions</p>
