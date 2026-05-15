@@ -404,7 +404,7 @@ function DashboardContent() {
         .toLocaleString('en-GB', { month: 'short', year: '2-digit' });
     });
 
-    return { valueSeries, contribSeries, labels };
+    return { valueSeries, contribSeries, labels, months };
   }, [entries]);
 
   // ── Mortgage / net worth totals ────────────────────────────────────────────
@@ -418,11 +418,53 @@ function DashboardContent() {
   // Net worth history: pension value over time + static savings/property/mortgage offset
   const netWorthChartData = useMemo(() => {
     if (!dualChartData) return null;
-    const assetsSeries      = dualChartData.valueSeries.map(v => v + savingsBalance + totalPropertyValue);
-    const liabilitiesSeries = dualChartData.valueSeries.map(() => totalMortgageDebt);
-    const series            = assetsSeries.map((a, i) => a - liabilitiesSeries[i]);
+    const { months } = dualChartData;
+
+    const now    = new Date();
+    const nowY   = now.getFullYear();
+    const nowM   = now.getMonth() + 1;
+
+    // Liability per month: reconstruct each mortgage's amortized balance using
+    // the standard amortization formula worked backwards from the current balance.
+    const liabilitiesSeries = months.map(mo => {
+      const [moY, moM] = mo.split('-').map(Number);
+
+      return mortgages.reduce((sum, m) => {
+        const bal     = m.outstandingBalance || 0;
+        const rate    = (m.interestRate || 0) / 100 / 12;
+        const payment = m.monthlyPayment || 0;
+
+        // Exclude months before the mortgage started
+        if (m.startDate) {
+          const sd = new Date(m.startDate);
+          if (!isNaN(sd.getTime())) {
+            const startKey = `${sd.getFullYear()}-${String(sd.getMonth() + 1).padStart(2, '0')}`;
+            if (mo < startKey) return sum;
+          }
+        }
+
+        // Months between this chart month and today
+        const monthsAgo = (nowY - moY) * 12 + (nowM - moM);
+        if (monthsAgo <= 0) return sum + bal;
+
+        let historicalBal;
+        if (rate > 0 && payment > 0) {
+          // Amortization: B_past = (B_now + P/r*(factor-1)) / factor
+          const factor = Math.pow(1 + rate, monthsAgo);
+          historicalBal = (bal + (payment / rate) * (factor - 1)) / factor;
+        } else {
+          // No rate/payment data: add back flat principal per month
+          historicalBal = bal + payment * monthsAgo;
+        }
+
+        return sum + Math.max(0, Math.round(historicalBal));
+      }, 0);
+    });
+
+    const assetsSeries = dualChartData.valueSeries.map(v => v + savingsBalance + totalPropertyValue);
+    const series       = assetsSeries.map((a, i) => a - liabilitiesSeries[i]);
     return { series, assetsSeries, liabilitiesSeries, labels: dualChartData.labels };
-  }, [dualChartData, savingsBalance, totalPropertyValue, totalMortgageDebt]);
+  }, [dualChartData, savingsBalance, totalPropertyValue, mortgages]);
 
   // Slice to selected timeframe: 1Y = 12 months, 5Y = 60 months, AT = all
   const displayData = useMemo(() => {
