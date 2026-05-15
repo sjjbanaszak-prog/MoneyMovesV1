@@ -1,8 +1,39 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import { Plus, Trash2, Edit2, ChevronDown, Download } from "lucide-react";
 import dayjs from "dayjs";
+import customParseFormat from 'dayjs/plugin/customParseFormat';
 import { categorizeTransaction } from "./utils/transactionCategorizer";
 import "./DebtListV2Styles.css";
+
+// Enable custom format parsing
+dayjs.extend(customParseFormat);
+
+// Helper function to parse dates in various formats
+const parseTransactionDate = (dateStr) => {
+  if (!dateStr) return dayjs();
+
+  // Try common date formats
+  const formats = [
+    'DD/MM/YYYY',
+    'DD/MM/YY',
+    'YYYY-MM-DD',
+    'MM/DD/YYYY',
+    'MM/DD/YY',
+    'DD MMM YYYY',
+    'DD-MM-YYYY',
+    'DD-MM-YY'
+  ];
+
+  for (const format of formats) {
+    const parsed = dayjs(dateStr, format, true);
+    if (parsed.isValid()) {
+      return parsed;
+    }
+  }
+
+  // Fallback to dayjs default parsing
+  return dayjs(dateStr);
+};
 
 export default function DebtListV2({
   debts,
@@ -482,8 +513,8 @@ export default function DebtListV2({
 
     // Sort transactions by date (newest first)
     updatedTransactions.sort((a, b) => {
-      const dateA = dayjs(a.transactionDate);
-      const dateB = dayjs(b.transactionDate);
+      const dateA = parseTransactionDate(a.transactionDate);
+      const dateB = parseTransactionDate(b.transactionDate);
       return dateB.diff(dateA); // Descending order (newest first)
     });
 
@@ -810,8 +841,8 @@ export default function DebtListV2({
                                       .slice()
                                       .sort((a, b) => {
                                         // Sort by date descending (newest first)
-                                        const dateA = dayjs(a.transactionDate);
-                                        const dateB = dayjs(b.transactionDate);
+                                        const dateA = parseTransactionDate(a.transactionDate);
+                                        const dateB = parseTransactionDate(b.transactionDate);
                                         return dateB.diff(dateA);
                                       })
                                       .map((transaction, tIdx) => {

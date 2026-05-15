@@ -12,12 +12,16 @@ import {
   FiMenu,
   FiUser,
   FiCreditCard,
+  FiBell,
+  FiSearch,
+  FiMessageSquare,
 } from "react-icons/fi";
 import { FaBars, FaChevronDown } from "react-icons/fa";
 import { TestTube2, Eye } from "lucide-react";
 import "./Navbar.css";
 import { useAuth } from "../contexts/AuthContext";
 import { useDemoMode } from "../contexts/DemoModeContext";
+import { useReportProblem } from "../contexts/ReportProblemContext";
 
 const Navbar = () => {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -26,8 +30,10 @@ const Navbar = () => {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const { currentUser, signInWithGoogle, logout } = useAuth();
   const { isDemoMode, toggleDemoMode } = useDemoMode();
+  const { openReportProblem } = useReportProblem();
   const menuRef = useRef(null);
   const userMenuRef = useRef(null);
+  const searchInputRef = useRef(null);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -73,6 +79,26 @@ const Navbar = () => {
     navigate("/login");
   };
 
+  const handleFeedbackClick = (e) => {
+    e.preventDefault();
+    openReportProblem();
+  };
+
+  const handleSearchClick = () => {
+    if (collapsed) {
+      setCollapsed(false);
+      setTimeout(() => {
+        searchInputRef.current?.focus();
+      }, 300);
+    } else {
+      searchInputRef.current?.focus();
+    }
+  };
+
+  const handleSearchInputClick = (e) => {
+    e.stopPropagation();
+  };
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
@@ -96,9 +122,9 @@ const Navbar = () => {
 
   useEffect(() => {
     if (collapsed) {
-      document.body.classList.add("collapsed");
+      document.body.classList.add("sidebar-collapsed");
     } else {
-      document.body.classList.remove("collapsed");
+      document.body.classList.remove("sidebar-collapsed");
     }
   }, [collapsed]);
 
@@ -124,22 +150,72 @@ const Navbar = () => {
   }, []);
 
   const navLinks = [
-    { to: "/", label: "Home", icon: <FiHome /> },
+    {
+      to: "/",
+      label: "Dashboard",
+      icon: (
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1H5a1 1 0 01-1-1v-3zM14 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1h-4a1 1 0 01-1-1v-3z" />
+        </svg>
+      )
+    },
     {
       to: "/PensionBuilderNEW",
-      label: "Income Tax Modeller",
-      icon: <FiPieChart />,
+      label: "Income",
+      icon: (
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      )
     },
-    { to: "/PensionPots", label: "Pension Dashboard", icon: <FiBriefcase /> },
+    {
+      to: "/PensionPots",
+      label: "Pension",
+      icon: (
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+        </svg>
+      )
+    },
     {
       to: "/MortgageCalcNEW",
-      label: "Mortgage Calculator",
-      icon: <FiTrendingUp />,
+      label: "Mortgage",
+      icon: (
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+        </svg>
+      )
     },
-    { to: "/SavingsTracker", label: "Savings Tracker", icon: <FiDatabase /> },
-    { to: "/debt-manager", label: "Debt Manager", icon: <FiCreditCard /> },
+    {
+      to: "/SavingsTracker",
+      label: "Savings",
+      icon: (
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+        </svg>
+      )
+    },
+    {
+      to: "/debt-manager",
+      label: "Debt",
+      icon: (
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+        </svg>
+      )
+    },
+    {
+      to: "/income-new",
+      label: "Income NEW",
+      icon: (
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      )
+    },
   ];
 
+  // Mobile navigation (unchanged)
   if (!isDesktop) {
     return (
       <nav className="navbar dark-mode" ref={menuRef}>
@@ -242,79 +318,43 @@ const Navbar = () => {
     );
   }
 
+  // Desktop navigation with new topbar + sidebar design
   return (
-    <nav className="sidebar">
-      <div className="sidebar-top-wrapper">
-        <Link to="/" className="logo__wrapper">
-          <img
-            src="/moneymoves-logo-only.png"
-            alt="Logo"
-            className="logo-small"
-          />
-          <span className={`company-name ${collapsed ? "hide" : ""}`}>
-            MoneyMoves
-          </span>
-        </Link>
-        <button
-          className="expand-btn"
-          type="button"
-          onClick={() => setCollapsed((prev) => !prev)}
-        >
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <path
-              d="M9.99021 13.28L5.64354 8.93333C5.13021 8.42 5.13021 7.58 5.64354 7.06667L9.99021 2.72"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </button>
-      </div>
-
-      <div className="sidebar-links">
-        <ul>
-          {navLinks.map((link) => (
-            <li key={link.to}>
-              <Link
-                to={link.to}
-                className={location.pathname === link.to ? "active" : ""}
-                data-tooltip={collapsed ? link.label : ""}
-              >
-                <span className="icon">{link.icon}</span>
-                <span className={`link ${collapsed ? "hide" : ""}`}>
-                  {link.label}
-                </span>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      <div className="separator separator--top"></div>
-
-      <div className="sidebar__profile">
-        {currentUser ? (
-          <>
+    <>
+      {/* Topbar */}
+      <div className="topbar">
+        <div className="topbar-logo-section">
+          <Link to="/" className="topbar-logo-link">
             <img
-              className="avatar"
-              src={currentUser.photoURL || 'https://via.placeholder.com/40'}
-              alt={currentUser.displayName || 'User'}
+              src="/moneymoves-logo-only.png"
+              alt="MoneyMoves Logo"
+              className="topbar-logo-img"
             />
-            <div className={`avatar__name ${collapsed ? "hide" : ""}`}>
-              <div className="user-name">{currentUser.displayName?.split(" ")[0] || 'User'}</div>
-              <div className="email">{currentUser.email}</div>
-            </div>
-            <div className="user-menu-wrapper" ref={userMenuRef}>
+          </Link>
+          <div className="topbar-logo-text">MoneyMoves</div>
+        </div>
+
+        <div className="topbar-right">
+          <div className="notification-icon">
+            <FiBell size={18} />
+            <div className="notification-badge">3</div>
+          </div>
+
+          {currentUser ? (
+            <div className="topbar-profile-wrapper" ref={userMenuRef}>
               <button
-                className={`user-menu-btn ${collapsed ? "hide" : ""}`}
+                className="topbar-profile-button"
                 onClick={() => setUserMenuOpen(!userMenuOpen)}
                 aria-label="User menu"
               >
-                <FiMenu size={20} />
+                <img
+                  src={currentUser.photoURL || 'https://via.placeholder.com/40'}
+                  alt={currentUser.displayName || 'User'}
+                />
               </button>
 
               {userMenuOpen && (
-                <div className="user-dropdown-menu">
+                <div className="user-dropdown-menu topbar-dropdown">
                   <button
                     onClick={handleAccountClick}
                     className="user-dropdown-item"
@@ -343,19 +383,76 @@ const Navbar = () => {
                 </div>
               )}
             </div>
-          </>
-        ) : (
-          <button
-            className="auth-button login-button"
-            onClick={handleAuthClick}
-            style={{ color: "#e5e7eb", background: "none", border: "none" }}
-          >
-            <FiLogIn size={16} style={{ marginRight: "6px" }} />
-            <span className={collapsed ? "hide" : ""}>Login</span>
-          </button>
-        )}
+          ) : (
+            <button
+              className="topbar-login-button"
+              onClick={handleAuthClick}
+            >
+              <FiLogIn size={16} />
+              <span>Login</span>
+            </button>
+          )}
+        </div>
       </div>
-    </nav>
+
+      {/* Sidebar */}
+      <nav className={`new-sidebar ${collapsed ? "collapsed" : ""}`}>
+        <button
+          className="collapse-toggle"
+          onClick={() => setCollapsed(!collapsed)}
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+        >
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path>
+          </svg>
+        </button>
+
+        <div className="search-box" onClick={handleSearchClick}>
+          <FiSearch className="search-icon" size={16} />
+          <input
+            ref={searchInputRef}
+            type="text"
+            className="search-text"
+            placeholder="Search"
+            onClick={handleSearchInputClick}
+          />
+          <span className="shortcut">⌘ K</span>
+        </div>
+
+        <div className="nav-section">
+          <ul>
+            {navLinks.map((link) => (
+              <li key={link.to}>
+                <Link
+                  to={link.to}
+                  className={`nav-item ${location.pathname === link.to ? "active" : ""}`}
+                  data-tooltip={link.label}
+                >
+                  <span className="nav-icon">{link.icon}</span>
+                  <span>{link.label}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="feedback-section">
+          <a
+            href="#"
+            className="nav-item"
+            data-tooltip="Feedback"
+            onClick={handleFeedbackClick}
+          >
+            <span className="nav-icon">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+              </svg>
+            </span>
+            <span>Feedback</span>
+          </a>
+        </div>
+      </nav>
+    </>
   );
 };
 

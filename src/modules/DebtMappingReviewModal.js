@@ -25,6 +25,7 @@ export default function DebtMappingReviewModal({
   interestRate: detectedInterestRate,
   confidenceScores,
   aiMetadata,
+  existingDebts,
   onConfirm,
   onCancel,
 }) {
@@ -41,6 +42,8 @@ export default function DebtMappingReviewModal({
   const [startingBalance, setStartingBalance] = useState(detectedStartingBalance || '');
   const [interestRate, setInterestRate] = useState(detectedInterestRate || '');
   const [minimumPayment, setMinimumPayment] = useState('');
+  const [showAutoFillSuggestion, setShowAutoFillSuggestion] = useState(false);
+  const [matchingDebt, setMatchingDebt] = useState(null);
 
   const debtTypes = [
     'Credit Card',
@@ -83,6 +86,63 @@ export default function DebtMappingReviewModal({
       setInterestRate(detectedInterestRate);
     }
   }, [detectedInterestRate]);
+
+  // Check if debt name matches an existing debt
+  useEffect(() => {
+    if (debtName && existingDebts && existingDebts.length > 0) {
+      const match = existingDebts.find(debt => debt.debtName === debtName);
+      if (match) {
+        setMatchingDebt(match);
+        setShowAutoFillSuggestion(true);
+      } else {
+        setMatchingDebt(null);
+        setShowAutoFillSuggestion(false);
+      }
+    }
+  }, [debtName, existingDebts]);
+
+  const handleAutoFillFromPrevious = () => {
+    if (!matchingDebt) return;
+
+    // Auto-fill interest rate from previous entry
+    if (matchingDebt.interestRate) {
+      setInterestRate(matchingDebt.interestRate.toString());
+    }
+
+    // Calculate starting balance from most recent transaction
+    if (matchingDebt.transactions && matchingDebt.transactions.length > 0) {
+      // Sort transactions by date to find most recent
+      const sortedTransactions = [...matchingDebt.transactions].sort((a, b) => {
+        const dateA = new Date(a.transactionDate);
+        const dateB = new Date(b.transactionDate);
+        return dateB - dateA; // Most recent first
+      });
+
+      // Calculate balance after most recent transaction
+      let calculatedBalance = matchingDebt.originalBalance || matchingDebt.balance;
+      sortedTransactions.forEach(txn => {
+        calculatedBalance += txn.amount;
+      });
+
+      setStartingBalance(Math.abs(calculatedBalance).toFixed(2));
+    } else {
+      // If no transactions, use current balance
+      setStartingBalance(matchingDebt.balance.toFixed(2));
+    }
+
+    // Auto-fill minimum payment if available
+    if (matchingDebt.minimumPayment) {
+      setMinimumPayment(matchingDebt.minimumPayment.toString());
+    }
+
+    // Auto-fill debt type if available
+    if (matchingDebt.debtType) {
+      handleMappingChange('debtType', matchingDebt.debtType);
+    }
+
+    // Hide the suggestion after auto-fill
+    setShowAutoFillSuggestion(false);
+  };
 
   const handleMappingChange = (field, value) => {
     setMapping(prev => ({ ...prev, [field]: value }));
@@ -178,6 +238,32 @@ export default function DebtMappingReviewModal({
           {/* Debt Information Section */}
           <div className="debt-mapper-section">
             <h3>Debt Information</h3>
+
+            {/* Auto-fill suggestion for existing debts */}
+            {showAutoFillSuggestion && matchingDebt && (
+              <div className="auto-fill-suggestion">
+                <div className="auto-fill-icon">💡</div>
+                <div className="auto-fill-content">
+                  <strong>Existing debt detected: {matchingDebt.debtName}</strong>
+                  <p>Auto-fill values from your previous statement?</p>
+                  <button
+                    type="button"
+                    className="auto-fill-btn"
+                    onClick={handleAutoFillFromPrevious}
+                  >
+                    Use Previous Values
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  className="auto-fill-dismiss"
+                  onClick={() => setShowAutoFillSuggestion(false)}
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+
             <div className="debt-mapper-grid">
               <div className="form-group">
                 <label>

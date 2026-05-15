@@ -61,10 +61,10 @@
 }
 
 .module-card {
-  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-  border: 1px solid #334155;
-  border-radius: 16px;
-  padding: 2rem;
+  background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+  border: 1px solid #374151;
+  border-radius: 12px;
+  padding: 16px;
   transition: all 0.3s ease;
 }
 
@@ -147,13 +147,14 @@
 
 .summary-label {
   font-size: 0.875rem;
-  color: #94a3b8;
+  color: #9ca3af;
+  font-weight: 500;
 }
 
 .summary-value {
   font-size: 1rem;
-  font-weight: 600;
-  color: #f3f4f6;
+  font-weight: 700;
+  color: #fff;
 }
 
 .summary-value.positive {
@@ -285,7 +286,7 @@
   }
 
   .module-card {
-    padding: 1.5rem;
+    padding: 14px;
   }
 
   .module-title {

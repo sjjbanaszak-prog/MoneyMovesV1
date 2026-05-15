@@ -1,8 +1,8 @@
 # Money Moves V1 - Refactoring Project Overview
 
 **Project:** Comprehensive Architecture Refactoring
-**Status:** In Progress (Phase 5 Part 3 Completed)
-**Last Updated:** October 19, 2025
+**Status:** Phase 5 Complete — Phases 6 & 7 Optional
+**Last Updated:** March 2026
 
 ---
 
@@ -13,239 +13,196 @@
 - Shared CSS file ✅
 - Archive legacy code ✅
 
+**Results:**
+- Created `/src/utils/formatters.js` — eliminated 11 duplicate `formatCurrency` functions
+- Created `/src/utils/dateUtils.js` — eliminated 3+ duplicate tax year calculations
+- Created `/src/styles/SharedStyles.css` — global shared component styles
+- Archived 909 lines of legacy code (`MortgageCalc.js`)
+
+---
+
 ### **Phase 2: Custom Hooks + Firebase Security** ✅ COMPLETED
 - Environment variables for Firebase ✅
-- Custom hooks (useFirebaseDoc, useFirebaseCollection) ✅
-- Hooks created but NOT applied (see Phase 4 note) ✅
+- Custom hooks (`useFirebaseDoc`, `useFirebaseCollection`) created ✅
+- Hooks NOT applied at scale (see Phase 4 note below)
+
+**Results:**
+- Secured Firebase credentials in `.env` file
+- `useFirebaseDoc` hook (155 lines) — eliminates 40–50 lines per component
+- `useFirebaseCollection` hook (168 lines) — simplifies collection queries
+- Refactored `MortgageCalcNEW`: 240 → 157 lines (35% reduction)
+
+---
 
 ### **Phase 3: Component Library + Pages Reorganization** ✅ COMPLETED
 - Reusable components (Modal, Button, Input, Card) ✅
 - Pages directory reorganization ✅
 
+**Results:**
+- Component library created: 240 lines total
+- 7 page components organized into `/src/pages/` (5,406 lines structured)
+- Barrel export for clean imports
+- Clear separation: pages vs feature modules vs reusable components
+
+---
+
 ### **Phase 4: Apply Custom Hooks to Remaining Components** ⏭️ SKIPPED
-**Decision:** Skipped this phase due to technical issues discovered during implementation.
+**Decision:** Skipped due to technical issues during implementation.
 
-**Reason:** The `useFirebaseDoc` hook caused re-render loops and input freezing bugs when applied to components with multiple individual state fields. The current pattern (direct useState + Firebase load/save effects) is:
-- ✅ Already clean and consistent
-- ✅ Working reliably across all components
-- ✅ Easy to understand and debug
-- ✅ Only ~30-40 lines per component (acceptable overhead)
+**Reason:** `useFirebaseDoc` caused re-render loops and input freezing when applied to components with multiple individual state fields. The current pattern (direct `useState` + Firebase load/save effects) is:
+- Already clean and consistent
+- Working reliably across all components
+- Easy to understand and debug
+- Only ~30–40 lines per component (acceptable overhead)
 
-**Original Objective:** Apply hooks to 22+ components to eliminate ~1,000 lines of boilerplate
-
-**Actual Outcome:** Hooks remain available for simple use cases, but complex components use the proven direct useState pattern
-
-**Impact:** Minimal - the working pattern is already maintainable and consistent
+**Impact:** Minimal — the working pattern is maintainable and consistent. Hooks remain available for simple use cases.
 
 ---
 
-### **Phase 5: CSS Consolidation** ✅ IN PROGRESS
+### **Phase 5: CSS Consolidation** ✅ COMPLETED
 
-#### **Phase 5 Part 1: CSS Variables Foundation** ✅ COMPLETED
-- Created variables.css with 40+ design tokens ✅
-- Enhanced SharedStyles.css with CSS variables ✅
-- Established complete design system ✅
+#### **Part 1: CSS Variables Foundation** ✅
+- Created `variables.css` with 40+ design tokens
+- Enhanced `SharedStyles.css` with CSS variables
+- Established complete design system
 
-#### **Phase 5 Part 2: Color Variable Replacement** ✅ COMPLETED
-- Replaced 178+ hardcoded colors in top 5 CSS files ✅
-- Applied semantic color variables ✅
-- Improved theme consistency ✅
+#### **Part 2: Color Variable Replacement** ✅
+- Replaced 178+ hardcoded colors in top 5 CSS files
+- Applied semantic color variables throughout
+- Improved theme consistency
 
-#### **Phase 5 Part 3: Duplicate CSS Removal** ✅ COMPLETED
-- Removed 119 lines of duplicate CSS ✅
-- Consolidated body styles (11 files) ✅
-- Consolidated modal-overlay styles (3 files) ✅
-- Single source of truth established ✅
+#### **Part 3: Duplicate CSS Removal** ✅
+- Removed 119 lines of duplicate CSS
+- Consolidated `body` styles (11 files)
+- Consolidated `modal-overlay` styles (3 files)
+- Single source of truth established
 
-#### **Phase 5 Part 4: Design System Consolidation** ✅ COMPLETED
-- Created standardized chart component system in SharedStyles.css ✅
-- Consolidated chart wrapper/header/title styles from 5 chart files ✅
-- Established design pattern thinking (not just literal duplicate removal) ✅
-- Chart components now use consistent base styles with custom overrides ✅
+#### **Part 4: Design System Consolidation** ✅
+- Created standardized chart component system in `SharedStyles.css`
+- Consolidated chart wrapper/header/title styles from 5 chart files
+- Chart components now use consistent base styles with component-specific overrides
 
-**Next:** Phase 6 (Optional) - Module Organization OR Phase 7 - Component Extraction
-
----
-
-## **REMAINING TASKS (Optional):**
-
-### **Phase 5 Part 4: Additional CSS Consolidation** (Optional)
-**Problem Identified:** 33 CSS files with 8,205 total lines
-
-**Proposed Actions:**
-1. **Merge duplicate patterns** - Many CSS files share identical classes
-2. **Create CSS modules** - Scope styles to components
-3. **Theme system** - Centralize colors, spacing, typography
-4. **Remove unused styles** - Dead CSS elimination
-
-**Files with Most Duplication:**
-- Modal styles (repeated in 5+ files)
-- Card/container patterns
-- Button variants
-- Form styling
-- Loading states
-
-**Estimated Impact:** Could reduce CSS from 8,205 lines to ~4,000-5,000 lines
+**Phase 5 Total Impact:** ~400 lines removed, consistent design tokens across all modules
 
 ---
 
-### **Phase 6: Module Organization** (Original Plan)
-**Problem Identified:** `/modules/` directory has 30+ files mixed together
+### **Additional Completed Work (Post-Phase 5)**
 
-**Proposed Structure:**
+#### **Income Tax Calculator — Layout & Style Cleanup** ✅
+- Extracted 50+ inline styles into named CSS classes in `IncomeTaxCalculator.css`
+- Standardised card padding to 24px and grid gaps to 24px across the module
+- Fixed `btn-toggle-group` → `itc-btn-toggle-group` class name mismatch
+- Removed meaningless positional inline styles on Lucide icon wrappers
+- Changes made on branch `fix/income-tax-layout-spacing` (merged to main)
+
+---
+
+## 🔧 Optional Future Work
+
+### **Phase 6: Module Organization**
+**Problem:** `/modules/` directory has 30+ files mixed together.
+
+**Proposed structure:**
 ```
 /modules
   /pension
-    - PensionPotPie.js
-    - PensionAccountsTable.js
-    - PensionUploader.js
-    - PensionAllowanceChart.js
-    - PensionPerformanceCards.js
-    - PensionGrowthChart.js
-    - PensionPeerComparison.js
-    - AIFinancialAdvisory.js
-
   /savings
-    - FileUploader.js
-    - ColumnMapper.js
-    - SavingsChart.js
-    - AccountsTable.js
-    - MonthlyBalanceChangeChart.js
-    - ISALISAUtilization.js
-    - PremiumBondsAnalysis.js
-    - AISavingsAdvisory.js
-
   /mortgage
-    - MortgageChart.js
-    - MortgageSummary.js
-    - ComparisonChart.js
-
   /trading
-    - Trading212Uploader.js
-    - PortfolioBuilder.js
-    - PortfolioValueChart.js
-    - TreemapChart.js
-    - MonthlyPerformanceChart.js
-
+  /debt
+  /income-tax
   /shared
-    - NetWorthChart.js
-    - DataUploader.js (generalized)
-    - ColumnMapper.js (if used across features)
-
   /utils
-    - columnDetection.js
-    - detectDateFormat.js
-    - premiumBondsParser.js
-    - dataValidation.js
-    - mortgageUtils.js
-    - pensionUtils.js
 ```
 
-**Benefits:**
-- Clearer feature boundaries
-- Easier to find related components
-- Better for code splitting
-- Logical grouping
+**Benefits:** Clearer feature boundaries, easier navigation, better for code splitting.
 
 ---
 
-### **Phase 7: Component Extraction** (Not in Original Plan, but Identified)
-**Large Components to Break Down:**
+### **Phase 7: Large Component Extraction**
 
-1. **AccountSettings.js** - 1,145 lines
-   - Extract modal components (EditProfile, UpgradePremium, ReportProblem)
-   - Extract SettingsCard, MenuItem as separate components
-
-2. **AIFinancialAdvisory.js** - ~1,000 lines
-   - Break into smaller advice section components
-   - Extract analysis logic
-
-3. **LandingPage.js** - 516 lines
-   - Extract module card components
-   - Separate overview sections
+| Component | Lines | Extraction Opportunity |
+|-----------|-------|------------------------|
+| `AccountSettings.js` | ~1,145 | Extract modal components (EditProfile, UpgradePremium, ReportProblem) |
+| `AIFinancialAdvisory.js` | ~1,000 | Break into advice section components |
+| `IncomeTaxCalculator.js` | ~1,300 | Extract input panel, results panel, chart panel |
+| `LandingPage.js` | ~516 | Extract module card components |
 
 ---
 
-### **Additional Items from Original Analysis:**
+### **Phase 5 (Continued): Further CSS Reduction**
+
+Based on analysis across 34 CSS files (~10,749 lines total):
+
+**What can be eliminated (estimated 30–40% reduction):**
+
+| Category | Files Affected | Lines Saveable |
+|----------|----------------|----------------|
+| Duplicate modal overlays | 4 files | ~160 lines |
+| Duplicate button styles | 3 files | ~90 lines |
+| Duplicate card wrappers | 6 files | ~150 lines |
+| Duplicate form inputs | 5 files | ~100 lines |
+| Base `body` styles (already global) | 20 files | ~160 lines |
+| Generic wrapper containers | 8 files | ~200 lines |
+| **Total** | **31 files** | **~860 lines** |
+
+**Small files that could be fully eliminated** (replace with utility classes):
+- `TimeframeTabs.css` (51 lines)
+- `StackedBarChart.css` (minimal)
+- Several small modal wrapper files
+
+**Large files that must stay** (component-specific complexity):
+- `AccountSettingsStyles.css` — reducible from ~1,421 to ~900 lines
+- `PensionAccountsTableStyles.css` — reducible from ~586 to ~450 lines
+- `ISALISAUtilization.css` — reducible from ~518 to ~380 lines
+- `Navbar.css` — reducible from ~576 to ~480 lines
+
+**Optimal approach:** Hybrid model — shared utilities in `SharedStyles.css`, component-specific layouts in dedicated CSS files. Avoid a single mega-file.
+
+---
 
 ### **Data Layer Consolidation**
-- **3 different parsers** for CSV/file handling
-- **Duplicate column detection** logic
-- **Similar data validation** patterns
+- 3 different parsers for CSV/file handling
+- Duplicate column detection logic
+- Similar data validation patterns
 
-**Proposed:** Create unified data service layer
-
-### **Utility Organization**
-You already started this with formatters and dateUtils, but there are more:
-- `/modules/utils/` has 6+ utility files that could be moved to `/src/utils/`
-- Some utils are domain-specific (mortgage, pension) - could be organized better
+**Proposed:** Create a unified data service layer.
 
 ---
 
-## **Summary of Remaining Work:**
+### **Utility Organization**
+- `/modules/utils/` has 6+ domain-specific utility files that could be better organized
+- Some utils (mortgage, pension, income tax) could move to `/src/utils/` with clear naming
+
+---
+
+## 📊 Summary of Remaining Work
 
 | Phase | Status | Estimated Impact |
 |-------|--------|------------------|
-| Custom Hooks Application | ⏳ Not Started | ~1,000 lines reduction |
-| CSS Consolidation | ⏳ Not Started | ~3,000-4,000 lines reduction |
-| Module Organization | ⏳ Not Started | Better structure |
-| Large Component Breakdown | ⏳ Not Started | Improved maintainability |
-| Data Layer Consolidation | ⏳ Not Started | Eliminate duplicate parsing |
-| Utility Organization | 🔄 Partially Done | Complete the work |
-
-**Biggest Impact Opportunities:**
-1. **Apply custom hooks to 22+ components** (Phase 4) - Most immediate code reduction
-2. **CSS consolidation** (Phase 5) - Reduce ~4,000 lines of duplicate CSS
-3. **Break down large components** - Improve maintainability
+| CSS Consolidation (further) | ⏳ Optional | ~2,000–3,000 lines reduction |
+| Module Organization | ⏳ Optional | Better file structure |
+| Large Component Breakdown | ⏳ Optional | Improved maintainability |
+| Data Layer Consolidation | ⏳ Optional | Eliminate duplicate parsers |
+| Custom Hooks Application | ⏭️ Skipped | Approach not viable at scale |
 
 ---
 
-## 🎯 Completed Achievements
+## 🎯 Completed Achievements Summary
 
-### Phase 1 Results
-- Created `/src/utils/formatters.js` - 11 duplicate formatCurrency functions eliminated
-- Created `/src/utils/dateUtils.js` - 3+ duplicate tax year calculations eliminated
-- Created `/src/styles/SharedStyles.css` - Global shared component styles
-- Archived 909 lines of legacy code (MortgageCalc.js)
+| Phase | Key Outcome |
+|-------|-------------|
+| Phase 1 | 11 duplicate formatCurrency fns eliminated; shared CSS established |
+| Phase 2 | Firebase credentials secured; custom hooks created |
+| Phase 3 | Component library + pages reorganisation |
+| Phase 4 | Skipped (re-render issues) |
+| Phase 5 Parts 1–4 | CSS variables, color replacement, duplicate removal, design system |
+| Income Tax CSS | 50+ inline styles extracted, spacing standardised |
 
-### Phase 2 Results
-- Secured Firebase credentials in `.env` file
-- Created `useFirebaseDoc` hook (155 lines) - eliminates 40-50 lines per component
-- Created `useFirebaseCollection` hook (168 lines) - simplifies collection queries
-- Refactored MortgageCalcNEW: 240 → 157 lines (83 lines removed, 35% reduction)
-- Estimated potential: 1,000+ lines removable across 23+ components
-
-### Phase 3 Results
-- Created component library: Modal, Button, Input, Card (240 lines total)
-- Organized 7 page components into `/src/pages/` directory (5,406 lines organized)
-- Created barrel export for clean imports
-- Clear separation: pages vs features vs reusable components
-- Estimated savings: ~50 lines per modal implementation
-
-**Total Lines Refactored So Far:** ~7,000+ lines
-**Total Lines Reduced:** ~1,000+ lines
+**Total Lines Refactored:** ~7,000+ lines structured/organised
+**Total Lines Removed:** ~1,500+ lines of duplication
 **Components with Better Structure:** 30+
 
 ---
 
-## 📊 Original Problem Analysis
-
-### CSS Files (33 files, 8,205 lines)
-- AccountSettingsStyles.css: 1,424 lines
-- SavingsTrackerStyles.css: 665 lines
-- MortgageCalcNEWStyles.css: 649 lines
-- LandingPage.css: 539 lines
-- PensionPotsStyles.css: 469 lines
-- ... 28 more CSS files
-
-### Duplicate Code Patterns Identified
-- **11 formatCurrency implementations** (eliminated ✅)
-- **3+ tax year calculations** (eliminated ✅)
-- **23+ Firebase load/save patterns** (hooks created ✅, application pending ⏳)
-- **5+ modal implementations** (component created ✅)
-- **Inconsistent button styles** (component created ✅)
-- **Varied form patterns** (component created ✅)
-
----
-
-*This document tracks the ongoing refactoring effort to improve code quality, reduce duplication, and establish better architectural patterns in the Money Moves V1 application.*
+*This document tracks the refactoring effort to improve code quality, reduce duplication, and establish better architectural patterns in the Money Moves V1 application.*

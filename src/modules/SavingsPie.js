@@ -297,7 +297,7 @@ export default function SavingsPie({ uploads, selectedAccounts }) {
     <div className="savings-pie-wrapper">
       <div className="chart-header">
         <h3 className="chart-heading">
-          {selectedType ? `${selectedType} Accounts` : "Current Value"}: £
+          {selectedType ? selectedType : "Current Value"}: £
           {total.toLocaleString(undefined, {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2,
@@ -305,7 +305,7 @@ export default function SavingsPie({ uploads, selectedAccounts }) {
         </h3>
         {selectedType && (
           <button className="back-to-types-btn" onClick={handleBackToTypes}>
-            ← Back to Types
+            ← Back
           </button>
         )}
       </div>
@@ -363,11 +363,9 @@ export default function SavingsPie({ uploads, selectedAccounts }) {
           />
         </PieChart>
       </ResponsiveContainer>
-      {!selectedType && (
-        <div className="drill-down-hint">
-          <p className="hint-text">💡 Click a segment to see accounts within that type</p>
-        </div>
-      )}
+      <div className="drill-down-hint">
+        <p className="hint-text">💡 Click a segment to see accounts within that type</p>
+      </div>
     </div>
   );
 }

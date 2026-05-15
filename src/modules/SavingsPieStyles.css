@@ -3,7 +3,6 @@
   background-color: #1f2937;
   border-radius: 16px;
   padding: 24px;
-  height: 100%;
   display: flex;
   flex-direction: column;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
@@ -16,6 +15,7 @@
   justify-content: space-between;
   align-items: center;
   gap: 12px;
+  min-height: 32px;
 }
 
 .savings-pie-wrapper .chart-heading {

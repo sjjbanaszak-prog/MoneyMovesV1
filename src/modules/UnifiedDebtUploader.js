@@ -292,17 +292,38 @@ export default function UnifiedDebtUploader({ onFileParsed, onClose }) {
       throw new Error("File appears to be empty. Please upload a valid statement file.");
     }
 
-    // Extract headers (first row)
-    const headers = data[0].filter((h) => h && h.trim() !== "");
+    // Find the header row - look for a row containing "Date" or "date" as first column
+    // This handles American Express and other providers with metadata rows at the top
+    let headerRowIndex = 0;
+    for (let i = 0; i < Math.min(data.length, 10); i++) {
+      const row = data[i];
+      if (row && row.length > 0) {
+        const firstCell = (row[0] || "").trim().toLowerCase();
+        // Check if this looks like a header row (contains common header keywords)
+        if (firstCell === "date" ||
+            firstCell === "transaction date" ||
+            firstCell === "posting date" ||
+            (row.some(cell => /^(date|description|amount|balance)$/i.test((cell || "").trim())))) {
+          headerRowIndex = i;
+          console.log(`Found header row at index ${i}:`, row);
+          break;
+        }
+      }
+    }
 
-    // Extract data rows (skip header)
-    const rawData = data.slice(1).filter((row) => {
+    // Extract headers from identified row
+    const headers = data[headerRowIndex].filter((h) => h && h.trim() !== "");
+
+    // Extract data rows (skip header and any rows before it)
+    const rawData = data.slice(headerRowIndex + 1).filter((row) => {
       return row.some((cell) => cell && cell.trim() !== "");
     });
 
     if (rawData.length === 0) {
       throw new Error("No transaction data found in the file.");
     }
+
+    console.log(`Extracted ${headers.length} columns and ${rawData.length} data rows`);
 
     // Convert array rows to objects
     const transformedData = rawData.map((row) => {
@@ -316,19 +337,26 @@ export default function UnifiedDebtUploader({ onFileParsed, onClose }) {
     setUploading(false);
     setProgress(null);
 
-    // Attempt to auto-detect columns
+    // Attempt to auto-detect columns with enhanced patterns for various providers
     const dateColumn = headers.find(h =>
-      /date|when|posted|transaction/i.test(h)
+      /^date$|transaction\s*date|posting\s*date|when|posted|trans.*date/i.test(h)
     );
     const amountColumn = headers.find(h =>
-      /amount|debit|charge|value|spend/i.test(h)
+      /^amount$|debit|charge|value|spend|transaction\s*amount|payment/i.test(h)
     );
     const balanceColumn = headers.find(h =>
-      /balance|outstanding/i.test(h)
+      /balance|outstanding|current\s*balance/i.test(h)
     );
     const descriptionColumn = headers.find(h =>
-      /description|merchant|payee|detail|reference|memo/i.test(h)
+      /^description$|merchant|payee|detail|reference|memo|narrative|particulars/i.test(h)
     );
+
+    // Detect creditor/provider from headers or filename
+    const creditorFromFile = fileName.toLowerCase().includes('amex') || fileName.toLowerCase().includes('american express')
+      ? 'American Express'
+      : fileName.toLowerCase().includes('barclaycard')
+      ? 'Barclaycard'
+      : null;
 
     // Pass data to parent
     if (onFileParsed) {
@@ -340,11 +368,15 @@ export default function UnifiedDebtUploader({ onFileParsed, onClose }) {
           amount: amountColumn || "",
           balance: balanceColumn || "",
           description: descriptionColumn || "",
-          debtType: "",
+          debtType: creditorFromFile ? "Credit Card" : "",
           dateFormat: "DD/MM/YYYY", // UK default
         },
         fileName: fileName,
-        detectedCreditor: null,
+        detectedCreditor: creditorFromFile ? {
+          name: creditorFromFile,
+          confidence: 0.8,
+          requiresConfirmation: false,
+        } : null,
         startingBalance: null,
         interestRate: null,
         suggestions: {

@@ -837,13 +837,14 @@
 }
 
 /* Fixed column widths for consistency */
-.debt-history-table-v2 th:nth-child(1) { width: 30%; } /* Description */
-.debt-history-table-v2 th:nth-child(2) { width: 12%; } /* Date */
-.debt-history-table-v2 th:nth-child(3) { width: 10%; } /* FY */
-.debt-history-table-v2 th:nth-child(4) { width: 13%; } /* Type */
-.debt-history-table-v2 th:nth-child(5) { width: 13%; } /* Amount */
-.debt-history-table-v2 th:nth-child(6) { width: 12%; } /* Source */
-.debt-history-table-v2 th:nth-child(7) { width: 10%; } /* Actions */
+.debt-history-table-v2 th:nth-child(1) { width: 25%; } /* Description */
+.debt-history-table-v2 th:nth-child(2) { width: 12%; } /* Category */
+.debt-history-table-v2 th:nth-child(3) { width: 10%; } /* Date */
+.debt-history-table-v2 th:nth-child(4) { width: 8%; } /* FY */
+.debt-history-table-v2 th:nth-child(5) { width: 10%; } /* Type */
+.debt-history-table-v2 th:nth-child(6) { width: 12%; } /* Amount */
+.debt-history-table-v2 th:nth-child(7) { width: 10%; } /* Source */
+.debt-history-table-v2 th:nth-child(8) { width: 13%; } /* Actions */
 
 .debt-history-table-v2 td {
   padding: 12px 16px !important;

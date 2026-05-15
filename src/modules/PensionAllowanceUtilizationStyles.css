@@ -135,6 +135,19 @@
   position: relative;
   min-height: 5px;
   cursor: help;
+  animation: growHeight 1s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  transform-origin: bottom;
+}
+
+@keyframes growHeight {
+  from {
+    transform: scaleY(0);
+    opacity: 0;
+  }
+  to {
+    transform: scaleY(1);
+    opacity: 1;
+  }
 }
 
 /* Bar Colors - Original colors preserved */

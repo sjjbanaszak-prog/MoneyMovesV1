@@ -21,6 +21,38 @@ import { useAuth } from '../contexts/AuthContext';
 import { auth, db } from '../firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
+import dayjs from 'dayjs';
+import customParseFormat from 'dayjs/plugin/customParseFormat';
+
+// Enable custom format parsing
+dayjs.extend(customParseFormat);
+
+// Helper function to parse dates in various formats
+const parseTransactionDate = (dateStr) => {
+  if (!dateStr) return dayjs();
+
+  // Try common date formats
+  const formats = [
+    'DD/MM/YYYY',
+    'DD/MM/YY',
+    'YYYY-MM-DD',
+    'MM/DD/YYYY',
+    'MM/DD/YY',
+    'DD MMM YYYY',
+    'DD-MM-YYYY',
+    'DD-MM-YY'
+  ];
+
+  for (const format of formats) {
+    const parsed = dayjs(dateStr, format, true);
+    if (parsed.isValid()) {
+      return parsed;
+    }
+  }
+
+  // Fallback to dayjs default parsing
+  return dayjs(dateStr);
+};
 
 const DebtManager = () => {
   const [debts, setDebts] = useState([]);
@@ -208,50 +240,144 @@ const DebtManager = () => {
     try {
       const { mapping, debtName, debtType, startingBalance, interestRate, minimumPayment } = mappingInfo;
 
-      // Process transactions from uploaded data (parsed from PDF)
+      // Process transactions from uploaded data
       const rawTransactions = uploadData.rawData || [];
 
       console.log('Raw transactions from parser:', rawTransactions);
-
-      // Calculate current balance by applying all transactions to starting balance
-      let currentBalance = startingBalance;
-
-      rawTransactions.forEach(txn => {
-        const amount = typeof txn.amount === 'string' ? parseFloat(txn.amount) || 0 : txn.amount;
-        currentBalance += amount; // amount is already signed (negative for payments)
-      });
+      console.log('Mapping:', mapping);
 
       // Store transactions in the format needed for display
-      const transactions = rawTransactions.map(txn => ({
-        transactionDate: txn.date || txn.transactionDate, // Handle both formats
-        description: txn.description,
-        amount: typeof txn.amount === 'string' ? parseFloat(txn.amount) || 0 : txn.amount, // Convert string to number
-        creditor: txn.creditor
-      }));
+      // Use the mapping to extract the correct fields from the raw data
+      const transactions = rawTransactions.map(row => {
+        // Extract values using the mapping keys
+        const dateValue = row[mapping.date] || '';
+        const amountValue = row[mapping.amount] || 0;
+        const descriptionValue = row[mapping.description] || '';
 
-      // Create the debt object
-      const newDebt = {
-        debtName: debtName,
-        debtType: debtType,
-        balance: Math.abs(currentBalance),
-        originalBalance: Math.abs(startingBalance), // Use starting balance as original
-        interestRate: interestRate,
-        minimumPayment: minimumPayment || Math.max(25, Math.abs(currentBalance) * 0.02), // 2% or £25 minimum
-        currentPayment: minimumPayment || Math.max(25, Math.abs(currentBalance) * 0.02),
-        createdAt: new Date().toISOString(),
-        uploadedFrom: uploadData.fileName,
-        transactionCount: transactions.length,
-        transactions: transactions, // Store transaction history
-      };
+        return {
+          transactionDate: dateValue,
+          description: descriptionValue,
+          amount: typeof amountValue === 'string' ? parseFloat(amountValue.replace(/[£,]/g, '')) || 0 : amountValue,
+          creditor: debtName
+        };
+      });
 
-      // Add to debts
-      setDebts(prev => [...prev, newDebt]);
+      // Check if a debt with this name already exists
+      const existingDebtIndex = debts.findIndex(debt => debt.debtName === debtName);
+
+      if (existingDebtIndex !== -1) {
+        // Debt exists - merge transactions and update balance
+        console.log(`Merging transactions for existing debt: ${debtName}`);
+
+        const existingDebt = debts[existingDebtIndex];
+        const existingTransactions = existingDebt.transactions || [];
+
+        // Create unique transaction IDs for deduplication
+        const createTransactionId = (txn) => {
+          const date = txn.transactionDate || '';
+          const amount = txn.amount || 0;
+          const description = txn.description || '';
+          return `${date}_${amount}_${description}`.toLowerCase().trim();
+        };
+
+        // Build Set of existing transaction IDs
+        const existingIds = new Set(
+          existingTransactions.map(txn => createTransactionId(txn))
+        );
+
+        // Filter out duplicate transactions from new data
+        const uniqueNewTransactions = transactions.filter(txn => {
+          const txnId = createTransactionId(txn);
+          return !existingIds.has(txnId);
+        });
+
+        console.log(`Found ${uniqueNewTransactions.length} new transactions out of ${transactions.length} total`);
+
+        if (uniqueNewTransactions.length === 0) {
+          alert(`No new transactions found. All ${transactions.length} transactions already exist in ${debtName}.`);
+          setShowMappingModal(false);
+          setUploadData(null);
+          return;
+        }
+
+        // Merge transactions (new transactions added to existing)
+        const mergedTransactions = [...existingTransactions, ...uniqueNewTransactions];
+
+        // Sort transactions by date descending (newest first)
+        mergedTransactions.sort((a, b) => {
+          const dateA = parseTransactionDate(a.transactionDate);
+          const dateB = parseTransactionDate(b.transactionDate);
+          return dateB.diff(dateA);
+        });
+
+        // Recalculate current balance by applying all merged transactions to original balance
+        let currentBalance = existingDebt.originalBalance || startingBalance;
+        mergedTransactions.forEach(txn => {
+          currentBalance += txn.amount; // amount is already signed (negative for payments)
+        });
+
+        // Update the existing debt with merged data
+        const updatedDebt = {
+          ...existingDebt,
+          balance: Math.abs(currentBalance),
+          transactions: mergedTransactions,
+          transactionCount: mergedTransactions.length,
+          // Keep original metadata but update last modified info
+          lastUpdated: new Date().toISOString(),
+          lastFileName: uploadData.fileName,
+        };
+
+        // Replace the existing debt in the array
+        setDebts(prev => {
+          const updated = [...prev];
+          updated[existingDebtIndex] = updatedDebt;
+          return updated;
+        });
+
+        alert(`Successfully added ${uniqueNewTransactions.length} new transaction${uniqueNewTransactions.length !== 1 ? 's' : ''} to ${debtName}`);
+
+        console.log('Debt updated successfully:', updatedDebt);
+      } else {
+        // New debt - create new entry
+        console.log(`Creating new debt: ${debtName}`);
+
+        // Sort transactions by date descending (newest first)
+        transactions.sort((a, b) => {
+          const dateA = parseTransactionDate(a.transactionDate);
+          const dateB = parseTransactionDate(b.transactionDate);
+          return dateB.diff(dateA);
+        });
+
+        // Calculate current balance by applying all transactions to starting balance
+        let currentBalance = startingBalance;
+        transactions.forEach(txn => {
+          currentBalance += txn.amount; // amount is already signed (negative for payments)
+        });
+
+        const newDebt = {
+          debtName: debtName,
+          debtType: debtType,
+          balance: Math.abs(currentBalance),
+          originalBalance: Math.abs(startingBalance), // Use starting balance as original
+          interestRate: interestRate,
+          minimumPayment: minimumPayment || Math.max(25, Math.abs(currentBalance) * 0.02), // 2% or £25 minimum
+          currentPayment: minimumPayment || Math.max(25, Math.abs(currentBalance) * 0.02),
+          createdAt: new Date().toISOString(),
+          uploadedFrom: uploadData.fileName,
+          transactionCount: transactions.length,
+          transactions: transactions, // Store transaction history (already sorted)
+        };
+
+        // Add to debts
+        setDebts(prev => [...prev, newDebt]);
+
+        console.log('Debt added successfully:', newDebt);
+      }
 
       // Close modal and reset
       setShowMappingModal(false);
       setUploadData(null);
 
-      console.log('Debt added successfully:', newDebt);
     } catch (error) {
       console.error('Error processing debt upload:', error);
       alert('Failed to process uploaded statement. Please try again.');
@@ -316,6 +442,7 @@ const DebtManager = () => {
           interestRate={uploadData.interestRate}
           confidenceScores={uploadData.confidenceScores}
           aiMetadata={uploadData.aiMetadata}
+          existingDebts={debts}
           onConfirm={handleConfirmMapping}
           onCancel={handleCancelMapping}
         />

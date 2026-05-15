@@ -822,13 +822,13 @@ export default function AIFinancialAdvisory({
                   : " Good utilization of your annual allowance."}
               </div>
               <div className="insight-metric">
-                <span className="metric-label">Expected FY Contributions:</span>
+                <span className="metric-label">Est. FY Contribution:</span>
                 <span className="metric-value positive">
                   {formatCurrency(expectedFYContributions)}
                 </span>
               </div>
               <div className="insight-metric">
-                <span className="metric-label">Expected Carry Forward:</span>
+                <span className="metric-label">Est. Carry Forward:</span>
                 <span
                   className={`metric-value ${
                     hasSignificantUnusedAllowance ? "warning" : "positive"

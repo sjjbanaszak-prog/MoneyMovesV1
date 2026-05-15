@@ -65,7 +65,7 @@ function DemoToggle() {
 
 // ── Single-line SVG chart: net worth over time ────────────────────────────────
 
-function NetWorthLineChart({ series, labels }) {
+function NetWorthLineChart({ series, assetsSeries, liabilitiesSeries, labels }) {
   const [hoveredIdx, setHoveredIdx] = useState(null);
   const W = 320, H = 90;
   const n = labels.length;
@@ -78,20 +78,33 @@ function NetWorthLineChart({ series, labels }) {
     );
   }
 
-  const maxVal = Math.max(...series.filter(v => v > 0), 1);
+  const allVals = [
+    ...(series || []),
+    ...(assetsSeries || []),
+    ...(liabilitiesSeries || []),
+  ].filter(v => v > 0);
+  const maxVal = Math.max(...allVals, 1);
   const toX = i => (i / (n - 1)) * W;
   const toY = v => H - (Math.max(0, v) / maxVal) * (H - 12) - 6;
 
-  const start = series.findIndex(v => v > 0);
-  const paths = (() => {
-    if (start < 0 || series.length - start < 2) return { line: null, area: null };
-    const slice = series.slice(start);
-    const pts   = slice.map((v, i) => `${toX(start + i)},${toY(v)}`).join(' L ');
+  const buildPath = s => {
+    if (!s || s.length < 2) return { line: null, area: null };
+    const start = s.findIndex(v => v > 0);
+    if (start < 0 || s.length - start < 2) return { line: null, area: null };
+    const sl  = s.slice(start);
+    const pts = sl.map((v, i) => `${toX(start + i)},${toY(v)}`).join(' L ');
     return {
       line: `M ${pts}`,
-      area: `M ${toX(start)},${H} L ${pts} L ${toX(start + slice.length - 1)},${H} Z`,
+      area: `M ${toX(start)},${H} L ${pts} L ${toX(start + sl.length - 1)},${H} Z`,
     };
-  })();
+  };
+
+  const nwPaths    = buildPath(series);
+  const assetPaths = buildPath(assetsSeries);
+  const liabPaths  = buildPath(liabilitiesSeries);
+
+  const hasAssets = assetsSeries && assetsSeries.some(v => v > 0);
+  const hasLiabs  = liabilitiesSeries && liabilitiesSeries.some(v => v > 0);
 
   const labelIndices = [0, Math.floor((n - 1) / 2), n - 1];
   const hi = hoveredIdx;
@@ -115,10 +128,35 @@ function NetWorthLineChart({ series, labels }) {
             pointerEvents: 'none',
             boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
           }}>
-            <p style={{ fontSize: '11px', fontWeight: 700, color: '#dae2fd', margin: '0 0 4px', fontFamily: 'Manrope, sans-serif' }}>
+            <p style={{ fontSize: '11px', fontWeight: 700, color: '#dae2fd', margin: '0 0 6px', fontFamily: 'Manrope, sans-serif' }}>
               {labels[hi]}
             </p>
-            <p style={{ fontSize: '13px', fontWeight: 700, color: '#4edea3', margin: 0 }}>{fmtK(series[hi])}</p>
+            {hasAssets && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', marginBottom: '3px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#4edea3', flexShrink: 0 }} />
+                  <span style={{ fontSize: '11px', color: '#bbcabf' }}>Assets</span>
+                </div>
+                <span style={{ fontSize: '12px', fontWeight: 700, color: '#4edea3' }}>{fmtK(assetsSeries[hi])}</span>
+              </div>
+            )}
+            {hasLiabs && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', marginBottom: '3px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#ffb4ab', flexShrink: 0 }} />
+                  <span style={{ fontSize: '11px', color: '#bbcabf' }}>Liabilities</span>
+                </div>
+                <span style={{ fontSize: '12px', fontWeight: 700, color: '#ffb4ab' }}>{fmtK(liabilitiesSeries[hi])}</span>
+              </div>
+            )}
+            <div style={{ borderTop: '1px solid rgba(173,198,255,0.1)', margin: '5px 0 4px' }} />
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#adc6ff', flexShrink: 0 }} />
+                <span style={{ fontSize: '11px', color: '#bbcabf' }}>Net Worth</span>
+              </div>
+              <span style={{ fontSize: '12px', fontWeight: 700, color: '#adc6ff' }}>{fmtK(series[hi])}</span>
+            </div>
           </div>
         )}
 
@@ -130,20 +168,41 @@ function NetWorthLineChart({ series, labels }) {
         >
           <defs>
             <linearGradient id="nwGrad" x1="0" x2="0" y1="0" y2="1">
-              <stop offset="0%" stopColor="#4edea3" stopOpacity="0.25" />
+              <stop offset="0%" stopColor="#adc6ff" stopOpacity="0.15" />
+              <stop offset="100%" stopColor="#adc6ff" stopOpacity="0" />
+            </linearGradient>
+            <linearGradient id="assetsGrad" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0%" stopColor="#4edea3" stopOpacity="0.15" />
               <stop offset="100%" stopColor="#4edea3" stopOpacity="0" />
+            </linearGradient>
+            <linearGradient id="liabsGrad" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0%" stopColor="#ffb4ab" stopOpacity="0.15" />
+              <stop offset="100%" stopColor="#ffb4ab" stopOpacity="0" />
             </linearGradient>
           </defs>
 
-          {paths.area && <path d={paths.area} fill="url(#nwGrad)" />}
-          {paths.line && <path d={paths.line} fill="none" stroke="#4edea3" strokeWidth="2" />}
+          {/* Areas first (back to front) */}
+          {assetPaths.area && <path d={assetPaths.area} fill="url(#assetsGrad)" />}
+          {liabPaths.area  && <path d={liabPaths.area}  fill="url(#liabsGrad)" />}
+          {nwPaths.area    && <path d={nwPaths.area}    fill="url(#nwGrad)" />}
+
+          {/* Lines on top */}
+          {liabPaths.line  && <path d={liabPaths.line}  fill="none" stroke="#ffb4ab" strokeWidth="1.5" strokeDasharray="4,3" />}
+          {assetPaths.line && <path d={assetPaths.line} fill="none" stroke="#4edea3" strokeWidth="1.5" />}
+          {nwPaths.line    && <path d={nwPaths.line}    fill="none" stroke="#adc6ff" strokeWidth="2" />}
 
           {hi !== null && (
             <line x1={toX(hi)} y1={0} x2={toX(hi)} y2={H}
               stroke="rgba(173,198,255,0.25)" strokeWidth="1" strokeDasharray="3,3" />
           )}
           {hi !== null && series[hi] > 0 && (
-            <circle cx={toX(hi)} cy={toY(series[hi])} r="4" fill="#0b1326" stroke="#4edea3" strokeWidth="2" />
+            <circle cx={toX(hi)} cy={toY(series[hi])} r="3.5" fill="#0b1326" stroke="#adc6ff" strokeWidth="2" />
+          )}
+          {hi !== null && hasAssets && assetsSeries[hi] > 0 && (
+            <circle cx={toX(hi)} cy={toY(assetsSeries[hi])} r="3.5" fill="#0b1326" stroke="#4edea3" strokeWidth="2" />
+          )}
+          {hi !== null && hasLiabs && liabilitiesSeries[hi] > 0 && (
+            <circle cx={toX(hi)} cy={toY(liabilitiesSeries[hi])} r="3.5" fill="#0b1326" stroke="#ffb4ab" strokeWidth="2" />
           )}
 
           {Array.from({ length: n }, (_, i) => {
@@ -168,9 +227,23 @@ function NetWorthLineChart({ series, labels }) {
           <span key={i} style={{ fontSize: '10px', color: '#64748b' }}>{labels[i]}</span>
         ))}
       </div>
-      <div style={{ display: 'flex', justifyContent: 'center', marginTop: '10px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <div style={{ width: '16px', height: '2px', background: '#4edea3', borderRadius: '1px' }} />
+      <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', marginTop: '10px', flexWrap: 'wrap' }}>
+        {hasAssets && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <div style={{ width: '16px', height: '2px', background: '#4edea3', borderRadius: '1px' }} />
+            <span style={{ fontSize: '11px', color: '#bbcabf' }}>Assets</span>
+          </div>
+        )}
+        {hasLiabs && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <svg width="16" height="2" viewBox="0 0 16 2" style={{ display: 'block' }}>
+              <line x1="0" y1="1" x2="16" y2="1" stroke="#ffb4ab" strokeWidth="2" strokeDasharray="4,3" />
+            </svg>
+            <span style={{ fontSize: '11px', color: '#bbcabf' }}>Liabilities</span>
+          </div>
+        )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+          <div style={{ width: '16px', height: '2px', background: '#adc6ff', borderRadius: '1px' }} />
           <span style={{ fontSize: '11px', color: '#bbcabf' }}>Net Worth</span>
         </div>
       </div>
@@ -345,11 +418,10 @@ function DashboardContent() {
   // Net worth history: pension value over time + static savings/property/mortgage offset
   const netWorthChartData = useMemo(() => {
     if (!dualChartData) return null;
-    const offset = savingsBalance + totalPropertyValue - totalMortgageDebt;
-    return {
-      series: dualChartData.valueSeries.map(v => v + offset),
-      labels: dualChartData.labels,
-    };
+    const assetsSeries      = dualChartData.valueSeries.map(v => v + savingsBalance + totalPropertyValue);
+    const liabilitiesSeries = dualChartData.valueSeries.map(() => totalMortgageDebt);
+    const series            = assetsSeries.map((a, i) => a - liabilitiesSeries[i]);
+    return { series, assetsSeries, liabilitiesSeries, labels: dualChartData.labels };
   }, [dualChartData, savingsBalance, totalPropertyValue, totalMortgageDebt]);
 
   // Slice to selected timeframe: 1Y = 12 months, 5Y = 60 months, AT = all
@@ -358,10 +430,12 @@ function DashboardContent() {
     if (timeframe === 'AT') return netWorthChartData;
     const n     = netWorthChartData.labels.length;
     const count = timeframe === '5Y' ? Math.min(60, n) : Math.min(12, n);
-    const slice = arr => arr.slice(n - count);
+    const sl    = arr => arr.slice(n - count);
     return {
-      series: slice(netWorthChartData.series),
-      labels: slice(netWorthChartData.labels),
+      series:           sl(netWorthChartData.series),
+      assetsSeries:     sl(netWorthChartData.assetsSeries),
+      liabilitiesSeries: sl(netWorthChartData.liabilitiesSeries),
+      labels:           sl(netWorthChartData.labels),
     };
   }, [netWorthChartData, timeframe]);
 
@@ -373,7 +447,7 @@ function DashboardContent() {
   const assetSegments = useMemo(() => [
     { value: totalPropertyValue, color: '#ffb95f' }, // matches PR initials colour
     { value: totalValue || 0,   color: '#4edea3' }, // matches PE initials colour
-    { value: savingsBalance,    color: '#adc6ff' }, // matches SA initials colour
+    { value: savingsBalance,    color: '#a78bfa' }, // matches SA initials colour
   ].filter(s => s.value > 0), [totalPropertyValue, totalValue, savingsBalance]);
 
   const debtSegments = useMemo(() =>
@@ -518,6 +592,8 @@ function DashboardContent() {
           {displayData ? (
             <NetWorthLineChart
               series={displayData.series}
+              assetsSeries={displayData.assetsSeries}
+              liabilitiesSeries={displayData.liabilitiesSeries}
               labels={displayData.labels}
             />
           ) : (
@@ -583,7 +659,7 @@ function DashboardContent() {
                 {savingsBalance > 0 && (
                   <FinanceRow
                     initials="SA"
-                    initialsColor="#adc6ff"
+                    initialsColor="#a78bfa"
                     title="Savings"
                     subtitle="Cash & ISA"
                     value={fmt(savingsBalance)}

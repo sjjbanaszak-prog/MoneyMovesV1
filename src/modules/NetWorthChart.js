@@ -496,7 +496,7 @@ export default function NetWorthChart({
           {assetLiabilityRatio.toFixed(2)}x
         </div>
         <div className="networth-metric-subtitle">
-          Assets: £{(totalAssets / 1000).toFixed(0)}k | Liabilities: £
+          Assets: £{(totalAssets / 1000).toFixed(0)}k | Liabs: £
           {(totalLiabilities / 1000).toFixed(0)}k
         </div>
       </div>

@@ -12,7 +12,6 @@ import {
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import { parseNumber } from "./utils/parseNumber";
-import "./PensionGrowthChartStyles.css";
 
 dayjs.extend(customParseFormat);
 

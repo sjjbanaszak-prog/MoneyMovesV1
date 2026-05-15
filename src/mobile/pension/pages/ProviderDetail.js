@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Link, useParams, Navigate } from 'react-router-dom';
-import { usePensionData, formatDate, parseDate, getTaxYearStart, taxYearLabel } from '../PensionDataContext';
+import { usePensionData, formatDate, parseDate, getTaxYearStart } from '../PensionDataContext';
 import PensionDetailLayout from '../PensionDetailLayout';
 
 function fmt(n)    { return '£' + (n || 0).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
@@ -75,30 +75,33 @@ const ACCOUNT_TYPES = [
 
 // Monthly bar chart — groups paymentHistory by month for a selected FY or CY.
 // Overlays a transparent value-trajectory line behind the bars.
-function ContributionBarChart({ paymentHistory, currentValue, color, mode, selectedYear }) {
-  // All date-sensitive logic is inside the memo so `today` is always fresh.
-  const { monthlyData, currentBucketIdx } = useMemo(() => {
+// Hover tooltip shows contribution amount + growth (derived from valueHistory snapshots).
+function ContributionBarChart({ paymentHistory, currentValue, color, mode, selectedYear, valueHistory }) {
+  const [hoveredIdx, setHoveredIdx] = useState(null);
+
+  const { monthlyData, currentBucketIdx, periodLabel, monthlyGrowth } = useMemo(() => {
     const today = new Date();
-    let buckets, bucketIdx;
+    let buckets, bucketIdx, pLabel;
 
     if (mode === 'fy') {
       const isCurrentFY = selectedYear === getTaxYearStart(today);
       buckets = Array.from({ length: 12 }, (_, i) => {
         const calMonth = (3 + i) % 12;
-        const year = calMonth >= 3 ? selectedYear : selectedYear + 1;
-        return { label: new Date(year, calMonth, 1).toLocaleString('en-GB', { month: 'short' }), amount: 0 };
+        const calYear  = calMonth >= 3 ? selectedYear : selectedYear + 1;
+        return { label: new Date(calYear, calMonth, 1).toLocaleString('en-GB', { month: 'short' }), amount: 0, calMonth, calYear };
       });
-      // Bucket index for today within FY; April 1–5 still belong to the previous FY.
       bucketIdx = isCurrentFY
         ? (today.getMonth() === 3 && today.getDate() < 6 ? 11 : (today.getMonth() - 3 + 12) % 12)
         : 11;
+      pLabel = `${selectedYear}/${String(selectedYear + 1).slice(-2)}`;
     } else {
       const isCurrentCY = selectedYear === today.getFullYear();
       buckets = Array.from({ length: 12 }, (_, i) => ({
         label: new Date(selectedYear, i, 1).toLocaleString('en-GB', { month: 'short' }),
-        amount: 0,
+        amount: 0, calMonth: i, calYear: selectedYear,
       }));
       bucketIdx = isCurrentCY ? today.getMonth() : 11;
+      pLabel = String(selectedYear);
     }
 
     (paymentHistory || []).forEach(p => {
@@ -116,8 +119,31 @@ function ContributionBarChart({ paymentHistory, currentValue, color, mode, selec
       }
     });
 
-    return { monthlyData: buckets, currentBucketIdx: bucketIdx };
-  }, [paymentHistory, mode, selectedYear]);
+    // Per-month growth using valueHistory snapshots.
+    // growth[i] = (latest valueHistory in month i) - (latest valueHistory before month i) - contributions[i]
+    const vHistory = (valueHistory || [])
+      .map(vh => ({ date: new Date(vh.date), value: vh.value }))
+      .filter(vh => !isNaN(vh.date.getTime()))
+      .sort((a, b) => a.date - b.date);
+
+    const growth = buckets.map(bucket => {
+      const { calMonth, calYear } = bucket;
+      const monthStart = new Date(calYear, calMonth, 1);
+      const monthEnd   = new Date(calYear, calMonth + 1, 0, 23, 59, 59);
+
+      const inMonth = vHistory.filter(vh => vh.date >= monthStart && vh.date <= monthEnd);
+      if (!inMonth.length) return null;
+      const endValue = inMonth[inMonth.length - 1].value;
+
+      const before = vHistory.filter(vh => vh.date < monthStart);
+      if (!before.length) return null;
+      const prevValue = before[before.length - 1].value;
+
+      return endValue - prevValue - (bucket.amount || 0);
+    });
+
+    return { monthlyData: buckets, currentBucketIdx: bucketIdx, periodLabel: pLabel, monthlyGrowth: growth };
+  }, [paymentHistory, valueHistory, mode, selectedYear]);
 
   // Build the value-trajectory line:
   //   values[0]   = estimated opening period value (currentValue minus period contributions)
@@ -161,11 +187,74 @@ function ContributionBarChart({ paymentHistory, currentValue, color, mode, selec
     return { linePoints, fillD };
   }, [monthlyData, currentValue, currentBucketIdx]);
 
-  const max = Math.max(...monthlyData.map(b => b.amount), 1);
+  // Bar height includes positive growth so the split bar reflects total value change
+  const barTotals = monthlyData.map((b, i) => {
+    const g = monthlyGrowth[i];
+    return b.amount + (g !== null && g > 0 ? g : 0);
+  });
+  const maxBarValue     = Math.max(...barTotals, 1);
+  const hasAnyGrowthData = monthlyGrowth.some(g => g !== null);
   const lineColor = color || '#4edea3';
 
+  const tooltipLeft    = hoveredIdx !== null ? Math.min(Math.max((hoveredIdx + 0.5) / 12 * 100, 14), 86) : 50;
+  const hoveredBucket  = hoveredIdx !== null ? monthlyData[hoveredIdx] : null;
+  const hoveredGrowth  = hoveredIdx !== null ? monthlyGrowth[hoveredIdx] : null;
+  const showTooltip    = hoveredIdx !== null && (hoveredBucket.amount > 0 || hoveredGrowth !== null);
+  const isHoveringBar  = hoveredIdx !== null && hoveredBucket.amount > 0;
+
   return (
-    <div style={{ position: 'relative' }}>
+    <div style={{ position: 'relative' }} onMouseLeave={() => setHoveredIdx(null)}>
+
+      {/* Hover tooltip */}
+      {showTooltip && (
+        <div style={{
+          position: 'absolute',
+          bottom: 'calc(100% + 6px)',
+          left: `${tooltipLeft}%`,
+          transform: 'translateX(-50%)',
+          background: '#1a2744',
+          border: '1px solid rgba(173,198,255,0.15)',
+          borderRadius: '10px',
+          padding: '8px 12px',
+          zIndex: 20,
+          whiteSpace: 'nowrap',
+          pointerEvents: 'none',
+          boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
+        }}>
+          <p style={{ fontSize: '11px', fontWeight: 700, color: '#dae2fd', margin: '0 0 6px', fontFamily: 'Manrope, sans-serif' }}>
+            {hoveredBucket.label} {periodLabel}
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '16px' }}>
+              <span style={{ fontSize: '11px', color: 'rgba(78,222,163,0.9)' }}>Contributed</span>
+              <span style={{ fontSize: '11px', fontWeight: 600, color: '#dae2fd' }}>
+                {'£' + Math.round(hoveredBucket.amount || 0).toLocaleString('en-GB')}
+              </span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '16px' }}>
+              <span style={{ fontSize: '11px', color: hoveredGrowth !== null ? (hoveredGrowth >= 0 ? '#adc6ff' : '#ff6b6b') : '#64748b' }}>
+                Growth
+              </span>
+              <span style={{ fontSize: '11px', fontWeight: 600, color: hoveredGrowth !== null ? (hoveredGrowth >= 0 ? '#adc6ff' : '#ff6b6b') : '#64748b' }}>
+                {hoveredGrowth !== null
+                  ? (hoveredGrowth >= 0 ? '+£' : '-£') + Math.round(Math.abs(hoveredGrowth)).toLocaleString('en-GB')
+                  : '—'}
+              </span>
+            </div>
+            <div style={{
+              display: 'flex', justifyContent: 'space-between', gap: '16px',
+              borderTop: '1px solid rgba(173,198,255,0.1)',
+              paddingTop: '3px', marginTop: '1px',
+            }}>
+              <span style={{ fontSize: '11px', color: '#bbcabf' }}>Total</span>
+              <span style={{ fontSize: '11px', fontWeight: 700, color: '#dae2fd' }}>
+                {'£' + Math.round((hoveredBucket.amount || 0) + (hoveredGrowth || 0)).toLocaleString('en-GB')}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Value-trajectory line — sits behind the bars */}
       {linePath && (
         <svg
@@ -179,9 +268,7 @@ function ContributionBarChart({ paymentHistory, currentValue, color, mode, selec
             zIndex: 0,
           }}
         >
-          {/* Subtle area fill below the line */}
           <path d={linePath.fillD} fill={lineColor} fillOpacity={0.07} />
-          {/* The line itself */}
           <polyline
             points={linePath.linePoints}
             fill="none"
@@ -193,21 +280,74 @@ function ContributionBarChart({ paymentHistory, currentValue, color, mode, selec
           />
         </svg>
       )}
+
       {/* Contribution bars — rendered in front of the line */}
-      <div style={{ display: 'flex', gap: '4px', alignItems: 'flex-end', height: '60px', position: 'relative', zIndex: 1 }}>
+      <div style={{ display: 'flex', gap: '4px', height: '52px', alignItems: 'flex-end', position: 'relative', zIndex: 1 }}>
+        {monthlyData.map((b, i) => {
+          const growthVal      = monthlyGrowth[i];
+          const positiveGrowth = growthVal !== null ? Math.max(0, growthVal) : 0;
+          const barTotal       = b.amount + positiveGrowth;
+          const barHeightPx    = barTotal > 0 ? Math.max(3, (barTotal / maxBarValue) * 52) : 3;
+          const hasSplit       = growthVal !== null && growthVal > 0 && b.amount > 0;
+          const growthFrac     = hasSplit ? positiveGrowth / barTotal : 0;
+          const hasData        = b.amount > 0 || growthVal !== null;
+          return (
+            <div
+              key={i}
+              style={{ flex: 1, height: '52px', display: 'flex', alignItems: 'flex-end', cursor: hasData ? 'pointer' : 'default' }}
+              onMouseEnter={() => setHoveredIdx(i)}
+            >
+              <div style={{
+                width: '100%',
+                height: `${barHeightPx}px`,
+                display: 'flex',
+                flexDirection: 'column',
+                borderRadius: '3px 3px 2px 2px',
+                overflow: 'hidden',
+                outline: hoveredIdx === i && hasData ? '1px solid rgba(173,198,255,0.25)' : 'none',
+                opacity: isHoveringBar && hoveredIdx !== i ? 0.4 : 1,
+                transition: 'height 0.4s ease, opacity 0.15s',
+              }}>
+                {hasSplit ? (
+                  <>
+                    <div style={{ width: '100%', height: `${growthFrac * 100}%`, background: 'rgba(173,198,255,0.35)' }} />
+                    <div style={{ width: '100%', flex: 1, background: 'rgba(78,222,163,0.45)' }} />
+                  </>
+                ) : b.amount > 0 ? (
+                  <div style={{ flex: 1, background: 'rgba(78,222,163,0.35)' }} />
+                ) : (
+                  <div style={{ flex: 1, background: 'rgba(173,198,255,0.06)' }} />
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Month labels */}
+      <div style={{ display: 'flex', gap: '4px', marginTop: '4px' }}>
         {monthlyData.map((b, i) => (
-          <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-            <div style={{
-              width: '100%',
-              height: `${Math.max(3, (b.amount / max) * 52)}px`,
-              borderRadius: '3px 3px 2px 2px',
-              background: b.amount > 0 ? 'rgba(78,222,163,0.35)' : 'rgba(173,198,255,0.06)',
-              transition: 'height 0.4s ease',
-            }} />
-            <span style={{ fontSize: '8px', color: '#64748b' }}>{b.label.slice(0, 1)}</span>
+          <div key={i} style={{ flex: 1, textAlign: 'center' }}>
+            <span style={{ fontSize: '8px', color: hoveredIdx === i ? lineColor : '#64748b' }}>
+              {b.label.slice(0, 1)}
+            </span>
           </div>
         ))}
       </div>
+
+      {/* Legend — only shown when growth data is available */}
+      {hasAnyGrowthData && (
+        <div style={{ display: 'flex', gap: '16px', marginTop: '10px', marginBottom: '2px', justifyContent: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <div style={{ width: '10px', height: '10px', borderRadius: '2px', background: 'rgba(78,222,163,0.45)' }} />
+            <span style={{ fontSize: '11px', color: '#bbcabf' }}>Contributions</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <div style={{ width: '10px', height: '10px', borderRadius: '2px', background: 'rgba(173,198,255,0.35)' }} />
+            <span style={{ fontSize: '11px', color: '#bbcabf' }}>Growth</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -252,7 +392,6 @@ export default function ProviderDetail() {
   const recentFive = sortedHistory.slice(0, 5);
 
   const currentFYStart = getTaxYearStart(new Date());
-  const currentFYLabel = taxYearLabel(currentFYStart);
   const currentFYTotal = (entry.paymentHistory || []).reduce((s, p) => {
     return getTaxYearStart(p.date) === currentFYStart ? s + (p.amount || 0) : s;
   }, 0);
@@ -480,6 +619,7 @@ export default function ProviderDetail() {
           <ContributionBarChart
             paymentHistory={entry.paymentHistory}
             currentValue={entry.currentValue}
+            valueHistory={entry.valueHistory}
             color={color}
             mode={periodType}
             selectedYear={periodType === 'fy' ? currentFYStart : currentCY}
@@ -487,7 +627,9 @@ export default function ProviderDetail() {
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '12px', padding: '12px', background: 'rgba(173,198,255,0.04)', borderRadius: '10px' }}>
             <div>
               <p style={{ fontSize: '11px', color: '#bbcabf', margin: '0 0 2px' }}>
-                {periodType === 'fy' ? taxYearLabel(currentFYStart) : String(currentCY)} total
+                {periodType === 'fy'
+                  ? `${currentFYStart}/${String(currentFYStart + 1).slice(-2)}`
+                  : String(currentCY)} total
               </p>
               <p style={{ fontWeight: 700, fontSize: '14px', color: '#4edea3', margin: 0 }}>{fmtShort(periodTotal)}</p>
             </div>
