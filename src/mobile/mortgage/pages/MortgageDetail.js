@@ -479,7 +479,11 @@ export default function MortgageDetail() {
 
   const recentFive = sortedPayments.slice(0, 5);
 
-  function savePropertyValue(v)      { updateMortgage(Number(idx), { propertyValue: v }); }
+  function savePropertyValue(v) {
+    const today   = new Date().toISOString().slice(0, 10);
+    const history = [...(mortgage.propertyValueHistory || []), { date: today, value: v }];
+    updateMortgage(Number(idx), { propertyValue: v, propertyValueHistory: history });
+  }
   function saveOutstandingBalance(v) { updateMortgage(Number(idx), { outstandingBalance: v }); }
   function savePurchasePrice(v)      { updateMortgage(Number(idx), { purchasePrice: v }); }
 

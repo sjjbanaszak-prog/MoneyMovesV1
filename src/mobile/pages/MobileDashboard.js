@@ -415,26 +415,79 @@ function DashboardContent() {
     totalMortgageDebt:  mortgages.reduce((s, m) => s + (m.outstandingBalance || 0), 0),
   }), [mortgages]);
 
-  // Net worth history: pension value over time + static savings/property/mortgage offset
+  // Net worth history: pension value over time + amortized liabilities + interpolated property assets
   const netWorthChartData = useMemo(() => {
     if (!dualChartData) return null;
     const { months } = dualChartData;
 
-    const now    = new Date();
-    const nowY   = now.getFullYear();
-    const nowM   = now.getMonth() + 1;
+    const now  = new Date();
+    const nowY = now.getFullYear();
+    const nowM = now.getMonth() + 1;
 
-    // Liability per month: reconstruct each mortgage's amortized balance using
-    // the standard amortization formula worked backwards from the current balance.
+    const nowKey = `${nowY}-${String(nowM).padStart(2, '0')}`;
+
+    // ── Per-property asset history ──────────────────────────────────────────
+    // Group by name so remortgages don't create a new property start date.
+    const propertyMap = {};
+    mortgages.forEach(m => {
+      const key = m.name || '__unknown__';
+      if (!propertyMap[key]) propertyMap[key] = [];
+      propertyMap[key].push(m);
+    });
+
+    // For each property build a sorted value history:
+    //   [{ key: 'YYYY-MM', value }] anchored at purchasePrice on startDate,
+    //   then all propertyValueHistory entries, then currentValue at today.
+    // Forward-fill gives the property value at any chart month.
+    const propertyHistories = Object.values(propertyMap).map(group => {
+      const sorted = [...group].sort((a, b) =>
+        (a.startDate || '').localeCompare(b.startDate || '')
+      );
+      const first = sorted[0];
+      const sd    = first.startDate ? new Date(first.startDate) : null;
+      const startKey     = sd && !isNaN(sd) ? `${sd.getFullYear()}-${String(sd.getMonth() + 1).padStart(2, '0')}` : null;
+      const purchasePrice = first.purchasePrice || first.propertyValue || 0;
+      const currentValue  = Math.max(...group.map(m => m.propertyValue || 0));
+
+      const pts = [];
+      if (startKey) pts.push({ key: startKey, value: purchasePrice });
+      group.forEach(m => {
+        (m.propertyValueHistory || []).forEach(h => {
+          const d = new Date(h.date);
+          if (isNaN(d.getTime())) return;
+          pts.push({ key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`, value: h.value });
+        });
+      });
+      pts.push({ key: nowKey, value: currentValue });
+      pts.sort((a, b) => a.key.localeCompare(b.key));
+
+      return { startKey, pts };
+    });
+
+    // ── Assets series ────────────────────────────────────────────────────────
+    const assetsSeries = months.map((mo, i) => {
+      const propertyAtMonth = propertyHistories.reduce((sum, { startKey, pts }) => {
+        if (!startKey || mo < startKey) return sum;
+        let val = 0;
+        for (const h of pts) {
+          if (h.key <= mo) val = h.value;
+          else break;
+        }
+        return sum + val;
+      }, 0);
+
+      return dualChartData.valueSeries[i] + savingsBalance + propertyAtMonth;
+    });
+
+    // ── Liabilities series ───────────────────────────────────────────────────
+    // Reconstruct each mortgage's balance via amortization formula worked backwards.
     const liabilitiesSeries = months.map(mo => {
       const [moY, moM] = mo.split('-').map(Number);
-
       return mortgages.reduce((sum, m) => {
         const bal     = m.outstandingBalance || 0;
         const rate    = (m.interestRate || 0) / 100 / 12;
         const payment = m.monthlyPayment || 0;
 
-        // Exclude months before the mortgage started
         if (m.startDate) {
           const sd = new Date(m.startDate);
           if (!isNaN(sd.getTime())) {
@@ -443,17 +496,14 @@ function DashboardContent() {
           }
         }
 
-        // Months between this chart month and today
         const monthsAgo = (nowY - moY) * 12 + (nowM - moM);
         if (monthsAgo <= 0) return sum + bal;
 
         let historicalBal;
         if (rate > 0 && payment > 0) {
-          // Amortization: B_past = (B_now + P/r*(factor-1)) / factor
           const factor = Math.pow(1 + rate, monthsAgo);
           historicalBal = (bal + (payment / rate) * (factor - 1)) / factor;
         } else {
-          // No rate/payment data: add back flat principal per month
           historicalBal = bal + payment * monthsAgo;
         }
 
@@ -461,10 +511,9 @@ function DashboardContent() {
       }, 0);
     });
 
-    const assetsSeries = dualChartData.valueSeries.map(v => v + savingsBalance + totalPropertyValue);
-    const series       = assetsSeries.map((a, i) => a - liabilitiesSeries[i]);
+    const series = assetsSeries.map((a, i) => a - liabilitiesSeries[i]);
     return { series, assetsSeries, liabilitiesSeries, labels: dualChartData.labels };
-  }, [dualChartData, savingsBalance, totalPropertyValue, mortgages]);
+  }, [dualChartData, savingsBalance, mortgages]);
 
   // Slice to selected timeframe: 1Y = 12 months, 5Y = 60 months, AT = all
   const displayData = useMemo(() => {

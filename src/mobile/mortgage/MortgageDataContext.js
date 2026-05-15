@@ -105,7 +105,7 @@ export function MortgageDataProvider({ children }) {
    * In live mode, persists to Firestore.
    */
   const MORTGAGE_ALLOWED_FIELDS = [
-    'name', 'lender', 'type', 'propertyValue', 'purchasePrice',
+    'name', 'lender', 'type', 'propertyValue', 'propertyValueHistory', 'purchasePrice',
     'mortgageAmount', 'outstandingBalance', 'interestRate', 'monthlyPayment',
     'termYears', 'startDate', 'fixedRateEndDate', 'notes', 'paymentHistory',
   ];
