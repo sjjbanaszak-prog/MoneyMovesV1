@@ -191,15 +191,14 @@ function computeNetDeposits(account) {
 function SavingsHistoryChart({ account, color, currentBalance, mode = 'fy' }) {
   const [hoveredIdx, setHoveredIdx] = useState(null);
 
-  const today      = new Date();
-  const nowYear    = today.getFullYear();
-  const nowMonth   = today.getMonth() + 1; // 1-indexed
-  const nowMonthIdx = today.getMonth();     // 0-indexed
-  const nowDay     = today.getDate();
+  const today       = new Date();
+  const nowYear     = today.getFullYear();
+  const nowMonth    = today.getMonth() + 1;
+  const nowMonthIdx = today.getMonth();
+  const nowDay      = today.getDate();
 
   const currentFYStart = (nowMonth > 4 || (nowMonth === 4 && nowDay >= 6))
-    ? nowYear
-    : nowYear - 1;
+    ? nowYear : nowYear - 1;
 
   const currentBucketIdx = mode === 'cy'
     ? nowMonthIdx
@@ -209,195 +208,250 @@ function SavingsHistoryChart({ account, color, currentBalance, mode = 'fy' }) {
     ? String(nowYear)
     : `${currentFYStart}/${String(currentFYStart + 1).slice(-2)}`;
 
-  const monthlyData = useMemo(() => {
+  const { monthlyData, monthlyGrowth } = useMemo(() => {
     const { rawData = [], mapping = {}, dateFormat } = account;
     const creditCol = mapping.credit;
     const amountCol = mapping.amount;
+    const debitCol  = mapping.debit;
 
+    // Buckets include calMonth/calYear for growth lookup and debit tracking
+    let buckets;
     if (mode === 'cy') {
-      const buckets = Array.from({ length: 12 }, (_, i) => ({
-        label:  new Date(nowYear, i, 1).toLocaleString('en-GB', { month: 'short' }),
-        amount: 0,
+      buckets = Array.from({ length: 12 }, (_, i) => ({
+        label: new Date(nowYear, i, 1).toLocaleString('en-GB', { month: 'short' }),
+        amount: 0, debit: 0, calMonth: i, calYear: nowYear,
       }));
-      rawData.forEach(row => {
-        if (!row[mapping.date]) return;
-        const d = parseDate(row[mapping.date], dateFormat);
-        if (!d || d.getFullYear() !== nowYear) return;
-        let credit = 0;
-        if (creditCol && row[creditCol] != null && row[creditCol] !== '') {
-          credit = parseAmount(row[creditCol]);
-        } else if (amountCol) {
-          const amt = parseAmount(row[amountCol]);
-          if (amt > 0) credit = amt;
-        }
-        if (credit > 0) buckets[d.getMonth()].amount += credit;
+    } else {
+      buckets = Array.from({ length: 12 }, (_, i) => {
+        const calMonth = (3 + i) % 12;
+        const calYear  = calMonth >= 3 ? currentFYStart : currentFYStart + 1;
+        return {
+          label: new Date(calYear, calMonth, 1).toLocaleString('en-GB', { month: 'short' }),
+          amount: 0, debit: 0, calMonth, calYear,
+        };
       });
-      (account.manualTransactions || []).forEach(tx => {
-        if (tx.direction !== 'credit') return;
-        const d = tx.date ? new Date(tx.date) : null;
-        if (!d || isNaN(d.getTime()) || d.getFullYear() !== nowYear) return;
-        buckets[d.getMonth()].amount += tx.amount;
-      });
-      return buckets;
     }
 
-    // FY mode: April-indexed buckets
-    const buckets = Array.from({ length: 12 }, (_, i) => {
-      const calMonth = (3 + i) % 12;
-      const year = calMonth >= 3 ? currentFYStart : currentFYStart + 1;
-      return {
-        label:  new Date(year, calMonth, 1).toLocaleString('en-GB', { month: 'short' }),
-        amount: 0,
-      };
-    });
+    // Fill credits and debits from rawData
     rawData.forEach(row => {
       if (!row[mapping.date]) return;
       const d = parseDate(row[mapping.date], dateFormat);
       if (!d) return;
-      const dMonth = d.getMonth() + 1;
-      const dDay   = d.getDate();
-      const dYear  = d.getFullYear();
-      const txFYStart = (dMonth > 4 || (dMonth === 4 && dDay >= 6)) ? dYear : dYear - 1;
-      if (txFYStart !== currentFYStart) return;
-      let credit = 0;
-      if (creditCol && row[creditCol] != null && row[creditCol] !== '') {
-        credit = parseAmount(row[creditCol]);
-      } else if (amountCol) {
+      let credit = 0, debit = 0;
+      if (creditCol && row[creditCol] != null && row[creditCol] !== '') credit = parseAmount(row[creditCol]);
+      if (debitCol  && row[debitCol]  != null && row[debitCol]  !== '') debit  = parseAmount(row[debitCol]);
+      if (!credit && !debit && amountCol) {
         const amt = parseAmount(row[amountCol]);
-        if (amt > 0) credit = amt;
+        if (amt > 0) credit = amt; else debit = Math.abs(amt);
       }
-      if (credit > 0) {
-        const bucketIdx = ((d.getMonth()) - 3 + 12) % 12;
-        buckets[bucketIdx].amount += credit;
+      if (mode === 'cy') {
+        if (d.getFullYear() !== nowYear) return;
+        const bi = d.getMonth();
+        if (credit > 0) buckets[bi].amount += credit;
+        if (debit  > 0) buckets[bi].debit  += debit;
+      } else {
+        const dM = d.getMonth() + 1, dD = d.getDate(), dY = d.getFullYear();
+        const txFY = (dM > 4 || (dM === 4 && dD >= 6)) ? dY : dY - 1;
+        if (txFY !== currentFYStart) return;
+        const bi = (d.getMonth() - 3 + 12) % 12;
+        if (credit > 0) buckets[bi].amount += credit;
+        if (debit  > 0) buckets[bi].debit  += debit;
       }
     });
+
+    // Fill credits and debits from manual transactions
     (account.manualTransactions || []).forEach(tx => {
-      if (tx.direction !== 'credit') return;
       const d = tx.date ? new Date(tx.date) : null;
       if (!d || isNaN(d.getTime())) return;
-      const dMonth = d.getMonth() + 1;
-      const dDay   = d.getDate();
-      const dYear  = d.getFullYear();
-      const txFYStart = (dMonth > 4 || (dMonth === 4 && dDay >= 6)) ? dYear : dYear - 1;
-      if (txFYStart !== currentFYStart) return;
-      const bucketIdx = ((d.getMonth()) - 3 + 12) % 12;
-      buckets[bucketIdx].amount += tx.amount;
+      if (mode === 'cy') {
+        if (d.getFullYear() !== nowYear) return;
+        const bi = d.getMonth();
+        if (tx.direction === 'credit') buckets[bi].amount += tx.amount;
+        if (tx.direction === 'debit')  buckets[bi].debit  += tx.amount;
+      } else {
+        const dM = d.getMonth() + 1, dD = d.getDate(), dY = d.getFullYear();
+        const txFY = (dM > 4 || (dM === 4 && dD >= 6)) ? dY : dY - 1;
+        if (txFY !== currentFYStart) return;
+        const bi = (d.getMonth() - 3 + 12) % 12;
+        if (tx.direction === 'credit') buckets[bi].amount += tx.amount;
+        if (tx.direction === 'debit')  buckets[bi].debit  += tx.amount;
+      }
     });
-    return buckets;
+
+    // Balance history snapshots for monthly growth (growth = endBal - prevBal - netFlow)
+    const bHistory = (account.balanceHistory || [])
+      .map(bh => ({ date: new Date(bh.date), value: bh.value }))
+      .filter(bh => !isNaN(bh.date.getTime()))
+      .sort((a, b) => a.date - b.date);
+
+    const growth = bHistory.length > 1
+      ? buckets.map(({ calMonth, calYear, amount: credits, debit: debits }) => {
+          const monthStart = new Date(calYear, calMonth, 1);
+          const monthEnd   = new Date(calYear, calMonth + 1, 0, 23, 59, 59);
+          const inMonth    = bHistory.filter(bh => bh.date >= monthStart && bh.date <= monthEnd);
+          if (!inMonth.length) return null;
+          const endValue = inMonth[inMonth.length - 1].value;
+          const before   = bHistory.filter(bh => bh.date < monthStart);
+          if (!before.length) return null;
+          return endValue - before[before.length - 1].value - (credits - debits);
+        })
+      : buckets.map(() => null);
+
+    return { monthlyData: buckets, monthlyGrowth: growth };
   }, [account, mode, currentFYStart, nowYear]);
 
-  // Value-trajectory line (same as pension ContributionBarChart)
+  // Value-trajectory line
   const linePath = useMemo(() => {
     const cv = currentBalance || 0;
     if (!cv) return null;
-
-    const fyTotal    = monthlyData.reduce((s, b) => s + b.amount, 0);
-    const openingVal = Math.max(0, cv - fyTotal);
-
+    const periodTotal = monthlyData.reduce((s, b) => s + b.amount, 0);
+    const openingVal  = Math.max(0, cv - periodTotal);
     const values = [openingVal];
     let running = openingVal;
     for (let i = 0; i <= currentBucketIdx; i++) {
       running = i === currentBucketIdx ? cv : running + monthlyData[i].amount;
       values.push(running);
     }
-
-    const COL_W  = 100 / 12;
-    const CHART_H = 52;
-    const PAD_Y  = 4;
-    const minVal = Math.min(...values);
-    const maxVal = Math.max(...values);
+    const COL_W = 100 / 12, CHART_H = 52, PAD_Y = 4;
+    const minVal = Math.min(...values), maxVal = Math.max(...values);
     const range  = maxVal - minVal || 1;
-
     const coords = values.map((v, i) => ({
       x: i === 0 ? 0 : (i - 1 + 0.5) * COL_W,
       y: CHART_H - PAD_Y - ((v - minVal) / range) * (CHART_H - PAD_Y * 2),
     }));
-
     const linePoints = coords.map(c => `${c.x.toFixed(2)},${c.y.toFixed(2)}`).join(' ');
     const lastX = coords[coords.length - 1].x.toFixed(2);
-    const fillD  = coords.map((c, i) => `${i === 0 ? 'M' : 'L'}${c.x.toFixed(2)},${c.y.toFixed(2)}`).join(' ')
+    const fillD = coords.map((c, i) => `${i === 0 ? 'M' : 'L'}${c.x.toFixed(2)},${c.y.toFixed(2)}`).join(' ')
       + ` L${lastX},${CHART_H} L0,${CHART_H} Z`;
-
     return { linePoints, fillD };
   }, [monthlyData, currentBalance, currentBucketIdx]);
 
-  const max = Math.max(...monthlyData.map(b => b.amount), 1);
-  const lineColor = color || '#4edea3';
+  const barTotals        = monthlyData.map((b, i) => b.amount + (monthlyGrowth[i] !== null && monthlyGrowth[i] > 0 ? monthlyGrowth[i] : 0));
+  const maxBarValue      = Math.max(...barTotals, 1);
+  const hasAnyGrowthData = monthlyGrowth.some(g => g !== null);
+  const lineColor        = color || '#4edea3';
+  const tooltipLeft      = hoveredIdx !== null ? Math.min(Math.max((hoveredIdx + 0.5) / 12 * 100, 14), 86) : 50;
+  const hoveredBucket    = hoveredIdx !== null ? monthlyData[hoveredIdx] : null;
+  const hoveredGrowth    = hoveredIdx !== null ? monthlyGrowth[hoveredIdx] : null;
+  const showTooltip      = hoveredIdx !== null && (hoveredBucket.amount > 0 || hoveredGrowth !== null);
+  const isHoveringBar    = hoveredIdx !== null && hoveredBucket.amount > 0;
 
   return (
-    <div style={{ position: 'relative' }}>
+    <div style={{ position: 'relative' }} onMouseLeave={() => setHoveredIdx(null)}>
       {/* Hover tooltip */}
-      {hoveredIdx !== null && monthlyData[hoveredIdx].amount > 0 && (
+      {showTooltip && (
         <div style={{
-          position: 'absolute',
-          bottom: 'calc(100% + 6px)',
-          left: `${Math.min(Math.max((hoveredIdx + 0.5) / 12 * 100, 14), 86)}%`,
-          transform: 'translateX(-50%)',
-          background: '#1a2744',
-          border: '1px solid rgba(173,198,255,0.15)',
-          borderRadius: '10px',
-          padding: '8px 12px',
-          zIndex: 20,
-          whiteSpace: 'nowrap',
-          pointerEvents: 'none',
-          boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
+          position: 'absolute', bottom: 'calc(100% + 6px)', left: `${tooltipLeft}%`,
+          transform: 'translateX(-50%)', background: '#1a2744',
+          border: '1px solid rgba(173,198,255,0.15)', borderRadius: '10px',
+          padding: '8px 12px', zIndex: 20, whiteSpace: 'nowrap',
+          pointerEvents: 'none', boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
         }}>
-          <p style={{ fontSize: '11px', fontWeight: 700, color: '#dae2fd', margin: '0 0 4px', fontFamily: 'Manrope, sans-serif' }}>
-            {monthlyData[hoveredIdx].label} {periodLabel}
+          <p style={{ fontSize: '11px', fontWeight: 700, color: '#dae2fd', margin: '0 0 6px', fontFamily: 'Manrope, sans-serif' }}>
+            {hoveredBucket.label} {periodLabel}
           </p>
-          <p style={{ fontSize: '12px', fontWeight: 600, color: '#4edea3', margin: 0 }}>
-            {fmt(monthlyData[hoveredIdx].amount)}
-          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '16px' }}>
+              <span style={{ fontSize: '11px', color: 'rgba(78,222,163,0.9)' }}>Deposited</span>
+              <span style={{ fontSize: '11px', fontWeight: 600, color: '#dae2fd' }}>
+                {'£' + Math.round(hoveredBucket.amount || 0).toLocaleString('en-GB')}
+              </span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '16px' }}>
+              <span style={{ fontSize: '11px', color: hoveredGrowth !== null ? (hoveredGrowth >= 0 ? '#adc6ff' : '#ff6b6b') : '#64748b' }}>
+                Growth
+              </span>
+              <span style={{ fontSize: '11px', fontWeight: 600, color: hoveredGrowth !== null ? (hoveredGrowth >= 0 ? '#adc6ff' : '#ff6b6b') : '#64748b' }}>
+                {hoveredGrowth !== null
+                  ? (hoveredGrowth >= 0 ? '+£' : '-£') + Math.round(Math.abs(hoveredGrowth)).toLocaleString('en-GB')
+                  : '—'}
+              </span>
+            </div>
+            <div style={{
+              display: 'flex', justifyContent: 'space-between', gap: '16px',
+              borderTop: '1px solid rgba(173,198,255,0.1)', paddingTop: '3px', marginTop: '1px',
+            }}>
+              <span style={{ fontSize: '11px', color: '#bbcabf' }}>Total</span>
+              <span style={{ fontSize: '11px', fontWeight: 700, color: '#dae2fd' }}>
+                {'£' + Math.round((hoveredBucket.amount || 0) + (hoveredGrowth || 0)).toLocaleString('en-GB')}
+              </span>
+            </div>
+          </div>
         </div>
       )}
 
-      {/* Value-trajectory line — sits behind the bars */}
+      {/* Value-trajectory line */}
       {linePath && (
-        <svg
-          viewBox="0 0 100 52"
-          preserveAspectRatio="none"
-          style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '52px', pointerEvents: 'none', zIndex: 0 }}
-        >
+        <svg viewBox="0 0 100 52" preserveAspectRatio="none"
+          style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '52px', pointerEvents: 'none', zIndex: 0 }}>
           <path d={linePath.fillD} fill={lineColor} fillOpacity={0.07} />
-          <polyline
-            points={linePath.linePoints}
-            fill="none"
-            stroke={lineColor}
-            strokeWidth="1.5"
-            strokeOpacity={0.5}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
+          <polyline points={linePath.linePoints} fill="none" stroke={lineColor}
+            strokeWidth="1.5" strokeOpacity={0.5} strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       )}
 
-      <div
-        style={{ display: 'flex', gap: '4px', alignItems: 'flex-end', height: '60px', position: 'relative', zIndex: 1 }}
-        onMouseLeave={() => setHoveredIdx(null)}
-      >
+      {/* Bars */}
+      <div style={{ display: 'flex', gap: '4px', height: '52px', alignItems: 'flex-end', position: 'relative', zIndex: 1 }}>
+        {monthlyData.map((b, i) => {
+          const growthVal      = monthlyGrowth[i];
+          const positiveGrowth = growthVal !== null ? Math.max(0, growthVal) : 0;
+          const barTotal       = b.amount + positiveGrowth;
+          const barHeightPx    = barTotal > 0 ? Math.max(3, (barTotal / maxBarValue) * 52) : 3;
+          const hasSplit       = growthVal !== null && growthVal > 0 && b.amount > 0;
+          const growthFrac     = hasSplit ? positiveGrowth / barTotal : 0;
+          const hasData        = b.amount > 0 || growthVal !== null;
+          return (
+            <div key={i}
+              style={{ flex: 1, height: '52px', display: 'flex', alignItems: 'flex-end', cursor: hasData ? 'pointer' : 'default' }}
+              onMouseEnter={() => setHoveredIdx(i)}>
+              <div style={{
+                width: '100%', height: `${barHeightPx}px`,
+                display: 'flex', flexDirection: 'column',
+                borderRadius: '3px 3px 2px 2px', overflow: 'hidden',
+                outline: hoveredIdx === i && hasData ? '1px solid rgba(173,198,255,0.25)' : 'none',
+                opacity: isHoveringBar && hoveredIdx !== i ? 0.4 : 1,
+                transition: 'height 0.4s ease, opacity 0.15s',
+              }}>
+                {hasSplit ? (
+                  <>
+                    <div style={{ width: '100%', height: `${growthFrac * 100}%`, background: 'rgba(173,198,255,0.35)' }} />
+                    <div style={{ width: '100%', flex: 1, background: 'rgba(78,222,163,0.45)' }} />
+                  </>
+                ) : b.amount > 0 ? (
+                  <div style={{ flex: 1, background: 'rgba(78,222,163,0.35)' }} />
+                ) : (
+                  <div style={{ flex: 1, background: 'rgba(173,198,255,0.06)' }} />
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Month labels */}
+      <div style={{ display: 'flex', gap: '4px', marginTop: '4px' }}>
         {monthlyData.map((b, i) => (
-          <div
-            key={i}
-            style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', cursor: b.amount > 0 ? 'pointer' : 'default' }}
-            onMouseEnter={() => setHoveredIdx(i)}
-          >
-            <div style={{
-              width: '100%',
-              height: `${Math.max(3, (b.amount / max) * 52)}px`,
-              borderRadius: '3px 3px 2px 2px',
-              background: b.amount > 0
-                ? (i === currentBucketIdx ? lineColor : `${lineColor}88`)
-                : 'rgba(173,198,255,0.06)',
-              outline: hoveredIdx === i && b.amount > 0 ? `1px solid ${lineColor}66` : 'none',
-              opacity: hoveredIdx !== null && hoveredIdx !== i && monthlyData[hoveredIdx].amount > 0 ? 0.4 : 1,
-              transition: 'height 0.4s ease, opacity 0.15s',
-            }} />
-            <span style={{ fontSize: '8px', color: i === currentBucketIdx ? lineColor : '#64748b' }}>
+          <div key={i} style={{ flex: 1, textAlign: 'center' }}>
+            <span style={{ fontSize: '8px', color: hoveredIdx === i ? lineColor : '#64748b' }}>
               {b.label.slice(0, 1)}
             </span>
           </div>
         ))}
       </div>
+
+      {/* Legend */}
+      {hasAnyGrowthData && (
+        <div style={{ display: 'flex', gap: '16px', marginTop: '10px', marginBottom: '2px', justifyContent: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <div style={{ width: '10px', height: '10px', borderRadius: '2px', background: 'rgba(78,222,163,0.45)' }} />
+            <span style={{ fontSize: '11px', color: '#bbcabf' }}>Deposits</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <div style={{ width: '10px', height: '10px', borderRadius: '2px', background: 'rgba(173,198,255,0.35)' }} />
+            <span style={{ fontSize: '11px', color: '#bbcabf' }}>Growth</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -421,7 +475,7 @@ function DetailRow({ label, value, valueColor, last }) {
 export default function SavingsAccountDetail() {
   const { idx }                                = useParams();
   const navigate                               = useNavigate();
-  const { accounts, updateAccount }            = useSavingsData();
+  const { accounts, updateAccount, updateAccountBalance } = useSavingsData();
 
   // Current balance edit state
   const [isEditing, setIsEditing] = useState(false);
@@ -466,7 +520,7 @@ export default function SavingsAccountDetail() {
     const val = parseFloat(editVal);
     if (isNaN(val) || val < 0) { setIsEditing(false); return; }
     setIsSaving(true);
-    await updateAccount(Number(idx), { currentBalance: val });
+    await updateAccountBalance(Number(idx), val);
     setIsSaving(false);
     setIsEditing(false);
   }
@@ -570,6 +624,26 @@ export default function SavingsAccountDetail() {
     });
     return Math.round(total);
   }, [account]);
+
+  const periodGrowth = useMemo(() => {
+    const bHistory = (account.balanceHistory || [])
+      .map(bh => ({ date: new Date(bh.date), value: bh.value }))
+      .filter(bh => !isNaN(bh.date.getTime()))
+      .sort((a, b) => a.date - b.date);
+    if (bHistory.length < 2) return null;
+    const periodStart = periodType === 'fy'
+      ? new Date(fyStart, 3, 6)
+      : new Date(today.getFullYear(), 0, 1);
+    const before = bHistory.filter(bh => bh.date < periodStart);
+    if (!before.length) return null;
+    const openingBal = before[before.length - 1].value;
+    let netFlow = 0;
+    allTx.forEach(tx => {
+      if (tx.date < periodStart) return;
+      netFlow += (tx.credit || 0) - (tx.debit || 0);
+    });
+    return Math.round(currentBalance - openingBal - netFlow);
+  }, [account, allTx, periodType, fyStart, currentBalance]);
 
   return (
     <SavingsDetailLayout backTo="/mobile/savings">
@@ -720,12 +794,22 @@ export default function SavingsAccountDetail() {
           <SavingsHistoryChart account={account} color={color} currentBalance={currentBalance} mode={periodType} />
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '12px', padding: '12px', background: 'rgba(173,198,255,0.04)', borderRadius: '10px' }}>
             <div>
-              <p style={{ fontSize: '11px', color: '#bbcabf', margin: '0 0 2px' }}>{periodType === 'fy' ? 'FY deposits' : 'CY deposits'}</p>
+              <p style={{ fontSize: '11px', color: '#bbcabf', margin: '0 0 2px' }}>
+                {periodType === 'fy' ? fyLabel : String(today.getFullYear())} total
+              </p>
               <p style={{ fontWeight: 700, fontSize: '14px', color: '#4edea3', margin: 0 }}>{fmt(periodType === 'fy' ? fyTotal : cyTotal)}</p>
             </div>
             <div style={{ textAlign: 'right' }}>
-              <p style={{ fontSize: '11px', color: '#bbcabf', margin: '0 0 2px' }}>Net deposits</p>
-              <p style={{ fontWeight: 700, fontSize: '14px', color: '#dae2fd', margin: 0 }}>{fmt(netDeposited)}</p>
+              <p style={{ fontSize: '11px', color: '#bbcabf', margin: '0 0 2px' }}>
+                {periodType === 'fy' ? fyLabel : String(today.getFullYear())} growth
+              </p>
+              {periodGrowth !== null ? (
+                <p style={{ fontWeight: 700, fontSize: '14px', color: periodGrowth >= 0 ? '#4edea3' : '#ff6b6b', margin: 0 }}>
+                  {periodGrowth >= 0 ? '+' : ''}{fmt(periodGrowth)}
+                </p>
+              ) : (
+                <p style={{ fontWeight: 700, fontSize: '14px', color: '#bbcabf', margin: 0 }}>—</p>
+              )}
             </div>
           </div>
         </div>

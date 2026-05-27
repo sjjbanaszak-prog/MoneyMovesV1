@@ -343,6 +343,17 @@ export function SavingsDataProvider({ children }) {
     await updateAccount(idx, { manualTransactions, currentBalance: newBalance });
   }
 
+  async function updateAccountBalance(idx, newBalance) {
+    const account = accounts[idx];
+    if (!account) return;
+    const now = new Date().toISOString();
+    const balanceHistory = [
+      ...(account.balanceHistory || []),
+      { date: now, value: newBalance },
+    ];
+    await updateAccount(idx, { currentBalance: newBalance, balanceHistory });
+  }
+
   async function addAccount(newAccount) {
     if (!user || isDemoMode) return;
     try {
@@ -406,7 +417,7 @@ export function SavingsDataProvider({ children }) {
   const metrics = computeMetrics(accounts);
 
   return (
-    <SavingsDataContext.Provider value={{ accounts: enrichedAccounts, metrics, isLoading, isDemoMode, lastUpdated, addTransaction, addAccount, updateAccount }}>
+    <SavingsDataContext.Provider value={{ accounts: enrichedAccounts, metrics, isLoading, isDemoMode, lastUpdated, addTransaction, addAccount, updateAccount, updateAccountBalance }}>
       {children}
     </SavingsDataContext.Provider>
   );
