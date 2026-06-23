@@ -124,6 +124,7 @@
   font-weight: 600;
 }
 
+
 /* Responsive: hide some columns on small portrait screens */
 @media (max-width: 640px) and (orientation: portrait) {
   .schedule-table th:nth-child(4),

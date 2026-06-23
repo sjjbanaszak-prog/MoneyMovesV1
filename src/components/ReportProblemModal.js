@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthProvider';
 import { collection, addDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useReportProblem } from '../contexts/ReportProblemContext';
-import '../pages/AccountSettingsStyles.css';
+import '../archive/web-pages/AccountSettingsStyles.css';
 
 export default function ReportProblemModal() {
   const { isOpen, closeReportProblem } = useReportProblem();

@@ -6,11 +6,14 @@ import MortgageInputForm from "../modules/mortgage/MortgageInputForm";
 import MortgageSummary from "../modules/mortgage/MortgageSummary";
 import MortgageChart from "../modules/mortgage/MortgageChart";
 import MortgageSchedule from "../modules/mortgage/MortgageSchedule";
+import MortgagePortingForm from "../modules/mortgage/MortgagePortingForm";
+import MortgagePortingSummary from "../modules/mortgage/MortgagePortingSummary";
 
 import {
   formatCurrency,
   generateAmortizationSchedule,
   calculateSavingsInterestPotential,
+  calculatePortingSchedule,
 } from "../modules/utils/mortgageUtils";
 
 import { db } from "../firebase";
@@ -35,7 +38,39 @@ const MortgageCalcNEW = () => {
     oneOffMonth: 1,
     oneOffOverpaymentEnabled: false,
     frequency: "monthly",
+    mortgageStartDate: "",
   });
+
+  const defaultPorting = {
+    enabled: false,
+    portType: "product_transfer",
+    newFixedStartDate: "",
+    newFixedEndDate: "",
+    newFixedTermYears: 2,
+    newRate: 4.0,
+    newRevertRate: 8.09,
+    portMonth: 24,
+    termResetEnabled: false,
+    newTotalTermYears: null,
+    topUpAmount: 0,
+    topUpRate: 5.0,
+    topUpFixedTermYears: 2,
+    topUpRevertRate: 8.09,
+    fees: {
+      ercType: "percentage",
+      ercValue: 0,
+      arrangementFee: 0,
+      valuationFee: 0,
+      legalFee: 0,
+      brokerFee: 0,
+      exitFee: 0,
+      cashback: 0,
+      addToLoan: false,
+    },
+  };
+
+  const [porting, setPorting] = useState(defaultPorting);
+  const [portingResults, setPortingResults] = useState(null);
 
   const frequencyOptions = [
     { value: "monthly", label: "Monthly" },
@@ -45,6 +80,27 @@ const MortgageCalcNEW = () => {
 
   const updateInput = (field, value) => {
     setInputs((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const updatePorting = (field, value) => {
+    setPorting((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const updatePortingFee = (field, value) => {
+    setPorting((prev) => ({
+      ...prev,
+      fees: { ...prev.fees, [field]: value },
+    }));
+  };
+
+  const togglePorting = (enabled) => {
+    setPorting((prev) => ({
+      ...prev,
+      enabled,
+      portMonth: enabled
+        ? Math.max(1, inputs.initialtermYears * 12)
+        : prev.portMonth,
+    }));
   };
 
   const [results, setResults] = useState({
@@ -105,6 +161,9 @@ const MortgageCalcNEW = () => {
           if (data.savingsRate !== undefined) {
             setSavingsRate(data.savingsRate);
           }
+          if (data.portingDetails) {
+            setPorting((prev) => ({ ...prev, ...data.portingDetails }));
+          }
         }
       } catch (error) {
         console.error("Error loading mortgage data:", error);
@@ -124,7 +183,7 @@ const MortgageCalcNEW = () => {
     const saveMortgageInputs = debounce(async () => {
       try {
         const ref = doc(db, "mortgageCalculations", user.uid);
-        await setDoc(ref, { ...inputs, savingsRate });
+        await setDoc(ref, { ...inputs, savingsRate, portingDetails: porting });
       } catch (error) {
         console.error("Error saving mortgage data:", error);
       }
@@ -133,7 +192,62 @@ const MortgageCalcNEW = () => {
     saveMortgageInputs();
 
     return () => saveMortgageInputs.cancel();
-  }, [inputs, savingsRate, user?.uid, isDemoMode]);
+  }, [inputs, savingsRate, porting, user?.uid, isDemoMode]);
+
+  // Sync portMonth from mortgage start date + new fixed start date
+  useEffect(() => {
+    if (!inputs.mortgageStartDate || !porting.newFixedStartDate) return;
+    const d1 = new Date(inputs.mortgageStartDate);
+    const d2 = new Date(porting.newFixedStartDate);
+    const months =
+      (d2.getFullYear() - d1.getFullYear()) * 12 +
+      (d2.getMonth() - d1.getMonth());
+    if (months > 0) {
+      setPorting((prev) =>
+        prev.portMonth === months ? prev : { ...prev, portMonth: months }
+      );
+    }
+  }, [inputs.mortgageStartDate, porting.newFixedStartDate]); // eslint-disable-line
+
+  // Sync newFixedTermYears from new fixed start + end dates
+  useEffect(() => {
+    if (!porting.newFixedStartDate || !porting.newFixedEndDate) return;
+    const d1 = new Date(porting.newFixedStartDate);
+    const d2 = new Date(porting.newFixedEndDate);
+    const months =
+      (d2.getFullYear() - d1.getFullYear()) * 12 +
+      (d2.getMonth() - d1.getMonth());
+    if (months > 0) {
+      const years = months / 12;
+      setPorting((prev) =>
+        Math.abs(prev.newFixedTermYears - years) < 0.01
+          ? prev
+          : { ...prev, newFixedTermYears: years }
+      );
+    }
+  }, [porting.newFixedStartDate, porting.newFixedEndDate]); // eslint-disable-line
+
+  // Porting calculation
+  useEffect(() => {
+    if (!porting.enabled) {
+      setPortingResults(null);
+      return;
+    }
+    const result = calculatePortingSchedule(inputs, {
+      portMonth: porting.portMonth,
+      portType: porting.portType,
+      newRate: porting.newRate,
+      newFixedTermYears: porting.newFixedTermYears,
+      newRevertRate: porting.newRevertRate,
+      newTotalTermYears: porting.termResetEnabled ? porting.newTotalTermYears : null,
+      topUpAmount: porting.portType === "new_property" ? porting.topUpAmount : 0,
+      topUpRate: porting.topUpRate,
+      topUpFixedTermYears: porting.topUpFixedTermYears,
+      topUpRevertRate: porting.topUpRevertRate,
+      fees: porting.fees,
+    });
+    setPortingResults(result);
+  }, [porting, inputs]);
 
   // Mortgage calculation logic
   useEffect(() => {
@@ -207,6 +321,23 @@ const MortgageCalcNEW = () => {
     });
   }, [inputs, savingsRate]);
 
+  const portingActive = porting.enabled && portingResults;
+  const portTypeLabelMap = {
+    product_transfer: "Product Transfer",
+    remortgage: "Remortgage",
+    new_property: "Property Port",
+  };
+
+  const chartNoOverpay = portingActive
+    ? portingResults.noPortCombined || results.amortizationNoOverpay
+    : results.amortizationNoOverpay;
+  const chartWithOverpay = portingActive
+    ? portingResults.combinedSchedule
+    : results.amortizationWithOverpay;
+
+  const estimatedBalanceAtPort =
+    results.amortizationNoOverpay?.[porting.portMonth - 1]?.balance ?? 0;
+
   return (
     <div className="savings-tracker-container">
       {/* Demo Mode Banner */}
@@ -216,6 +347,17 @@ const MortgageCalcNEW = () => {
         inputs={inputs}
         updateInput={updateInput}
         frequencyOptions={frequencyOptions}
+      />
+
+      <MortgagePortingForm
+        porting={porting}
+        updatePorting={updatePorting}
+        updatePortingFee={updatePortingFee}
+        togglePorting={togglePorting}
+        mortgageStartDate={inputs.mortgageStartDate}
+        initialtermYears={inputs.initialtermYears}
+        termYears={inputs.termYears}
+        estimatedBalanceAtPort={estimatedBalanceAtPort}
       />
 
       <MortgageSummary
@@ -238,25 +380,42 @@ const MortgageCalcNEW = () => {
         mortgageTermMonths={0}
       />
 
+      {portingActive && (
+        <MortgagePortingSummary portingResults={portingResults} />
+      )}
+
       <div style={{ marginTop: "2rem" }}>
         <MortgageChart
-          amortizationNoOverpay={results.amortizationNoOverpay}
-          amortizationWithOverpay={results.amortizationWithOverpay}
-          oneOffOverpayment={inputs.oneOffOverpaymentEnabled}
+          amortizationNoOverpay={chartNoOverpay}
+          amortizationWithOverpay={chartWithOverpay}
+          oneOffOverpayment={!portingActive && inputs.oneOffOverpaymentEnabled}
           oneOffOverpaymentType="£"
           oneOffOverpaymentAmount={inputs.oneOffOverpayment}
           oneOffMonthIndex={inputs.oneOffMonth}
+          portMonth={portingActive ? porting.portMonth : null}
+          portLabel={portTypeLabelMap[porting.portType]}
+          withOverpayLabel={portingActive ? "With Port" : "With Overpayments"}
+          noOverpayLabel={
+            portingActive
+              ? portingResults.noPortCombined
+                ? "Stay on Revert Rate"
+                : "No Overpayments"
+              : "No Overpayments"
+          }
         />
       </div>
 
       <MortgageSchedule
-        amortizationNoOverpay={results.amortizationNoOverpay}
-        amortizationWithOverpay={results.amortizationWithOverpay}
+        amortizationNoOverpay={chartNoOverpay}
+        amortizationWithOverpay={chartWithOverpay}
         oneOffOverpayment={
-          inputs.oneOffOverpaymentEnabled ? inputs.oneOffOverpayment : 0
+          !portingActive && inputs.oneOffOverpaymentEnabled
+            ? inputs.oneOffOverpayment
+            : 0
         }
         oneOffOverpaymentType="£"
         oneOffMonth={inputs.oneOffMonth}
+        portMonth={portingActive ? porting.portMonth : null}
       />
     </div>
   );
