@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import MortgageLayout from '../MortgageLayout';
 import { useMortgageData } from '../MortgageDataContext';
 import PremiumGate from '../../components/PremiumGate';
@@ -26,9 +26,91 @@ function monthsDiff(d1, d2) {
   return (d2.getFullYear() - d1.getFullYear()) * 12 + (d2.getMonth() - d1.getMonth());
 }
 
+function HealthScoreInfoSheet({ open, onClose, factors, healthScore, healthColor }) {
+  return (
+    <>
+      <div
+        onClick={onClose}
+        style={{
+          position: 'fixed', inset: 0, zIndex: 200,
+          background: 'rgba(0,0,0,0.6)',
+          backdropFilter: 'blur(4px)',
+          opacity: open ? 1 : 0,
+          pointerEvents: open ? 'auto' : 'none',
+          transition: 'opacity 0.3s ease',
+        }}
+      />
+      <div style={{
+        position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 201,
+        background: '#171f33',
+        borderRadius: '24px 24px 0 0',
+        padding: '0 0 40px',
+        maxHeight: '85dvh',
+        overflowY: 'auto',
+        transform: open ? 'translateY(0)' : 'translateY(100%)',
+        transition: 'transform 0.35s cubic-bezier(0.32, 0.72, 0, 1)',
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0 0' }}>
+          <div style={{ width: 40, height: 4, borderRadius: 9999, background: 'rgba(173,198,255,0.2)' }} />
+        </div>
+        <div style={{ padding: '16px 20px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <p style={{ margin: 0, fontSize: 11, color: '#bbcabf', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 700 }}>How it's calculated</p>
+            <h2 style={{ margin: '4px 0 0', fontFamily: 'Manrope,sans-serif', fontWeight: 900, fontSize: 22, color: '#dae2fd' }}>Health Score</h2>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ fontFamily: 'Manrope,sans-serif', fontWeight: 900, fontSize: 28, color: healthColor }}>{healthScore}</span>
+            <button onClick={onClose} style={{ background: 'rgba(173,198,255,0.08)', border: 'none', borderRadius: '50%', width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+              <span className="material-symbols-outlined" style={{ color: '#adc6ff', fontSize: 20 }}>close</span>
+            </button>
+          </div>
+        </div>
+        <p style={{ margin: '12px 20px 20px', fontSize: 13, color: '#bbcabf', lineHeight: 1.6 }}>
+          Your mortgage health score out of 100 is calculated from five factors covering LTV position, payment consistency, rate security, capital progress, and property appreciation.
+        </p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: '0 20px' }}>
+          {factors.map((f, i) => (
+            <div key={i} style={{ background: '#222a3d', borderRadius: 16, padding: '16px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#dae2fd' }}>{f.label}</p>
+                <span style={{ fontFamily: 'Manrope,sans-serif', fontWeight: 900, fontSize: 15, color: '#4edea3' }}>
+                  {f.pts}<span style={{ fontSize: 11, color: '#bbcabf', fontWeight: 400 }}>/{f.max}</span>
+                </span>
+              </div>
+              <div style={{ width: '100%', height: 6, background: '#131b2e', borderRadius: 9999, overflow: 'hidden', marginBottom: 6 }}>
+                <div style={{ width: `${(f.pts / f.max) * 100}%`, height: '100%', background: '#4edea3', borderRadius: 9999, transition: 'width 0.4s ease' }} />
+              </div>
+              <p style={{ margin: 0, fontSize: 11, color: '#bbcabf' }}>{f.detail}</p>
+            </div>
+          ))}
+        </div>
+        <div style={{ margin: '20px 20px 0', background: '#222a3d', borderRadius: 16, padding: '16px' }}>
+          <p style={{ margin: '0 0 12px', fontSize: 12, fontWeight: 700, color: '#bbcabf', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Score Bands</p>
+          {[
+            { range: '85 – 100', label: 'Excellent',       color: '#4edea3' },
+            { range: '70 – 84',  label: 'Strong',          color: '#4edea3' },
+            { range: '50 – 69',  label: 'Developing',      color: '#ffb95f' },
+            { range: '30 – 49',  label: 'Needs Attention', color: '#ffb95f' },
+            { range: '0 – 29',   label: 'Critical',        color: '#ff8a80' },
+          ].map((b, i, arr) => (
+            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: i < arr.length - 1 ? '1px solid rgba(173,198,255,0.06)' : 'none' }}>
+              <span style={{ fontSize: 13, color: '#bbcabf' }}>{b.range}</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: b.color, background: `${b.color}18`, padding: '2px 10px', borderRadius: 9999 }}>{b.label}</span>
+            </div>
+          ))}
+        </div>
+        <p style={{ margin: '16px 20px 0', fontSize: 11, color: '#64748b', lineHeight: 1.6 }}>
+          Score is based on your recorded mortgage data and may not reflect all accounts or recent changes.
+        </p>
+      </div>
+    </>
+  );
+}
+
 export default function MortgageAIAnalysis() {
   const { mortgages } = useMortgageData();
   const now = new Date();
+  const [showHealthInfo, setShowHealthInfo] = useState(false);
 
   // ── Aggregate metrics ──────────────────────────────────────────────────────
   const aggregates = useMemo(() => {
@@ -69,8 +151,8 @@ export default function MortgageAIAnalysis() {
   }, [mortgages, now]);
 
   // ── Health Score (5 factors, 100 pts) ──────────────────────────────────────
-  const { healthScore, healthLabel, healthColor } = useMemo(() => {
-    if (!mortgages.length) return { healthScore: 0, healthLabel: 'No Data', healthColor: '#64748b' };
+  const { healthScore, healthLabel, healthColor, healthFactors } = useMemo(() => {
+    if (!mortgages.length) return { healthScore: 0, healthLabel: 'No Data', healthColor: '#64748b', healthFactors: [] };
 
     // F1: LTV Position — 25 pts
     const ltv = aggregates.blendedLTV;
@@ -141,7 +223,16 @@ export default function MortgageAIAnalysis() {
     else if (score >= 30) { label = 'Needs Attention'; color = '#ffb95f'; }
     else                  { label = 'Critical';        color = '#ff8a80'; }
 
-    return { healthScore: score, healthLabel: label, healthColor: color };
+    const appPct = totalPurchasePrice > 0 ? ((totalPropertyValue - totalPurchasePrice) / totalPurchasePrice) * 100 : 0;
+    const factors = [
+      { label: 'LTV Position',          pts: f1, max: 25, detail: `Blended LTV is ${ltv.toFixed(1)}%. Lower LTV means more equity and access to better remortgage rates.` },
+      { label: 'Payment Consistency',   pts: f2, max: 20, detail: `${activeMonths} month${activeMonths !== 1 ? 's' : ''} with recorded payments in the last 12 months. Regular payments build a strong credit profile.` },
+      { label: 'Rate Security',         pts: f3, max: 20, detail: minMonths === null ? 'No fixed-rate expiry date recorded — add a start date and term to track rate security.' : minMonths <= 0 ? 'At least one mortgage has moved to the standard variable rate (SVR).' : `Shortest fixed-rate period has ${minMonths} months remaining. Longer security scores higher.` },
+      { label: 'Capital Progress',      pts: f4, max: 20, detail: `${capitalPct.toFixed(1)}% of the original mortgage balance has been repaid. Greater capital reduction reduces interest exposure.` },
+      { label: 'Property Appreciation', pts: f5, max: 15, detail: `Property value has ${appPct >= 0 ? 'grown' : 'fallen'} by ${Math.abs(appPct).toFixed(1)}% since purchase. Appreciation builds equity and improves your LTV over time.` },
+    ];
+
+    return { healthScore: score, healthLabel: label, healthColor: color, healthFactors: factors };
   }, [mortgages, aggregates, rateExpiries]);
 
   // ── Recommendations ────────────────────────────────────────────────────────
@@ -358,7 +449,13 @@ export default function MortgageAIAnalysis() {
             </p>
             <p style={{ fontSize: '11px', color: '#bbcabf', margin: 0 }}>total per month</p>
           </div>
-          <div className="metric-card">
+          <div className="metric-card" style={{ position: 'relative' }}>
+            <button
+              onClick={() => setShowHealthInfo(true)}
+              style={{ position: 'absolute', top: 8, right: 8, background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+            >
+              <span className="material-symbols-outlined" style={{ color: '#adc6ff', fontSize: 16 }}>info</span>
+            </button>
             <p style={{ fontSize: '11px', color: '#adc6ff', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', margin: '0 0 6px' }}>
               Health Score
             </p>
@@ -413,6 +510,13 @@ export default function MortgageAIAnalysis() {
 
       </div>
       </PremiumGate>
+      <HealthScoreInfoSheet
+        open={showHealthInfo}
+        onClose={() => setShowHealthInfo(false)}
+        factors={healthFactors}
+        healthScore={healthScore}
+        healthColor={healthColor}
+      />
     </MortgageLayout>
   );
 }
