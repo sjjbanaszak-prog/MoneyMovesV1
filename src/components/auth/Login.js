@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import './AuthStyles.css';
 
@@ -12,17 +12,16 @@ const Login = () => {
 
   const { login, signInWithGoogle, currentUser } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
   const lastSubmitRef = useRef(0);
 
-  const from = location.state?.from?.pathname || '/mobile/dashboard';
+  const from = '/mobile/dashboard';
 
   // Redirect if already logged in
   useEffect(() => {
     if (currentUser) {
       navigate(from, { replace: true });
     }
-  }, [currentUser, navigate, from]);
+  }, [currentUser, navigate]);
 
   /**
    * Get user-friendly error message
