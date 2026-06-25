@@ -283,9 +283,93 @@ function BarRow({ label, monthlyValue, lifetimeValue, tab, maxValue, color, barB
   );
 }
 
-// ── Main Component ────────────────────────────────────────────────────────────
+// ── Market Rate Data ──────────────────────────────────────────────────────────
+// Source: MortgageNotes best-buy representative rates by LTV, 9 Jun 2026.
+// Update this block when refreshing rate data.
+const MARKET_DATA_DATE = 'Jun 2026';
+const RATES_BY_LTV = [
+  { maxLtv: 60, rate2yr: 4.39, rate5yr: 4.43 },
+  { maxLtv: 75, rate2yr: 4.60, rate5yr: 4.53 },
+  { maxLtv: 85, rate2yr: 4.66, rate5yr: 4.68 },
+  { maxLtv: 90, rate2yr: 4.80, rate5yr: 4.79 },
+  { maxLtv: 95, rate2yr: 5.16, rate5yr: 5.16 },
+];
 
-const MARKET_RATE_2YR = 3.85;
+function getRatesForLtv(ltv) {
+  if (!ltv || ltv <= 0) return RATES_BY_LTV[1]; // default 75%
+  const band = RATES_BY_LTV.find(b => ltv <= b.maxLtv);
+  return band ?? RATES_BY_LTV[RATES_BY_LTV.length - 1]; // >95% → use 95% band
+}
+
+// Estimate typical stepped UK ERC from months remaining.
+// Most lenders use: fixedTermYears% in year 1, stepping down 1% per year.
+function estimateERC(balance, fixedTermYears, monthsLeft) {
+  if (!balance || !monthsLeft || monthsLeft <= 0 || !fixedTermYears) return 0;
+  const elapsed = Math.max(0, fixedTermYears * 12 - monthsLeft);
+  const yearIn  = Math.floor(elapsed / 12); // 0 = first year of fix
+  const pct     = Math.max(0, (Math.min(fixedTermYears, 5) - yearIn) / 100);
+  return Math.round(balance * pct);
+}
+
+// Calculate remaining term months from mortgage start date + term years.
+function calcRemainingMonths(m) {
+  if (!m?.startDate || !m?.termYears) return null;
+  const end = new Date(m.startDate);
+  end.setFullYear(end.getFullYear() + m.termYears);
+  const now = new Date();
+  return Math.max(0, (end.getFullYear() - now.getFullYear()) * 12 + (end.getMonth() - now.getMonth()));
+}
+
+// Total principal repaid over `periods` months at a given rate.
+function calcPrincipalPaid(balance, annualRate, termMonths, periods) {
+  if (!balance || !annualRate || !termMonths) return 0;
+  const r  = annualRate / 100 / 12;
+  const pmt = r === 0 ? balance / termMonths
+    : balance * r / (1 - Math.pow(1 + r, -termMonths));
+  let bal = balance, principal = 0;
+  for (let i = 0; i < Math.min(periods, termMonths); i++) {
+    const interest = bal * r;
+    const p = Math.max(0, pmt - interest);
+    principal += p;
+    bal = Math.max(0, bal - p);
+  }
+  return principal;
+}
+
+// Generate the Architect's Verdict from real computed values.
+function generateVerdict(monthsLeft, currentRateNum, monthlySaving, saving5yr, breakEven, ercAmount, ercOn, mktRate) {
+  if (monthsLeft === null) {
+    return `Add your fixed rate end date in Mortgage Details to unlock a full comparison.`;
+  }
+  const marketIsHigher = currentRateNum < mktRate;
+
+  if (monthsLeft === 0) {
+    if (marketIsHigher) {
+      return `Your fixed term has expired and you're now on your lender's SVR. Your current ${currentRateNum}% rate is below the market average of ${mktRate}% — remortgaging would increase your monthly payment. Shop around as some lenders may offer sub-market deals.`;
+    }
+    return `Your fixed term has expired. Switching to the ${mktRate}% market rate saves ${fmtGBP(monthlySaving)}/month with no ERC to pay — act now before more rolls onto the SVR.`;
+  }
+
+  if (marketIsHigher) {
+    return `Your current ${currentRateNum}% rate is below the market average of ${mktRate}%. Stay on your existing deal until it expires${monthsLeft > 0 ? ` in ${monthsLeft} months` : ''}. Start comparing deals 3–6 months before your fixed term ends.`;
+  }
+
+  if (monthsLeft <= 6) {
+    return `With only ${monthsLeft} month${monthsLeft !== 1 ? 's' : ''} left, you can lock in a new deal now and it starts the moment your current fix expires — saving ${fmtGBP(monthlySaving)}/month from day one, with no ERC to pay.`;
+  }
+
+  if (ercOn && ercAmount > 0 && breakEven > 0) {
+    if (breakEven <= monthsLeft) {
+      const netSaving = (monthsLeft - breakEven) * monthlySaving;
+      return `Switching early costs ${fmtGBP(ercAmount)} in ERCs and breaks even in ${breakEven} months. Since your fixed term ends in ${monthsLeft} months, you'd still come out ${fmtGBP(netSaving)} ahead. Worth doing if you can absorb the upfront fee.`;
+    }
+    return `The ${fmtGBP(ercAmount)} ERC pushes your break-even to ${breakEven} months — beyond your ${monthsLeft}-month remaining term. Wait until 3–6 months before your fix expires, then switch fee-free.`;
+  }
+
+  return `Switching to the ${mktRate}% market rate saves ${fmtGBP(monthlySaving)}/month and ${fmtGBP(saving5yr)} over 5 years.`;
+}
+
+// ── Main Component ────────────────────────────────────────────────────────────
 
 export default function MortgageCompare() {
   const { mortgages } = useMortgageData();
@@ -300,28 +384,55 @@ export default function MortgageCompare() {
   const monthsLeft       = monthsUntil(fixedExpiry);
   const monthsLeftLabel  = monthsLeft === null ? '–' : monthsLeft === 1 ? '1 month' : `${monthsLeft} months`;
 
-  const { score, badge, badgeColor, factors } = calcReadinessScore(m, monthsLeft, MARKET_RATE_2YR);
-
-  const currentRate    = m ? `${parseFloat(m.interestRate).toFixed(2)}%` : '–';
+  const currentRateNum = m ? parseFloat(m.interestRate) || 0 : 0;
+  const currentRate    = m ? `${currentRateNum.toFixed(2)}%` : '–';
   const balance        = m ? (m.outstandingBalance || 0) : 0;
   const svrRate        = m ? parseFloat(m.defaultRate || 0) : 0;
-  const originalLoan   = m ? (m.mortgageAmount || balance) : 0;
-  const fullTermMonths = m ? (m.termYears || 0) * 12 : 0;
+
+  // LTV-based rate lookup
+  const ltvPct      = m?.propertyValue > 0 ? (balance / m.propertyValue) * 100 : null;
+  const ltvBand     = getRatesForLtv(ltvPct);
+  const MARKET_RATE_2YR = ltvBand.rate2yr;
+  const MARKET_RATE_5YR = ltvBand.rate5yr;
+
+  const { score, badge, badgeColor, factors } = calcReadinessScore(m, monthsLeft, MARKET_RATE_2YR);
+
+  // Use remaining term for all payment comparisons — remortgaging is always off current balance
+  const remainingMonths = m ? (calcRemainingMonths(m) ?? (m.termYears || 0) * 12) : 0;
 
   const fixedMonthly  = m ? Math.round(m.monthlyPayment || 0) : 0;
-  const varMonthly    = m && svrRate && fullTermMonths
-    ? Math.round(calculateMonthlyPayment(originalLoan, svrRate, fullTermMonths)) : 0;
-  const marketMonthly = m && fullTermMonths
-    ? Math.round(calculateMonthlyPayment(originalLoan, MARKET_RATE_2YR, fullTermMonths)) : 0;
+  const varMonthly    = m && svrRate && remainingMonths
+    ? Math.round(calculateMonthlyPayment(balance, svrRate, remainingMonths)) : 0;
+  const marketMonthly = m && remainingMonths
+    ? Math.round(calculateMonthlyPayment(balance, MARKET_RATE_2YR, remainingMonths)) : 0;
 
-  const maxMonthly   = Math.max(fixedMonthly, varMonthly, marketMonthly, 1);
+  // Derive fixed term years from stored field or from start/end dates
+  const fixedTermYears = m?.fixedTermYears
+    ?? (m?.fixedRateStartDate && m?.fixedRateEndDate
+      ? Math.round((new Date(m.fixedRateEndDate) - new Date(m.fixedRateStartDate)) / (1000 * 60 * 60 * 24 * 365.25))
+      : null);
+
+  const ercAmount      = m ? estimateERC(balance, fixedTermYears, monthsLeft) : 0;
+  const monthlySaving  = Math.max(0, fixedMonthly - marketMonthly);
+  const savingVsVar    = Math.max(0, varMonthly - marketMonthly);
+
   const MONTHS_60    = 60;
   const fixedTotal   = fixedMonthly  * MONTHS_60;
   const varTotal     = varMonthly    * MONTHS_60;
   const marketTotal  = marketMonthly * MONTHS_60;
-  const savingVsFixed = fixedMonthly - marketMonthly;
-  const savingVsVar   = varMonthly   - marketMonthly;
-  const saving5yr     = savingVsVar  * MONTHS_60;
+  const saving5yr    = savingVsVar * MONTHS_60;
+  const breakEven    = ercOn && ercAmount > 0 && monthlySaving > 0
+    ? Math.ceil(ercAmount / monthlySaving) : 0;
+
+  // Extra equity built over 5 years by switching vs staying on current fixed rate
+  const principalCurrent = m ? calcPrincipalPaid(balance, currentRateNum, remainingMonths, MONTHS_60) : 0;
+  const principalMarket  = m ? calcPrincipalPaid(balance, MARKET_RATE_2YR, remainingMonths, MONTHS_60) : 0;
+  const equityBoostPct   = m?.propertyValue > 0
+    ? ((principalMarket - principalCurrent) / m.propertyValue * 100) : 0;
+
+  const maxMonthly = Math.max(fixedMonthly, varMonthly, marketMonthly, 1);
+
+  const verdict = generateVerdict(monthsLeft, currentRateNum, monthlySaving, saving5yr, breakEven, ercAmount, ercOn, MARKET_RATE_2YR);
 
   const s = {
     page:         { minHeight: '100dvh', background: '#0b1326', color: '#dae2fd', fontFamily: 'Inter,sans-serif' },
@@ -359,19 +470,6 @@ export default function MortgageCompare() {
             You have <span style={{ color: '#4edea3', fontWeight: 700 }}>{monthsLeftLabel}</span> remaining on your fixed term.
             Market conditions are shifting—time to plan your next move.
           </p>
-          <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
-            <button style={{
-              background: '#4edea3', color: '#003824', padding: '10px 20px',
-              borderRadius: 12, fontFamily: 'Manrope,sans-serif', fontWeight: 700,
-              fontSize: 13, border: 'none', cursor: 'pointer',
-              boxShadow: '0 4px 16px rgba(78,222,163,0.25)',
-            }}>Start Shopping Now</button>
-            <button style={{
-              background: 'transparent', color: '#4edea3', padding: '10px 20px',
-              borderRadius: 12, fontFamily: 'Manrope,sans-serif', fontWeight: 700,
-              fontSize: 13, border: '1px solid rgba(78,222,163,0.35)', cursor: 'pointer',
-            }}>View Eligibility</button>
-          </div>
         </div>
 
         {/* ── Readiness Dial ───────────────────────────────────────────── */}
@@ -393,9 +491,21 @@ export default function MortgageCompare() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
               <div>
                 <h3 style={{ ...s.sectionTitle, fontSize: 18 }}>Market Rate Tracker</h3>
-                <p style={{ ...s.label, marginTop: 2 }}>Live benchmark vs. your current {currentRate} rate</p>
+                <p style={{ ...s.label, marginTop: 2 }}>
+                  {ltvPct !== null
+                    ? `Based on your ${ltvPct.toFixed(0)}% LTV · vs. your ${currentRate}`
+                    : `Benchmark vs. your current ${currentRate} rate`}
+                </p>
               </div>
-              <span className="material-symbols-outlined" style={{ color: '#adc6ff', fontSize: 22 }}>query_stats</span>
+              {ltvPct !== null && (
+                <span style={{
+                  fontSize: 11, fontWeight: 700, color: '#adc6ff',
+                  background: 'rgba(173,198,255,0.1)', borderRadius: 8,
+                  padding: '3px 10px', whiteSpace: 'nowrap',
+                }}>
+                  {ltvBand.maxLtv}% LTV band
+                </span>
+              )}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#131b2e', borderRadius: 16, padding: '14px 16px' }}>
@@ -405,14 +515,12 @@ export default function MortgageCompare() {
                   </div>
                   <div>
                     <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#dae2fd' }}>2-Year Fixed</p>
-                    <p style={{ ...s.label, marginTop: 2 }}>Avg. High Street</p>
+                    <p style={{ ...s.label, marginTop: 2 }}>Avg. all lenders, 75% LTV</p>
                   </div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                  <p style={{ margin: 0, ...s.mono, fontSize: 20, color: '#4edea3' }}>3.85%</p>
-                  <p style={{ margin: 0, fontSize: 10, color: '#4edea3', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 2 }}>
-                    <span className="material-symbols-outlined" style={{ fontSize: 10 }}>arrow_downward</span>-0.35%
-                  </p>
+                  <p style={{ margin: 0, ...s.mono, fontSize: 20, color: '#4edea3' }}>{MARKET_RATE_2YR}%</p>
+                  <p style={{ margin: 0, fontSize: 10, color: '#64748b' }}>{MARKET_DATA_DATE}</p>
                 </div>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#131b2e', borderRadius: 16, padding: '14px 16px' }}>
@@ -422,17 +530,18 @@ export default function MortgageCompare() {
                   </div>
                   <div>
                     <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#dae2fd' }}>5-Year Fixed</p>
-                    <p style={{ ...s.label, marginTop: 2 }}>Stability Focus</p>
+                    <p style={{ ...s.label, marginTop: 2 }}>Avg. all lenders, 75% LTV</p>
                   </div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                  <p style={{ margin: 0, ...s.mono, fontSize: 20, color: '#adc6ff' }}>4.12%</p>
-                  <p style={{ margin: 0, fontSize: 10, color: '#adc6ff', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 2 }}>
-                    <span className="material-symbols-outlined" style={{ fontSize: 10 }}>trending_flat</span>No change
-                  </p>
+                  <p style={{ margin: 0, ...s.mono, fontSize: 20, color: '#adc6ff' }}>{MARKET_RATE_5YR}%</p>
+                  <p style={{ margin: 0, fontSize: 10, color: '#64748b' }}>{MARKET_DATA_DATE}</p>
                 </div>
               </div>
             </div>
+            <p style={{ margin: '10px 0 0', fontSize: 10, color: '#475569', lineHeight: 1.5 }}>
+              Source: Uswitch average residential rates. Big-6 lenders typically 0.5–0.6% lower. BoE base rate: 3.75%.
+            </p>
           </div>
         </div>
 
@@ -449,17 +558,25 @@ export default function MortgageCompare() {
                 </div>
               </div>
               <p style={{ margin: 0, fontSize: 11, color: '#bbcabf', lineHeight: 1.6 }}>
-                Toggle to include the estimated £4,250 exit fee in your switch profitability analysis.
+                {ercAmount > 0
+                  ? `Estimated ERC of ${fmtGBP(ercAmount)} based on typical stepped charges for a ${fixedTermYears}-year fix.`
+                  : monthsLeft === 0
+                    ? 'Your fixed term has expired — no ERC applies.'
+                    : 'No ERC data available. Check your mortgage offer document for the exact figure.'}
               </p>
             </div>
             <div style={{ borderTop: '1px solid rgba(60,74,66,0.3)', paddingTop: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span style={{ fontSize: 13, color: '#bbcabf' }}>Est. ERC Fee</span>
-                <span style={{ fontSize: 13, fontWeight: 700, color: '#ffb4ab' }}>{ercOn ? '£4,250.00' : '—'}</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: '#ffb4ab' }}>
+                  {ercOn && ercAmount > 0 ? fmtGBP(ercAmount) : '—'}
+                </span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span style={{ fontSize: 13, color: '#bbcabf' }}>Break-even Point</span>
-                <span style={{ fontSize: 13, fontWeight: 700, color: '#dae2fd' }}>{ercOn ? '14 Months' : 'N/A'}</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: '#dae2fd' }}>
+                  {ercOn && breakEven > 0 ? `${breakEven} month${breakEven !== 1 ? 's' : ''}` : 'N/A'}
+                </span>
               </div>
             </div>
           </div>
@@ -513,7 +630,7 @@ export default function MortgageCompare() {
                 tab={tab} maxValue={maxMonthly}
                 color="#4edea3" barBg="#4edea3"
                 tag={tab === 'monthly'
-                  ? (savingVsFixed > 0 ? `SAVE ${fmtGBP(savingVsFixed)} EVERY MONTH vs. fixed` : undefined)
+                  ? (monthlySaving > 0 ? `SAVE ${fmtGBP(monthlySaving)} EVERY MONTH vs. fixed` : undefined)
                   : (saving5yr > 0 ? `SAVE ${fmtGBP(saving5yr)} OVER 5 YEARS vs. variable` : undefined)
                 }
               />
@@ -527,8 +644,10 @@ export default function MortgageCompare() {
                 </p>
               </div>
               <div style={{ background: '#131b2e', borderRadius: 16, padding: '16px', borderTop: '3px solid #4edea3' }}>
-                <p style={{ margin: 0, fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#4edea3', fontWeight: 700 }}>Equity Boost</p>
-                <p style={{ margin: '6px 0 0', ...s.mono, fontSize: 24, color: '#4edea3' }}>+2.4%</p>
+                <p style={{ margin: 0, fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#4edea3', fontWeight: 700 }}>Equity Boost (5yr)</p>
+                <p style={{ margin: '6px 0 0', ...s.mono, fontSize: 24, color: '#4edea3' }}>
+                  {equityBoostPct > 0 ? `+${equityBoostPct.toFixed(1)}%` : equityBoostPct < 0 ? `${equityBoostPct.toFixed(1)}%` : '—'}
+                </p>
               </div>
             </div>
 
@@ -537,22 +656,11 @@ export default function MortgageCompare() {
                 <span className="material-symbols-outlined" style={{ color: '#4edea3', fontSize: 26 }}>lightbulb</span>
               </div>
               <h4 style={{ fontFamily: 'Manrope,sans-serif', fontWeight: 700, fontSize: 17, color: '#dae2fd', margin: '0 0 10px' }}>
-                Architect's Verdict
+                Verdict
               </h4>
               <p style={{ margin: 0, fontSize: 13, color: '#bbcabf', lineHeight: 1.7 }}>
-                Switching now outweighs your current overpayment strategy by{' '}
-                <span style={{ color: '#dae2fd', fontWeight: 700 }}>£3,200</span> over the next 24 months,
-                even after accounting for the Early Repayment Charge. The interest rate spread is currently
-                at a 14-month high—this is an asymmetric advantage.
+                {verdict}
               </p>
-              <button style={{
-                marginTop: 16, display: 'flex', alignItems: 'center', gap: 8,
-                background: 'none', border: 'none', color: '#4edea3', fontWeight: 700,
-                fontSize: 13, cursor: 'pointer', padding: 0, fontFamily: 'Inter,sans-serif',
-              }}>
-                Generate Full Comparison PDF
-                <span className="material-symbols-outlined" style={{ fontSize: 18 }}>arrow_forward</span>
-              </button>
             </div>
           </div>
         </div>

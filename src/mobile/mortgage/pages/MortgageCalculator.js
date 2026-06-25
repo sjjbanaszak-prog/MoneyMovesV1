@@ -682,10 +682,10 @@ export default function MortgageCalculator() {
           <div style={{ padding: '0 20px 16px' }}>
             <p style={{ fontSize: '13px', color: '#64748b', margin: 0 }}>
               {activeMode === 0
-                ? "Enter your mortgage details to model payments and overpayment strategies."
+                ? "Enter mortgage details to model payments."
                 : activeMode === 1
                 ? 'Choose a mortgage to model your overpayment strategy.'
-                : 'Choose a mortgage to model a product switch or remortgage.'}
+                : 'Choose a mortgage to model a mortgage change.'}
             </p>
           </div>
 
