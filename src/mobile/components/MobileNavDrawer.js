@@ -9,8 +9,9 @@ const NAV_ITEMS = [
   { label: 'Mortgage',  icon: 'home',             path: '/mobile/mortgage', match: '/mobile/mortgage' },
   { label: 'Savings',   icon: 'savings',          path: '/mobile/savings',  match: '/mobile/savings'  },
   { label: 'Income',    icon: 'payments',         path: '/mobile/income',   match: '/mobile/income'   },
-  { label: 'Family',    icon: 'family_restroom',  path: '/mobile/family',   match: '/mobile/family'   },
   { label: 'Debt',      icon: 'credit_card',      path: '/debt-manager',    match: '/debt-manager',   disabled: true },
+  { divider: true },
+  { label: 'Family',    icon: 'family_restroom',  path: '/mobile/family',   match: '/mobile/family'   },
 ];
 
 export default function MobileNavDrawer() {
@@ -187,7 +188,10 @@ export default function MobileNavDrawer() {
 
         {/* Nav items */}
         <nav style={{ flex: 1, padding: '8px 12px' }}>
-          {NAV_ITEMS.map(item => {
+          {NAV_ITEMS.map((item, idx) => {
+            if (item.divider) {
+              return <div key={`divider-${idx}`} style={{ height: '1px', background: 'rgba(173,198,255,0.1)', margin: '8px 4px' }} />;
+            }
             const active = isActive(item);
             const inner = (
               <div style={{
