@@ -71,6 +71,55 @@ function calcNextReviewDate(fixedRateStartDate, fixedTermYears, fixedRateEndDate
   return review;
 }
 
+// ---- Inline editable postcode field ----
+function EditablePostcode({ value, onSave }) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editVal, setEditVal]     = useState('');
+
+  function startEdit() { setEditVal(value || ''); setIsEditing(true); }
+  function handleSave() {
+    const v = editVal.trim().toUpperCase().replace(/\s+/g, ' ');
+    if (v) onSave(v);
+    setIsEditing(false);
+  }
+  function handleCancel() { setIsEditing(false); }
+
+  const inputStyle = {
+    width: '100%', background: 'rgba(173,198,255,0.08)',
+    border: '1px solid rgba(173,198,255,0.3)', borderRadius: '8px',
+    padding: '6px 10px', color: '#dae2fd', fontSize: '15px',
+    fontFamily: 'Manrope, sans-serif', fontWeight: 700,
+    outline: 'none', boxSizing: 'border-box', textTransform: 'uppercase',
+  };
+
+  return (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+        <p style={{ fontSize: '11px', color: '#adc6ff', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0 }}>Postcode</p>
+        {!isEditing && (
+          <button onClick={startEdit} style={{ background: 'none', border: 'none', padding: '1px', cursor: 'pointer', display: 'flex', alignItems: 'center', color: '#adc6ff', opacity: 0.7 }}>
+            <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>edit</span>
+          </button>
+        )}
+      </div>
+      {isEditing ? (
+        <div>
+          <input type="text" value={editVal} onChange={e => setEditVal(e.target.value.toUpperCase())}
+            autoFocus maxLength={8} placeholder="e.g. SW1A 2AA" style={{ ...inputStyle, marginBottom: '8px' }} />
+          <div style={{ display: 'flex', gap: '6px' }}>
+            <button onClick={handleSave} style={{ flex: 1, background: '#4edea3', color: '#003824', border: 'none', borderRadius: '8px', padding: '6px 8px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>Save</button>
+            <button onClick={handleCancel} style={{ flex: 1, background: 'rgba(173,198,255,0.1)', color: '#adc6ff', border: '1px solid rgba(173,198,255,0.2)', borderRadius: '8px', padding: '6px 8px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>Cancel</button>
+          </div>
+        </div>
+      ) : (
+        <p style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 700, fontSize: '16px', color: value ? '#dae2fd' : '#475569', margin: 0 }}>
+          {value || 'Not set — tap to add'}
+        </p>
+      )}
+    </div>
+  );
+}
+
 // ---- Inline editable value field ----
 function EditableValue({ label, value, color, onSave }) {
   const [isEditing, setIsEditing] = useState(false);
@@ -486,6 +535,7 @@ export default function MortgageDetail() {
   }
   function saveOutstandingBalance(v) { updateMortgage(Number(idx), { outstandingBalance: v }); }
   function savePurchasePrice(v)      { updateMortgage(Number(idx), { purchasePrice: v }); }
+  function savePostcode(v)           { updateMortgage(Number(idx), { postcode: v }); }
 
   return (
     <MortgageDetailLayout backTo="/mobile/mortgage">
@@ -607,6 +657,9 @@ export default function MortgageDetail() {
           </h3>
           <DetailRow label="Lender"            value={mortgage.lender || '–'} />
           <DetailRow label="Type"              value={mortgage.type || '–'} />
+          <div style={{ padding: '10px 0', borderBottom: '1px solid rgba(173,198,255,0.06)' }}>
+            <EditablePostcode value={mortgage.postcode} onSave={savePostcode} />
+          </div>
           {mortgage.purchasePrice > 0 && (
             <DetailRow label="Purchase Price"  value={fmt(mortgage.purchasePrice)} />
           )}

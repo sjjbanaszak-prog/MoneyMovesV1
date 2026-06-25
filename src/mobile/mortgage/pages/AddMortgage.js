@@ -96,6 +96,7 @@ export default function AddMortgage() {
 
   // Property
   const [name,             setName]             = useState('');
+  const [postcode,         setPostcode]         = useState('');
   const [type,             setType]             = useState('Residential');
   const [lender,           setLender]           = useState('');
   const [purchasePrice,    setPurchasePrice]    = useState('');
@@ -132,6 +133,7 @@ export default function AddMortgage() {
 
     const newMortgage = {
       name:               name.trim(),
+      postcode:           postcode.trim().toUpperCase().replace(/\s+/g, ' ') || null,
       type,
       lender:             lender.trim(),
       purchasePrice:      propVal,
@@ -179,6 +181,17 @@ export default function AddMortgage() {
               placeholder="e.g. 12 Oak Street"
               value={name}
               onChange={e => setName(e.target.value)}
+            />
+          </Field>
+
+          <Field label="Postcode" hint="Used to pull regional price history from HM Land Registry">
+            <input
+              type="text"
+              className="input-field"
+              placeholder="e.g. SW1A 2AA"
+              value={postcode}
+              onChange={e => setPostcode(e.target.value.toUpperCase())}
+              maxLength={8}
             />
           </Field>
 

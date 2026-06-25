@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useRef, useCallback } from 'react';
+import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import MortgageLayout from '../MortgageLayout';
 import { useMortgageData } from '../MortgageDataContext';
 import PremiumGate from '../../components/PremiumGate';
@@ -46,9 +46,30 @@ function DonutChart({ segments, centerLabel, centerSub }) {
   );
 }
 
+// Map postcodes.io european_electoral_region → Land Registry UKHPI region slug
+function eerToSlug(eer) {
+  return {
+    'London':                    'london',
+    'South East':                'south-east',
+    'South West':                'south-west',
+    'East of England':           'east-of-england',
+    'East Midlands':             'east-midlands',
+    'West Midlands':             'west-midlands',
+    'Yorkshire and The Humber':  'yorkshire-and-the-humber',
+    'North West':                'north-west',
+    'North East':                'north-east',
+    'Wales':                     'wales',
+  }[eer] || 'england-and-wales';
+}
+
+function parsePeriod(item) {
+  if (!item?.refPeriod) return '';
+  return typeof item.refPeriod === 'object' ? (item.refPeriod._value || '') : String(item.refPeriod);
+}
+
 // Dual-line SVG chart: property value (green solid) + area average (blue dashed)
 // Hover/touch shows a crosshair + inline tooltip with both values.
-function PropertyLineChart({ valueSeries, avgSeries, labels }) {
+function PropertyLineChart({ valueSeries, avgSeries, labels, avgLabel = 'Area average' }) {
   const W = 320, H = 90;
   const n = labels.length;
   const svgRef = useRef(null);
@@ -196,7 +217,7 @@ function PropertyLineChart({ valueSeries, avgSeries, labels }) {
           <svg width="16" height="4" style={{ flexShrink: 0 }}>
             <line x1="0" y1="2" x2="16" y2="2" stroke="#adc6ff" strokeWidth="1.5" strokeDasharray="4 3" />
           </svg>
-          <span style={{ fontSize: '11px', color: '#bbcabf' }}>Area average</span>
+          <span style={{ fontSize: '11px', color: '#bbcabf' }}>{avgLabel}</span>
         </div>
       </div>
     </>
@@ -205,6 +226,55 @@ function PropertyLineChart({ valueSeries, avgSeries, labels }) {
 
 export default function MortgageInsights() {
   const { mortgages } = useMortgageData();
+  const [hpiData, setHpiData] = useState(null); // { regional: [], national: [], regionName: '' }
+  const [hpiLoading, setHpiLoading] = useState(false);
+
+  useEffect(() => {
+    const primary = mortgages.find(m => m.type === 'Residential') || mortgages[0];
+    const postcode = primary?.postcode;
+    if (!postcode) { setHpiData(null); return; }
+
+    let cancelled = false;
+    setHpiLoading(true);
+
+    async function fetchHpi() {
+      try {
+        // Step 1: get region from postcodes.io
+        const pc = postcode.replace(/\s/g, '');
+        const pcRes = await fetch(`https://api.postcodes.io/postcodes/${pc}`);
+        const pcJson = await pcRes.json();
+        if (cancelled || pcJson.status !== 200) return;
+
+        const eer = pcJson.result.european_electoral_region;
+        const slug = eerToSlug(eer);
+        const regionName = eer || 'England & Wales';
+
+        // Step 2: fetch regional + national UKHPI in parallel
+        const LR = 'https://landregistry.data.gov.uk/api/1/slice.json?dataset=ukhpi&measures/housePriceIndex=true&_pageSize=60&_sort=dimension/refPeriod';
+        const enc = s => encodeURIComponent('http://landregistry.data.gov.uk/id/region/' + s);
+
+        const [regRes, natRes] = await Promise.all([
+          fetch(`${LR}&dimension/refRegion=${enc(slug)}`),
+          fetch(`${LR}&dimension/refRegion=${enc('england-and-wales')}`),
+        ]);
+        const [regJson, natJson] = await Promise.all([regRes.json(), natRes.json()]);
+
+        if (cancelled) return;
+        const regional = regJson?.result?.items || [];
+        const national = natJson?.result?.items || [];
+        if (regional.length >= 2 && national.length >= 2) {
+          setHpiData({ regional, national, regionName });
+        }
+      } catch (_) {
+        // silently fall back to synthetic data
+      } finally {
+        if (!cancelled) setHpiLoading(false);
+      }
+    }
+
+    fetchHpi();
+    return () => { cancelled = true; };
+  }, [mortgages]);
 
   // Payment Distribution: walk amortization for each mortgage to split principal vs interest
   const paymentDistribution = useMemo(() => {
@@ -250,16 +320,15 @@ export default function MortgageInsights() {
     };
   }, [mortgages]);
 
-  // Property Value Tracker: uses primary residential property + estimated UK HPI trend
+  // Property Value Tracker
   const propertyChartData = useMemo(() => {
     const primary = mortgages.find(m => m.type === 'Residential') || mortgages[0];
     if (!primary) return null;
-
     const currentValue = primary.propertyValue || 0;
     if (currentValue === 0) return null;
 
     // If stored valueHistory exists with 2+ entries, use it directly
-    if (primary.valueHistory && primary.valueHistory.length >= 2) {
+    if (primary.valueHistory?.length >= 2) {
       const sorted = [...primary.valueHistory].sort((a, b) => a.date.localeCompare(b.date));
       const valueSeries = sorted.map(v => v.value);
       const avgSeries = valueSeries.map(v => Math.round(v * 0.94));
@@ -267,31 +336,64 @@ export default function MortgageInsights() {
         const d = new Date(v.date);
         return d.toLocaleString('en-GB', { month: 'short', year: '2-digit' });
       });
-      return { valueSeries, avgSeries, labels, currentValue, name: primary.name };
+      return { valueSeries, avgSeries, labels, currentValue, name: primary.name, isReal: false };
     }
 
-    // Synthesise a 24-month history using UK average HPI (~5% pa for property, ~4% for area avg)
+    // Use real UKHPI data if available
+    if (hpiData?.regional?.length >= 2 && hpiData?.national?.length >= 2) {
+      const sortByPeriod = arr => [...arr].sort((a, b) => parsePeriod(a).localeCompare(parsePeriod(b)));
+      const regional = sortByPeriod(hpiData.regional).slice(-24);
+      const national = sortByPeriod(hpiData.national).slice(-24);
+
+      const latestRegHpi = regional[regional.length - 1].housePriceIndex;
+      const latestNatHpi = national[national.length - 1].housePriceIndex;
+
+      // Both series anchored to currentValue at the latest point so the chart shows
+      // how regional vs national trajectories diverged over the period.
+      const valueSeries = regional.map(item =>
+        Math.round(currentValue * (item.housePriceIndex / latestRegHpi))
+      );
+      const avgSeries = national.map(item =>
+        Math.round(currentValue * (item.housePriceIndex / latestNatHpi))
+      );
+      const labels = regional.map(item => {
+        const [y, mo] = parsePeriod(item).split('-');
+        if (!y || !mo) return parsePeriod(item);
+        const d = new Date(parseInt(y), parseInt(mo) - 1);
+        return d.toLocaleString('en-GB', { month: 'short', year: '2-digit' });
+      });
+
+      const regGrowthPct = ((latestRegHpi / regional[0].housePriceIndex) - 1) * 100;
+      const natGrowthPct = ((latestNatHpi / national[0].housePriceIndex) - 1) * 100;
+
+      return {
+        valueSeries,
+        avgSeries,
+        labels,
+        currentValue,
+        growth: valueSeries[valueSeries.length - 1] - valueSeries[0],
+        name: primary.name,
+        regionName: hpiData.regionName,
+        regGrowthPct: Math.round(regGrowthPct * 10) / 10,
+        natGrowthPct: Math.round(natGrowthPct * 10) / 10,
+        isReal: true,
+      };
+    }
+
+    // Fallback: synthesise using UK long-run average HPI (~5% pa)
     const months = 24;
     const propMonthlyGrowth = Math.pow(1.05, 1 / 12) - 1;
     const areaMonthlyGrowth = Math.pow(1.04, 1 / 12) - 1;
-
-    const valueSeries = [];
-    const avgSeries = [];
-    const labels = [];
+    const valueSeries = [], avgSeries = [], labels = [];
     const now = new Date();
-
     for (let i = months - 1; i >= 0; i--) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
       labels.push(d.toLocaleString('en-GB', { month: 'short', year: '2-digit' }));
-      // Back-calculate: current / (1 + growth)^i
       valueSeries.push(Math.round(currentValue / Math.pow(1 + propMonthlyGrowth, i)));
       avgSeries.push(Math.round((currentValue * 0.93) / Math.pow(1 + areaMonthlyGrowth, i)));
     }
-
-    const growth = currentValue - valueSeries[0];
-
-    return { valueSeries, avgSeries, labels, currentValue, growth, name: primary.name };
-  }, [mortgages]);
+    return { valueSeries, avgSeries, labels, currentValue, growth: currentValue - valueSeries[0], name: primary.name, isReal: false };
+  }, [mortgages, hpiData]);
 
   return (
     <MortgageLayout>
@@ -351,10 +453,23 @@ export default function MortgageInsights() {
             <h3 style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 800, fontSize: '16px', color: '#dae2fd', margin: 0 }}>
               Property Value Tracker
             </h3>
-            <span style={{ fontSize: '11px', color: '#475569', marginTop: '2px' }}>Est. trend</span>
+            {hpiLoading ? (
+              <span style={{ fontSize: '11px', color: '#475569', marginTop: '2px' }}>Loading…</span>
+            ) : propertyChartData?.isReal ? (
+              <span style={{ fontSize: '10px', color: '#4edea3', background: 'rgba(78,222,163,0.1)', borderRadius: '6px', padding: '2px 8px', fontWeight: 700 }}>
+                HM Land Registry
+              </span>
+            ) : (
+              <span style={{ fontSize: '11px', color: '#475569', marginTop: '2px' }}>Est. trend</span>
+            )}
           </div>
           {propertyChartData && (
-            <p style={{ fontSize: '12px', color: '#64748b', margin: '0 0 16px' }}>{propertyChartData.name}</p>
+            <p style={{ fontSize: '12px', color: '#64748b', margin: '0 0 16px' }}>
+              {propertyChartData.name}
+              {propertyChartData.isReal && propertyChartData.regionName && (
+                <span style={{ color: '#475569' }}> · {propertyChartData.regionName}</span>
+              )}
+            </p>
           )}
 
           {!propertyChartData ? (
@@ -367,32 +482,32 @@ export default function MortgageInsights() {
                 valueSeries={propertyChartData.valueSeries}
                 avgSeries={propertyChartData.avgSeries}
                 labels={propertyChartData.labels}
+                avgLabel={propertyChartData.isReal ? 'National avg' : 'Area average'}
               />
               <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '12px', background: 'rgba(173,198,255,0.04)', borderRadius: '10px', padding: '12px' }}>
                 <div>
                   <p style={{ fontSize: '11px', color: '#bbcabf', margin: '0 0 3px' }}>Current value</p>
                   <p style={{ fontWeight: 700, fontSize: '14px', color: '#4edea3', margin: 0 }}>{fmtK(propertyChartData.currentValue)}</p>
                 </div>
-                {propertyChartData.growth > 0 && (
+                {propertyChartData.isReal ? (
                   <div style={{ textAlign: 'right' }}>
-                    <p style={{ fontSize: '11px', color: '#bbcabf', margin: '0 0 3px' }}>Est. 2yr gain</p>
-                    <p style={{ fontWeight: 700, fontSize: '14px', color: '#adc6ff', margin: 0 }}>
-                      +{fmtK(propertyChartData.growth)}
+                    <p style={{ fontSize: '11px', color: '#bbcabf', margin: '0 0 3px' }}>Regional vs National (24m)</p>
+                    <p style={{ fontWeight: 700, fontSize: '14px', color: propertyChartData.regGrowthPct >= propertyChartData.natGrowthPct ? '#4edea3' : '#ffb95f', margin: 0 }}>
+                      {propertyChartData.regGrowthPct > 0 ? '+' : ''}{propertyChartData.regGrowthPct}% vs {propertyChartData.natGrowthPct > 0 ? '+' : ''}{propertyChartData.natGrowthPct}%
                     </p>
                   </div>
-                )}
+                ) : propertyChartData.growth > 0 ? (
+                  <div style={{ textAlign: 'right' }}>
+                    <p style={{ fontSize: '11px', color: '#bbcabf', margin: '0 0 3px' }}>Est. 2yr gain</p>
+                    <p style={{ fontWeight: 700, fontSize: '14px', color: '#adc6ff', margin: 0 }}>+{fmtK(propertyChartData.growth)}</p>
+                  </div>
+                ) : null}
               </div>
               <p style={{ fontSize: '10px', color: '#475569', margin: '10px 0 0', lineHeight: '1.5' }}>
-                Estimated trend based on UK average HPI growth.{' '}
-                <a
-                  href="https://www.gov.uk/search-house-prices"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{ color: '#adc6ff', textDecoration: 'underline' }}
-                >
-                  View live area data on HM Land Registry
-                </a>
-                .
+                {propertyChartData.isReal
+                  ? `Estimated values use HM Land Registry UKHPI monthly data for ${propertyChartData.regionName}. Green = regional trend, blue = England & Wales national average.`
+                  : <>Estimated trend based on UK average HPI growth. Add a postcode in mortgage details to use real Land Registry data. <a href="https://www.gov.uk/search-house-prices" target="_blank" rel="noopener noreferrer" style={{ color: '#adc6ff', textDecoration: 'underline' }}>HM Land Registry</a>.</>
+                }
               </p>
             </>
           )}
