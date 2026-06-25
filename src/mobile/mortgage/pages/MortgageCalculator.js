@@ -507,7 +507,44 @@ export default function MortgageCalculator() {
   const updateSwitch    = (field, value) => setSwitchInputs(prev => ({ ...prev, [field]: value }));
   const updateSwitchFees = (field, value) => setSwitchInputs(prev => ({ ...prev, fees: { ...prev.fees, [field]: value } }));
 
-  const selectedMortgage = selectedIdx !== null ? mortgages[selectedIdx] : null;
+  // Sandbox (no saved mortgage) state — selectedIdx === -1 means sandbox is active
+  const [sandboxMortgage, setSandboxMortgage] = useState(null);
+  const [sandboxForm, setSandboxForm] = useState({
+    name: '', lender: '', amount: '', rate: '', termYears: '', fixedTermYears: '', svrRate: '',
+  });
+  const updateSandbox = (field, val) => setSandboxForm(prev => ({ ...prev, [field]: val }));
+
+  const applySandboxForm = () => {
+    if (!sandboxForm.amount || !sandboxForm.rate || !sandboxForm.termYears) return;
+    const today = new Date().toISOString().slice(0, 10);
+    const m = {
+      name: sandboxForm.name || 'New Mortgage',
+      lender: sandboxForm.lender || 'TBC',
+      type: 'Residential',
+      outstandingBalance: parseFloat(sandboxForm.amount),
+      interestRate: parseFloat(sandboxForm.rate),
+      termYears: parseFloat(sandboxForm.termYears),
+      startDate: today,
+      fixedRateStartDate: today,
+      fixedTermYears: sandboxForm.fixedTermYears ? parseFloat(sandboxForm.fixedTermYears) : null,
+      defaultRate: sandboxForm.svrRate ? parseFloat(sandboxForm.svrRate) : null,
+      _isSandbox: true,
+    };
+    setSandboxMortgage(m);
+    setSelectedIdx(-1);
+    setStep(2);
+  };
+
+  // activeMode: 0 = New Mortgage, 1 = Overpayment, 2 = Switch
+  // Auto-select New Mortgage tab when user has no saved mortgages
+  const userSetMode = React.useRef(false);
+  React.useEffect(() => {
+    if (userSetMode.current) return;
+    setActiveMode(mortgages.length > 0 ? 1 : 0);
+  }, [mortgages]);
+
+  // selectedIdx === -1 → sandbox; null → nothing selected; ≥0 → real mortgage
+  const selectedMortgage = selectedIdx === -1 ? sandboxMortgage : (selectedIdx !== null ? mortgages[selectedIdx] : null);
 
   // Auto-populate switch start date from mortgage fixed end date
   React.useEffect(() => {
@@ -604,10 +641,18 @@ export default function MortgageCalculator() {
     try { return calcSwitchResult(selectedMortgage, switchInputs); } catch { return null; }
   }, [selectedMortgage, switchInputs]);
 
-  // ── Step 0 — Select Property ───────────────────────────────────────────────
+  // ── Step 0 — Select Property / New Mortgage ───────────────────────────────
 
   if (step === 0) {
-    const canContinue = selectedIdx !== null;
+    const hasMortgages = mortgages.length > 0;
+    const sandboxReady = !!(sandboxForm.amount && sandboxForm.rate && sandboxForm.termYears);
+    const canContinue = activeMode === 0 ? sandboxReady : selectedIdx !== null;
+
+    const tabs = [
+      { label: 'New Mortgage', idx: 0, disabled: false },
+      { label: 'Overpayment',  idx: 1, disabled: !hasMortgages },
+      { label: 'Switch',       idx: 2, disabled: !hasMortgages },
+    ];
 
     return (
       <MortgageLayout>
@@ -620,29 +665,84 @@ export default function MortgageCalculator() {
             </h1>
           </div>
 
-          <div style={{ padding: '0 16px 16px', display: 'flex', gap: '8px' }}>
-            {['Overpayment', 'Switch'].map((label, i) => (
-              <button key={label} className={`tab-btn${activeMode === i ? ' active' : ''}`} onClick={() => setActiveMode(i)}>
+          {/* Three-tab pill selector */}
+          <div style={{ padding: '0 16px 16px', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+            {tabs.map(({ label, idx, disabled }) => (
+              <button
+                key={label}
+                className={`tab-btn${activeMode === idx ? ' active' : ''}`}
+                onClick={() => { if (!disabled) { userSetMode.current = true; setActiveMode(idx); } }}
+                style={{ opacity: disabled ? 0.35 : 1, cursor: disabled ? 'not-allowed' : 'pointer', width: '100%', textAlign: 'center' }}
+              >
                 {label}
               </button>
             ))}
           </div>
 
-          <div style={{ padding: '0 20px 20px' }}>
+          <div style={{ padding: '0 20px 16px' }}>
             <p style={{ fontSize: '13px', color: '#64748b', margin: 0 }}>
               {activeMode === 0
+                ? "Enter your mortgage details to model payments and overpayment strategies."
+                : activeMode === 1
                 ? 'Choose a mortgage to model your overpayment strategy.'
                 : 'Choose a mortgage to model a product switch or remortgage.'}
             </p>
           </div>
 
           <div style={{ padding: '0 16px' }}>
-            {mortgages.length === 0 ? (
-              <div style={{ ...cardStyle, textAlign: 'center', padding: '40px 20px' }}>
-                <span className="material-symbols-outlined" style={{ color: '#64748b', fontSize: '40px', display: 'block', marginBottom: '12px' }}>home_work</span>
-                <p style={{ fontSize: '14px', color: '#64748b', margin: 0 }}>No mortgages added yet. Add one from the Overview tab.</p>
+
+            {/* ── New Mortgage tab — inline form ── */}
+            {activeMode === 0 && (
+              <div style={{ ...cardStyle }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+                  <div style={{ background: '#1a2438', borderRadius: '10px', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <span className="material-symbols-outlined" style={{ color: '#adc6ff', fontSize: '22px' }}>calculate</span>
+                  </div>
+                  <div>
+                    <p style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 800, fontSize: '15px', color: '#dae2fd', margin: '0 0 2px' }}>Model a mortgage</p>
+                    <p style={{ fontSize: '11px', color: '#64748b', margin: 0 }}>No account needed — results are not saved</p>
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
+                  <div>
+                    <FieldLabel>Label (optional)</FieldLabel>
+                    <input type="text" value={sandboxForm.name} onChange={e => updateSandbox('name', e.target.value)} placeholder="e.g. First Home" style={{ ...inputStyle, fontSize: '14px' }} />
+                  </div>
+                  <div>
+                    <FieldLabel>Lender (optional)</FieldLabel>
+                    <input type="text" value={sandboxForm.lender} onChange={e => updateSandbox('lender', e.target.value)} placeholder="e.g. Nationwide" style={{ ...inputStyle, fontSize: '14px' }} />
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: '10px' }}>
+                  <FieldLabel>Mortgage Amount</FieldLabel>
+                  <div style={{ position: 'relative' }}>
+                    <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#bbcabf', fontWeight: 700, fontFamily: 'Manrope, sans-serif' }}>£</span>
+                    <input type="number" value={sandboxForm.amount} onChange={e => updateSandbox('amount', e.target.value)} placeholder="200000" style={{ ...inputStyle, paddingLeft: '28px', fontSize: '18px' }} />
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
+                  <PctInput label="Interest Rate" value={sandboxForm.rate} onChange={v => updateSandbox('rate', v)} />
+                  <div>
+                    <FieldLabel>Term (Years)</FieldLabel>
+                    <input type="number" value={sandboxForm.termYears} onChange={e => updateSandbox('termYears', e.target.value)} placeholder="25" style={{ ...inputStyle, fontSize: '16px' }} />
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                  <div>
+                    <FieldLabel>Fixed For (Yrs)</FieldLabel>
+                    <input type="number" step="0.5" value={sandboxForm.fixedTermYears} onChange={e => updateSandbox('fixedTermYears', e.target.value)} placeholder="e.g. 2" style={{ ...inputStyle, fontSize: '16px' }} />
+                  </div>
+                  <PctInput label="SVR After (opt)" value={sandboxForm.svrRate} onChange={v => updateSandbox('svrRate', v)} />
+                </div>
               </div>
-            ) : mortgages.map((m, i) => {
+            )}
+
+            {/* ── Overpayment / Switch tab — saved mortgage list ── */}
+            {activeMode !== 0 && mortgages.map((m, i) => {
               const sel = selectedIdx === i;
               return (
                 <button key={i} onClick={() => setSelectedIdx(i)} style={{ width: '100%', textAlign: 'left', cursor: 'pointer', background: sel ? '#222a3d' : '#171f33', borderRadius: '16px', padding: '20px', marginBottom: '12px', border: sel ? '2px solid #4edea3' : '2px solid transparent', boxShadow: sel ? '0 4px 20px rgba(78,222,163,0.12)' : 'none', transition: 'all 0.2s' }}>
@@ -671,15 +771,16 @@ export default function MortgageCalculator() {
                 </button>
               );
             })}
+
           </div>
 
           <div style={{ padding: '4px 16px 0' }}>
             <button
-              onClick={() => canContinue && setStep(1)}
+              onClick={() => { if (!canContinue) return; activeMode === 0 ? applySandboxForm() : setStep(1); }}
               disabled={!canContinue}
               style={{ width: '100%', background: canContinue ? '#4edea3' : '#1a2438', color: canContinue ? '#003824' : '#3d5068', border: 'none', borderRadius: '14px', padding: '16px', fontFamily: 'Manrope, sans-serif', fontWeight: 800, fontSize: '16px', cursor: canContinue ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', transition: 'all 0.2s' }}
             >
-              Select and Continue
+              {activeMode === 0 ? 'Model this mortgage' : 'Select and Continue'}
               <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>arrow_forward</span>
             </button>
           </div>
@@ -689,9 +790,9 @@ export default function MortgageCalculator() {
     );
   }
 
-  // ── Step 1 — Overpayment Inputs ────────────────────────────────────────────
+  // ── Step 1 — Overpayment Inputs (activeMode 0 = new mortgage, 1 = overpayment) ──
 
-  if (step === 1 && activeMode === 0) {
+  if (step === 1 && activeMode !== 2) {
     const m = selectedMortgage;
     const remaining = m ? calcRemainingMonths(m) : 0;
 
@@ -843,7 +944,7 @@ export default function MortgageCalculator() {
 
   // ── Step 1 — Switch Inputs ─────────────────────────────────────────────────
 
-  if (step === 1 && activeMode === 1) {
+  if (step === 1 && activeMode === 2) {
     const m = selectedMortgage;
     const sw = switchInputs;
     const isPT = sw.switchType === 'product_transfer';
@@ -1050,7 +1151,7 @@ export default function MortgageCalculator() {
 
   // ── Step 2 — Switch Results ────────────────────────────────────────────────
 
-  if (activeMode === 1) {
+  if (activeMode === 2) {
     if (!switchCalc) { setStep(1); return null; }
     const sc = switchCalc;
     const switchTypeLabel = { product_transfer: 'Product Transfer', remortgage: 'Remortgage', new_property: 'Property Port' }[switchInputs.switchType] || 'Switch';
@@ -1202,23 +1303,26 @@ export default function MortgageCalculator() {
     );
   }
 
-  // ── Step 2 — Overpayment Results ──────────────────────────────────────────
+  // ── Step 2 — Overpayment / New Mortgage Results ───────────────────────────
 
-  if (!calc) { setStep(1); return null; }
+  if (!calc) { setStep(activeMode === 0 ? 0 : 1); return null; }
 
   const { baseline, overpaid, monthsSaved, interestSaved, origEnd, newEnd, tableRows,
           rateChangeMonth, defaultRate: calcDefaultRate } = calc;
 
   const m = selectedMortgage;
+  const isSandbox = activeMode === 0;
   const hasReversion = calcDefaultRate != null && rateChangeMonth < Infinity;
-  const missingSVRData = (m?.defaultRate || m?.interestRate) && !hasReversion;
+  const missingSVRData = !isSandbox && (m?.defaultRate || m?.interestRate) && !hasReversion;
+  const backStep = isSandbox ? 0 : 1;
+  const monthlyPayment = Math.round(pmt(m?.outstandingBalance || 0, m?.interestRate || 0, calcRemainingMonths(m)));
 
   return (
     <MortgageLayout>
       <div style={{ padding: '0 0 32px' }}>
 
         <div style={{ padding: '20px 20px 0', display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <button onClick={() => setStep(1)} style={{ background: 'rgba(173,198,255,0.08)', border: 'none', borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
+          <button onClick={() => setStep(backStep)} style={{ background: 'rgba(173,198,255,0.08)', border: 'none', borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
             <span className="material-symbols-outlined" style={{ color: '#adc6ff', fontSize: '20px' }}>arrow_back</span>
           </button>
           <p style={{ fontSize: '13px', color: '#bbcabf', margin: 0 }}>Calculator</p>
@@ -1242,33 +1346,70 @@ export default function MortgageCalculator() {
             </div>
           ) : null}
 
-          {/* Hero card */}
-          <div style={{ background: 'linear-gradient(135deg, #4edea3 0%, #10b981 100%)', borderRadius: '20px', padding: '28px 24px', marginBottom: '16px', position: 'relative', overflow: 'hidden' }}>
-            <div style={{ position: 'absolute', right: '-24px', top: '-24px', width: '120px', height: '120px', background: 'rgba(255,255,255,0.07)', borderRadius: '50%' }} />
-            <div style={{ position: 'absolute', right: '40px', bottom: '-30px', width: '80px', height: '80px', background: 'rgba(255,255,255,0.04)', borderRadius: '50%' }} />
-            <p style={{ fontSize: '11px', fontWeight: 700, color: 'rgba(0,56,36,0.65)', textTransform: 'uppercase', letterSpacing: '0.15em', margin: '0 0 4px', fontFamily: 'Inter, sans-serif' }}>Projection Results</p>
-            <h2 style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 900, fontSize: '28px', color: '#003824', margin: '0 0 20px' }}>Mortgage Freedom</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', alignItems: 'stretch' }}>
-              <div>
-                <p style={{ fontSize: '12px', color: 'rgba(0,56,36,0.7)', margin: '0 0 4px' }}>Interest Saved</p>
-                <p style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 900, fontSize: '28px', color: '#003824', margin: '0 0 14px', lineHeight: 1 }}>{fmtCcy(interestSaved)}</p>
-                <div style={{ background: 'rgba(0,56,36,0.1)', borderRadius: '10px', padding: '8px 12px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                  <span className="material-symbols-outlined" style={{ color: '#003824', fontSize: '16px' }}>timer</span>
-                  <span style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 700, fontSize: '12px', color: '#003824' }}>{fmtMonths(monthsSaved)} saved</span>
+          {/* Hero card — New Mortgage view */}
+          {isSandbox ? (
+            <div style={{ background: 'linear-gradient(135deg, #2d4fd6 0%, #1a3aaa 100%)', borderRadius: '20px', padding: '28px 24px', marginBottom: '16px', position: 'relative', overflow: 'hidden' }}>
+              <div style={{ position: 'absolute', right: '-24px', top: '-24px', width: '120px', height: '120px', background: 'rgba(255,255,255,0.06)', borderRadius: '50%' }} />
+              <p style={{ fontSize: '11px', fontWeight: 700, color: 'rgba(173,198,255,0.7)', textTransform: 'uppercase', letterSpacing: '0.15em', margin: '0 0 4px', fontFamily: 'Inter, sans-serif' }}>Mortgage Summary</p>
+              <h2 style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 900, fontSize: '26px', color: '#dae2fd', margin: '0 0 20px' }}>{m?.name || 'New Mortgage'}</h2>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div style={{ background: 'rgba(255,255,255,0.07)', borderRadius: '14px', padding: '14px' }}>
+                  <p style={{ fontSize: '11px', color: 'rgba(173,198,255,0.6)', margin: '0 0 4px' }}>Monthly Payment</p>
+                  <p style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 900, fontSize: '24px', color: '#4edea3', margin: 0 }}>{fmtCcy(monthlyPayment)}</p>
+                  <p style={{ fontSize: '10px', color: 'rgba(173,198,255,0.5)', margin: '4px 0 0' }}>at {m?.interestRate}%</p>
                 </div>
-              </div>
-              <div style={{ background: 'rgba(0,56,36,0.1)', borderRadius: '14px', padding: '14px' }}>
-                <div style={{ paddingBottom: '10px', marginBottom: '10px', borderBottom: '1px solid rgba(0,56,36,0.12)' }}>
-                  <p style={{ fontSize: '11px', color: 'rgba(0,56,36,0.6)', margin: '0 0 2px' }}>Original End Date</p>
-                  <p style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 700, fontSize: '14px', color: '#003824', margin: 0 }}>{fmtDate(origEnd)}</p>
-                </div>
-                <div>
-                  <p style={{ fontSize: '11px', color: 'rgba(0,56,36,0.6)', margin: '0 0 2px' }}>New End Date</p>
-                  <p style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 900, fontSize: '16px', color: '#003824', margin: 0 }}>{fmtDate(newEnd)}</p>
+                <div style={{ background: 'rgba(255,255,255,0.07)', borderRadius: '14px', padding: '14px' }}>
+                  <p style={{ fontSize: '11px', color: 'rgba(173,198,255,0.6)', margin: '0 0 4px' }}>Mortgage Free</p>
+                  <p style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 900, fontSize: '20px', color: '#dae2fd', margin: 0 }}>{fmtDate(origEnd)}</p>
+                  <p style={{ fontSize: '10px', color: 'rgba(173,198,255,0.5)', margin: '4px 0 0' }}>{fmtMonths(baseline.months)} remaining</p>
                 </div>
               </div>
             </div>
-          </div>
+          ) : (
+            /* Hero card — Overpayment view */
+            <div style={{ background: 'linear-gradient(135deg, #4edea3 0%, #10b981 100%)', borderRadius: '20px', padding: '28px 24px', marginBottom: '16px', position: 'relative', overflow: 'hidden' }}>
+              <div style={{ position: 'absolute', right: '-24px', top: '-24px', width: '120px', height: '120px', background: 'rgba(255,255,255,0.07)', borderRadius: '50%' }} />
+              <div style={{ position: 'absolute', right: '40px', bottom: '-30px', width: '80px', height: '80px', background: 'rgba(255,255,255,0.04)', borderRadius: '50%' }} />
+              <p style={{ fontSize: '11px', fontWeight: 700, color: 'rgba(0,56,36,0.65)', textTransform: 'uppercase', letterSpacing: '0.15em', margin: '0 0 4px', fontFamily: 'Inter, sans-serif' }}>Projection Results</p>
+              <h2 style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 900, fontSize: '28px', color: '#003824', margin: '0 0 20px' }}>Mortgage Freedom</h2>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', alignItems: 'stretch' }}>
+                <div>
+                  <p style={{ fontSize: '12px', color: 'rgba(0,56,36,0.7)', margin: '0 0 4px' }}>Interest Saved</p>
+                  <p style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 900, fontSize: '28px', color: '#003824', margin: '0 0 14px', lineHeight: 1 }}>{fmtCcy(interestSaved)}</p>
+                  <div style={{ background: 'rgba(0,56,36,0.1)', borderRadius: '10px', padding: '8px 12px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                    <span className="material-symbols-outlined" style={{ color: '#003824', fontSize: '16px' }}>timer</span>
+                    <span style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 700, fontSize: '12px', color: '#003824' }}>{fmtMonths(monthsSaved)} saved</span>
+                  </div>
+                </div>
+                <div style={{ background: 'rgba(0,56,36,0.1)', borderRadius: '14px', padding: '14px' }}>
+                  <div style={{ paddingBottom: '10px', marginBottom: '10px', borderBottom: '1px solid rgba(0,56,36,0.12)' }}>
+                    <p style={{ fontSize: '11px', color: 'rgba(0,56,36,0.6)', margin: '0 0 2px' }}>Original End Date</p>
+                    <p style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 700, fontSize: '14px', color: '#003824', margin: 0 }}>{fmtDate(origEnd)}</p>
+                  </div>
+                  <div>
+                    <p style={{ fontSize: '11px', color: 'rgba(0,56,36,0.6)', margin: '0 0 2px' }}>New End Date</p>
+                    <p style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 900, fontSize: '16px', color: '#003824', margin: 0 }}>{fmtDate(newEnd)}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Key stats — New Mortgage only */}
+          {isSandbox && (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '14px' }}>
+              <div style={{ background: '#222a3d', borderRadius: '16px', padding: '16px', borderLeft: '4px solid #0566d9' }}>
+                <p style={{ fontSize: '11px', color: '#bbcabf', margin: '0 0 8px' }}>Total Interest</p>
+                <p style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 900, fontSize: '22px', color: '#adc6ff', margin: 0 }}>{fmtCcy(baseline.totalInterest)}</p>
+                <p style={{ fontSize: '10px', color: '#64748b', margin: '4px 0 0' }}>over {m?.termYears || 25} years</p>
+              </div>
+              <div style={{ background: '#222a3d', borderRadius: '16px', padding: '16px', borderLeft: '4px solid #e29100' }}>
+                <p style={{ fontSize: '11px', color: '#bbcabf', margin: '0 0 8px' }}>Total Cost</p>
+                <p style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 900, fontSize: '22px', color: '#ffb95f', margin: 0 }}>{fmtCcy(baseline.totalPaid)}</p>
+                <p style={{ fontSize: '10px', color: '#64748b', margin: '4px 0 0' }}>principal + interest</p>
+              </div>
+            </div>
+          )}
 
           {/* Balance chart */}
           <div className="animate-in stagger-1 section-card" style={{ margin: '0 0 14px' }}>
@@ -1276,7 +1417,8 @@ export default function MortgageCalculator() {
             <BalanceChart baseline={baseline} overpaid={overpaid} />
           </div>
 
-          {/* Impact breakdown */}
+          {/* Impact breakdown — Overpayment only */}
+          {!isSandbox && (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '14px' }}>
             <div style={{ background: '#222a3d', borderRadius: '16px', padding: '16px', borderLeft: '4px solid #0566d9' }}>
               <p style={{ fontSize: '11px', color: '#bbcabf', margin: '0 0 12px', lineHeight: 1.2 }}>Total Interest Comparison</p>
@@ -1301,6 +1443,7 @@ export default function MortgageCalculator() {
               </div>
             </div>
           </div>
+          )}
 
           {/* Yearly trajectory table */}
           <div className="animate-in stagger-2 section-card" style={{ margin: '0 0 14px', padding: 0, overflow: 'hidden' }}>
@@ -1312,7 +1455,7 @@ export default function MortgageCalculator() {
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
                 <thead>
                   <tr style={{ background: 'rgba(45,52,73,0.5)' }}>
-                    {['Year', 'Balance', 'Principal', 'Interest', 'Saved'].map(h => (
+                    {(isSandbox ? ['Year', 'Balance', 'Principal', 'Interest'] : ['Year', 'Balance', 'Principal', 'Interest', 'Saved']).map(h => (
                       <th key={h} style={{ padding: '10px 12px', textAlign: 'left', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '10px', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>{h}</th>
                     ))}
                   </tr>
@@ -1324,7 +1467,7 @@ export default function MortgageCalculator() {
                       <td style={{ padding: '10px 12px', color: '#bbcabf', whiteSpace: 'nowrap' }}>{fmtK(row.balance)}</td>
                       <td style={{ padding: '10px 12px', color: '#bbcabf', whiteSpace: 'nowrap' }}>{fmtK(row.principalPaid)}</td>
                       <td style={{ padding: '10px 12px', color: '#bbcabf', whiteSpace: 'nowrap' }}>{fmtK(row.interestPaid)}</td>
-                      <td style={{ padding: '10px 12px', color: '#4edea3', fontWeight: 700, whiteSpace: 'nowrap' }}>+{fmtK(row.cumulativeSavings)}</td>
+                      {!isSandbox && <td style={{ padding: '10px 12px', color: '#4edea3', fontWeight: 700, whiteSpace: 'nowrap' }}>+{fmtK(row.cumulativeSavings)}</td>}
                     </tr>
                   ))}
                 </tbody>
@@ -1332,9 +1475,9 @@ export default function MortgageCalculator() {
             </div>
           </div>
 
-          <button onClick={() => setStep(1)} style={{ width: '100%', background: 'transparent', border: '1px solid rgba(173,198,255,0.15)', borderRadius: '14px', padding: '14px', color: '#dae2fd', fontFamily: 'Manrope, sans-serif', fontWeight: 700, fontSize: '15px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+          <button onClick={() => setStep(backStep)} style={{ width: '100%', background: 'transparent', border: '1px solid rgba(173,198,255,0.15)', borderRadius: '14px', padding: '14px', color: '#dae2fd', fontFamily: 'Manrope, sans-serif', fontWeight: 700, fontSize: '15px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
             <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>tune</span>
-            Adjust Parameters
+            {isSandbox ? 'Edit Mortgage Details' : 'Adjust Parameters'}
           </button>
 
         </div>
