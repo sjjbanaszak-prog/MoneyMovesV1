@@ -251,7 +251,7 @@ export default function IncomeOverview() {
             <p style={{ fontSize: '13px', color: '#bbcabf', lineHeight: 1.6, maxWidth: '280px', margin: '0 0 16px' }}>
               Our AI can identify salary benchmarks, tax optimisation opportunities, and strategies to grow your take-home pay.
             </p>
-            <button className="primary-btn" style={{ marginTop: '6px' }}>See Income Insights</button>
+            <button className="primary-btn" disabled style={{ marginTop: '6px', opacity: 0.35, cursor: 'default' }}>See Income Insights</button>
           </div>
         </div>
 

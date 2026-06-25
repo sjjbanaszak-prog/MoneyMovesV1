@@ -360,7 +360,7 @@ export default function SavingsOverview() {
             <p style={{ fontSize: '13px', color: '#bbcabf', lineHeight: 1.6, maxWidth: '280px', margin: '0 0 16px' }}>
               Our AI can identify ways to maximise your ISA allowance and grow your savings faster.
             </p>
-            <button className="primary-btn" style={{ marginTop: '6px' }}>See Savings Insights</button>
+            <button className="primary-btn" disabled style={{ marginTop: '6px', opacity: 0.35, cursor: 'default' }}>See Savings Insights</button>
           </div>
         </div>
 

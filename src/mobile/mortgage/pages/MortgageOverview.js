@@ -243,7 +243,7 @@ export default function MortgageOverview() {
             <p style={{ fontSize: '13px', color: '#bbcabf', lineHeight: 1.6, maxWidth: '280px', margin: '0 0 16px' }}>
               Our AI can identify overpayment opportunities and show you how to pay off your mortgage sooner.
             </p>
-            <button className="primary-btn" style={{ marginTop: '6px' }}>See Mortgage Insights</button>
+            <button className="primary-btn" style={{ marginTop: '6px' }} onClick={() => navigate('/mobile/mortgage/ai')}>See Mortgage Insights</button>
           </div>
         </div>
 
