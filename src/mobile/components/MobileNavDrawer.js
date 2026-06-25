@@ -9,6 +9,7 @@ const NAV_ITEMS = [
   { label: 'Mortgage',  icon: 'home',             path: '/mobile/mortgage', match: '/mobile/mortgage' },
   { label: 'Savings',   icon: 'savings',          path: '/mobile/savings',  match: '/mobile/savings'  },
   { label: 'Income',    icon: 'payments',         path: '/mobile/income',   match: '/mobile/income'   },
+  { label: 'Family',    icon: 'family_restroom',  path: '/mobile/family',   match: '/mobile/family'   },
   { label: 'Debt',      icon: 'credit_card',      path: '/debt-manager',    match: '/debt-manager',   disabled: true },
 ];
 

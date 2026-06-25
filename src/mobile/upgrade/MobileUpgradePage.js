@@ -48,32 +48,73 @@ const PREMIUM_FEATURES = [
   },
 ];
 
+const FAMILY_FEATURES = [
+  {
+    title: 'Everything in Professional',
+    desc: 'All pro features included for every adult in the household.',
+  },
+  {
+    title: 'Family Hub & partner tracking',
+    desc: 'Track your partner\'s ISA, pension, and savings alongside your own.',
+  },
+  {
+    title: 'Children\'s account management',
+    desc: 'Monitor JISA, Junior SIPP, and Premium Bonds for each child.',
+  },
+  {
+    title: 'Combined household allowances',
+    desc: 'See your full household ISA, pension, and savings picture in one place.',
+  },
+  {
+    title: 'Up to 6 family members',
+    desc: 'Cover your whole household — adults and children — under one plan.',
+  },
+];
+
 export default function MobileUpgradePage() {
   const navigate = useNavigate();
-  const [plan, setPlan] = useState('annual'); // 'free' | 'monthly' | 'annual'
+  const [plan, setPlan]                       = useState('individual'); // 'individual' | 'family'
+  const [individualBilling, setIndivBilling]  = useState('annual');    // 'free' | 'monthly' | 'annual'
+  const [familyBilling, setFamilyBilling]     = useState('monthly');   // 'monthly' | 'annual'
 
-  const isFree    = plan === 'free';
-  const isMonthly = plan === 'monthly';
-  const isAnnual  = plan === 'annual';
+  const isFamily   = plan === 'family';
+  const isIndivFree    = !isFamily && individualBilling === 'free';
+  const isIndivMonthly = !isFamily && individualBilling === 'monthly';
+  const isIndivAnnual  = !isFamily && individualBilling === 'annual';
+  const isFamAnnual    = isFamily  && familyBilling     === 'annual';
 
-  const price    = isFree ? '£0' : isAnnual ? '£49.99' : '£5.99';
-  const period   = isFree ? null : isAnnual ? '/year' : '/month';
-  const subLabel = isFree
+  const price = isIndivFree ? '£0'
+    : isIndivAnnual         ? '£49.99'
+    : isIndivMonthly        ? '£5.99'
+    : isFamAnnual           ? '£69.99'
+    :                         '£7.99';
+
+  const period = isIndivFree ? null : (isIndivAnnual || isFamAnnual) ? '/year' : '/month';
+
+  const subLabel = isIndivFree
     ? 'Access to core features. No payment required.'
-    : isAnnual
+    : isIndivAnnual
       ? 'Equivalent to £4.16 per month, billed annually.'
-      : 'Billed monthly. Cancel anytime.';
+      : isIndivMonthly
+        ? 'Billed monthly. Cancel anytime.'
+        : isFamAnnual
+          ? 'Equivalent to £5.83 per month, billed annually.'
+          : 'Billed monthly. Cancel anytime.';
 
-  const features  = isFree ? FREE_FEATURES : PREMIUM_FEATURES;
-  const planLabel = isFree ? 'Free Plan' : 'Professional Plan';
-  const accentCol = isFree ? '#adc6ff' : '#4edea3';
-  const cardBorderCol = isFree ? '#adc6ff' : '#4edea3';
-  const checkBg  = isFree ? 'rgba(173,198,255,0.1)' : 'rgba(78,222,163,0.1)';
+  const features  = isFamily ? FAMILY_FEATURES : isIndivFree ? FREE_FEATURES : PREMIUM_FEATURES;
+  const planLabel = isFamily ? 'Family Plan' : isIndivFree ? 'Free Plan' : 'Professional Plan';
+  const accentCol = isFamily ? '#a78bfa' : isIndivFree ? '#adc6ff' : '#4edea3';
+  const checkBg   = isFamily ? 'rgba(167,139,250,0.1)' : isIndivFree ? 'rgba(173,198,255,0.1)' : 'rgba(78,222,163,0.1)';
 
-  const TABS = [
+  const INDIV_BILLING_OPTS = [
     { key: 'free',    label: 'Free' },
     { key: 'monthly', label: 'Monthly' },
-    { key: 'annual',  label: 'Annual', badge: 'Save 17%' },
+    { key: 'annual',  label: 'Annual', badge: '-17%', badgeColor: '#ff4d4d', badgeText: '#ffffff' },
+  ];
+
+  const FAMILY_BILLING_OPTS = [
+    { key: 'monthly', label: 'Monthly' },
+    { key: 'annual',  label: 'Annual', badge: '-27%', badgeColor: '#ff4d4d', badgeText: '#ffffff' },
   ];
 
   return (
@@ -117,7 +158,7 @@ export default function MobileUpgradePage() {
           </p>
         </section>
 
-        {/* Billing Toggle */}
+        {/* Plan type toggle — Individual / Family */}
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
           <div style={{
             display: 'flex', gap: '4px', padding: '6px',
@@ -125,58 +166,25 @@ export default function MobileUpgradePage() {
             border: '1px solid rgba(60,74,66,0.1)',
             width: '100%',
           }}>
-            {TABS.map(tab => {
+            {[
+              { key: 'individual', label: 'Individual', activeColor: '#4edea3', activeText: '#003824' },
+              { key: 'family',     label: 'Family',     activeColor: '#a78bfa', activeText: '#1a0a2e' },
+            ].map(tab => {
               const active = plan === tab.key;
-              const isAnnualTab = tab.key === 'annual';
-
-              const btn = (
+              return (
                 <button
                   key={tab.key}
                   onClick={() => setPlan(tab.key)}
                   style={{
-                    width: '100%', height: '100%',
-                    padding: '8px 4px',
-                    borderRadius: '10px',
-                    border: 'none',
-                    cursor: 'pointer',
-                    background: active ? (isAnnualTab ? '#4edea3' : '#171f33') : 'transparent',
-                    color: active ? (isAnnualTab ? '#003824' : '#dae2fd') : '#bbcabf',
-                    fontWeight: active ? 700 : 600,
-                    fontSize: '13px',
+                    flex: 1, padding: '10px 4px', borderRadius: '10px', border: 'none',
+                    cursor: 'pointer', fontSize: '13px', fontWeight: active ? 700 : 600,
+                    background: active ? tab.activeColor : 'transparent',
+                    color: active ? tab.activeText : '#bbcabf',
                     transition: 'all 0.2s',
                   }}
                 >
                   {tab.label}
                 </button>
-              );
-
-              if (!isAnnualTab) {
-                return <div key={tab.key} style={{ flex: 1 }}>{btn}</div>;
-              }
-
-              // Annual tab — wrap in relative/overflow-hidden container for corner ribbon
-              return (
-                <div key={tab.key} style={{ flex: 1, position: 'relative', overflow: 'hidden', borderRadius: '10px' }}>
-                  {btn}
-                  <span style={{
-                    position: 'absolute',
-                    top: '7px',
-                    right: '-16px',
-                    width: '64px',
-                    background: '#4edea3',
-                    color: '#003824',
-                    fontSize: '7px',
-                    fontWeight: 800,
-                    letterSpacing: '0.06em',
-                    textTransform: 'uppercase',
-                    textAlign: 'center',
-                    padding: '2px 0',
-                    transform: 'rotate(45deg)',
-                    pointerEvents: 'none',
-                  }}>
-                    17%
-                  </span>
-                </div>
               );
             })}
           </div>
@@ -186,16 +194,16 @@ export default function MobileUpgradePage() {
         <div style={{
           background: '#171f33', borderRadius: '20px',
           padding: '28px', marginBottom: '16px',
-          borderTop: `4px solid ${cardBorderCol}`,
+          borderTop: `4px solid ${accentCol}`,
           position: 'relative', overflow: 'hidden',
-          boxShadow: `0 0 40px ${isFree ? 'rgba(173,198,255,0.08)' : 'rgba(78,222,163,0.12)'}`,
+          boxShadow: `0 0 40px ${isFamily ? 'rgba(167,139,250,0.12)' : isIndivFree ? 'rgba(173,198,255,0.08)' : 'rgba(78,222,163,0.12)'}`,
         }}>
           <div style={{
             position: 'absolute', top: 0, right: 0, padding: '20px',
             opacity: 0.08, pointerEvents: 'none',
           }}>
             <span className="material-symbols-outlined" style={{ fontSize: '80px', color: accentCol }}>
-              {isFree ? 'lock_open' : 'diamond'}
+              {isFamily ? 'family_restroom' : isIndivFree ? 'lock_open' : 'diamond'}
             </span>
           </div>
 
@@ -212,6 +220,49 @@ export default function MobileUpgradePage() {
               )}
             </div>
             <p style={{ fontSize: '13px', color: '#bbcabf', margin: '0 0 24px' }}>{subLabel}</p>
+
+            {/* Billing frequency toggle */}
+            <div style={{
+              display: 'flex', gap: '4px', padding: '4px',
+              background: '#0b1326', borderRadius: '10px',
+              marginBottom: '24px',
+            }}>
+              {(isFamily ? FAMILY_BILLING_OPTS : INDIV_BILLING_OPTS).map(opt => {
+                const currentBilling = isFamily ? familyBilling : individualBilling;
+                const active = currentBilling === opt.key;
+                const btn = (
+                  <button
+                    key={opt.key}
+                    onClick={() => isFamily ? setFamilyBilling(opt.key) : setIndivBilling(opt.key)}
+                    style={{
+                      width: '100%', height: '100%', padding: '7px 8px',
+                      borderRadius: '7px', border: 'none',
+                      cursor: 'pointer', fontSize: '12px', fontWeight: active ? 700 : 500,
+                      background: active ? accentCol : 'transparent',
+                      color: active ? (isFamily ? '#1a0a2e' : '#003824') : '#bbcabf',
+                      transition: 'all 0.2s',
+                    }}
+                  >
+                    {opt.label}
+                  </button>
+                );
+                if (!opt.badge) return <div key={opt.key} style={{ flex: 1 }}>{btn}</div>;
+                return (
+                  <div key={opt.key} style={{ flex: 1, position: 'relative', overflow: 'hidden', borderRadius: '7px' }}>
+                    {btn}
+                    <span style={{
+                      position: 'absolute', top: '6px', right: '-15px', width: '58px',
+                      background: opt.badgeColor, color: opt.badgeText,
+                      fontSize: '7px', fontWeight: 800, letterSpacing: '0.06em',
+                      textTransform: 'uppercase', textAlign: 'center',
+                      padding: '2px 0', transform: 'rotate(45deg)', pointerEvents: 'none',
+                    }}>
+                      {opt.badge}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
 
             {/* Features */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '28px' }}>
@@ -232,7 +283,7 @@ export default function MobileUpgradePage() {
               ))}
             </div>
 
-            {isFree ? (
+            {isIndivFree ? (
               <button style={{
                 width: '100%',
                 background: 'rgba(173,198,255,0.08)', color: '#adc6ff',
@@ -245,17 +296,17 @@ export default function MobileUpgradePage() {
             ) : (
               <button style={{
                 width: '100%',
-                background: '#4edea3', color: '#003824',
+                background: accentCol, color: isFamily ? '#1a0a2e' : '#003824',
                 border: 'none', borderRadius: '14px',
                 padding: '18px', fontFamily: 'Manrope, sans-serif',
                 fontWeight: 800, fontSize: '16px', cursor: 'pointer',
-                boxShadow: '0 4px 20px rgba(78,222,163,0.25)',
+                boxShadow: `0 4px 20px ${isFamily ? 'rgba(167,139,250,0.25)' : 'rgba(78,222,163,0.25)'}`,
               }}>
                 Start 7-Day Free Trial
               </button>
             )}
             <p style={{ textAlign: 'center', fontSize: '11px', color: '#bbcabf', margin: '10px 0 0' }}>
-              {isFree ? 'Upgrade anytime to unlock premium features.' : 'No commitment. Cancel anytime before trial ends.'}
+              {isIndivFree ? 'Upgrade anytime to unlock premium features.' : isFamily ? 'All family members included. Cancel anytime before trial ends.' : 'No commitment. Cancel anytime before trial ends.'}
             </p>
           </div>
         </div>

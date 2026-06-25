@@ -10,6 +10,7 @@ import MobileSettingsPage  from './settings/MobileSettingsPage';
 import EditProfilePage     from './settings/EditProfilePage';
 import ReportProblemPage   from './settings/ReportProblemPage';
 import MobileUpgradePage   from './upgrade/MobileUpgradePage';
+import FamilyApp           from './family/FamilyApp';
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -57,6 +58,9 @@ export default function MobileApp() {
 
       {/* Income section — owns all /mobile/income/* routes */}
       <Route path="income/*" element={<IncomeApp />} />
+
+      {/* Family section — owns all /mobile/family/* routes */}
+      <Route path="family/*" element={<FamilyApp />} />
 
       {/* Settings & Upgrade */}
       <Route path="settings"                  element={<MobileSettingsPage />} />

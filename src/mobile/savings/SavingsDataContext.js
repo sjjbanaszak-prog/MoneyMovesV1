@@ -169,7 +169,7 @@ function getCreditTransactions(account) {
 // ---- Compute derived metrics ----
 function computeMetrics(accounts) {
   if (!accounts || accounts.length === 0) {
-    return { totalBalance: 0, isaBalance: 0, nonIsaBalance: 0, currentFYIsaDeposits: 0, totalDeposited: 0, totalGrowth: 0, growthPct: 0, isaAllowance: 20000 };
+    return { totalBalance: 0, isaBalance: 0, nonIsaBalance: 0, currentFYIsaDeposits: 0, currentFYLisaDeposits: 0, premiumBondsBalance: 0, hasLisa: false, totalDeposited: 0, totalGrowth: 0, growthPct: 0, isaAllowance: 20000 };
   }
 
   const totalBalance = accounts.reduce((s, a) => s + deriveCurrentBalance(a), 0);
@@ -250,6 +250,59 @@ function computeMetrics(accounts) {
     });
   });
 
+  // LISA-specific deposits in current tax year
+  const lisaAccounts = accounts.filter(a => {
+    const t = (a.accountType || '').toLowerCase();
+    return t.includes('lisa') || t.includes('lifetime');
+  });
+  let currentFYLisaDeposits = 0;
+  lisaAccounts.forEach(account => {
+    const { rawData = [], mapping = {}, dateFormat } = account;
+    rawData.forEach(row => {
+      if (!mapping.date) return;
+      const dateValue = row[mapping.date];
+      if (!dateValue) return;
+      const txDate = dateFormat
+        ? dayjs(String(dateValue), dateFormat, true)
+        : dayjs(String(dateValue));
+      if (!txDate.isValid()) return;
+      if (!txDate.isSameOrAfter(taxYearStart) || !txDate.isSameOrBefore(taxYearEnd)) return;
+      const desc = mapping.description
+        ? String(row[mapping.description] || '').toLowerCase()
+        : '';
+      const isInterest = desc.includes('interest') || /\bint\b/.test(desc);
+      const isDividend = desc.includes('dividend');
+      const isTransfer = desc.includes('transfer');
+      const isBonus    = desc.includes('bonus');
+      if (isInterest || isDividend || isTransfer || isBonus) return;
+      let credit = 0;
+      if (mapping.credit) {
+        credit = parseAmount(row[mapping.credit]);
+      } else if (mapping.amount) {
+        const amt = parseAmount(row[mapping.amount]);
+        if (amt > 0) credit = amt;
+      }
+      if (credit > 0) currentFYLisaDeposits += credit;
+    });
+    (account.manualTransactions || []).forEach(tx => {
+      if (tx.direction !== 'credit') return;
+      if (tx.type === 'interest' || tx.type === 'transfer_in') return;
+      if (!tx.date) return;
+      const txDate = dayjs(tx.date);
+      if (!txDate.isValid()) return;
+      if (!txDate.isSameOrAfter(taxYearStart) || !txDate.isSameOrBefore(taxYearEnd)) return;
+      currentFYLisaDeposits += tx.amount;
+    });
+  });
+
+  // Premium Bonds balance
+  const pbAccounts = accounts.filter(a =>
+    (a.accountType || '').toLowerCase().includes('premium bond')
+  );
+  const premiumBondsBalance = Math.round(
+    pbAccounts.reduce((s, a) => s + deriveCurrentBalance(a), 0)
+  );
+
   return {
     totalBalance: Math.round(totalBalance),
     isaBalance: Math.round(isaBalance),
@@ -258,6 +311,9 @@ function computeMetrics(accounts) {
     totalGrowth,
     growthPct,
     currentFYIsaDeposits: Math.round(currentFYIsaDeposits),
+    currentFYLisaDeposits: Math.round(currentFYLisaDeposits),
+    premiumBondsBalance,
+    hasLisa: lisaAccounts.length > 0,
     isaAllowance: 20000,
   };
 }
