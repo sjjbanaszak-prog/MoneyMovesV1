@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useParams, Navigate, Link, useNavigate } from 'react-router-dom';
 import { useMortgageData } from '../MortgageDataContext';
 import MortgageDetailLayout from '../MortgageDetailLayout';
+import { lookupPropertyValue } from '../utils/propertyLookup';
 
 // ---- Helpers ----
 function fmt(n) {
@@ -488,6 +489,24 @@ export default function MortgageDetail() {
   function savePurchasePrice(v)      { updateMortgage(Number(idx), { purchasePrice: v }); }
   function savePostcode(v)           { updateMortgage(Number(idx), { postcode: v }); }
 
+  // Land Registry refresh
+  const [lrRefreshing, setLrRefreshing] = useState(false);
+  const [lrRefreshResult, setLrRefreshResult] = useState(null);
+
+  async function handleLRRefresh() {
+    if (!mortgage.name || !mortgage.postcode) return;
+    setLrRefreshing(true);
+    setLrRefreshResult(null);
+    const result = await lookupPropertyValue(mortgage.name, mortgage.postcode);
+    setLrRefreshResult(result);
+    setLrRefreshing(false);
+  }
+
+  function applyLRRefresh(value) {
+    savePropertyValue(value);
+    setLrRefreshResult(null);
+  }
+
   const [isEditingDetails, setIsEditingDetails] = useState(false);
   const [editPostcode, setEditPostcode]         = useState('');
 
@@ -576,6 +595,94 @@ export default function MortgageDetail() {
                 onSave={saveOutstandingBalance}
               />
             </div>
+
+            {/* Land Registry refresh */}
+            {mortgage.name && mortgage.postcode && (
+              <div style={{ marginTop: '12px' }}>
+                {!lrRefreshResult && (
+                  <button
+                    type="button"
+                    onClick={handleLRRefresh}
+                    disabled={lrRefreshing}
+                    style={{
+                      width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      gap: '6px', padding: '8px 12px',
+                      background: 'rgba(173,198,255,0.05)',
+                      border: '1px dashed rgba(173,198,255,0.2)',
+                      borderRadius: '8px', cursor: lrRefreshing ? 'default' : 'pointer',
+                      color: '#64748b', fontSize: '12px', fontWeight: 600,
+                    }}
+                  >
+                    <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>
+                      {lrRefreshing ? 'hourglass_empty' : 'refresh'}
+                    </span>
+                    {lrRefreshing ? 'Looking up Land Registry…' : 'Refresh value from Land Registry'}
+                  </button>
+                )}
+
+                {lrRefreshResult && !lrRefreshResult.error && (
+                  <div style={{
+                    background: 'rgba(78,222,163,0.07)',
+                    border: '1px solid rgba(78,222,163,0.2)',
+                    borderRadius: '10px', padding: '12px 14px',
+                  }}>
+                    <p style={{ fontSize: '11px', color: '#4edea3', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 8px' }}>
+                      Land Registry Estimate
+                    </p>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+                      <div>
+                        <p style={{ fontSize: '11px', color: '#adc6ff', margin: '0 0 2px' }}>Last sold</p>
+                        <p style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 800, fontSize: '15px', color: '#dae2fd', margin: 0 }}>
+                          £{lrRefreshResult.lastSalePrice.toLocaleString('en-GB')}
+                        </p>
+                        <p style={{ fontSize: '11px', color: '#64748b', margin: '2px 0 0' }}>{lrRefreshResult.lastSaleDateFormatted}</p>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <p style={{ fontSize: '11px', color: '#adc6ff', margin: '0 0 2px' }}>Estimated today</p>
+                        <p style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 800, fontSize: '15px', color: '#4edea3', margin: 0 }}>
+                          ~£{lrRefreshResult.estimatedValue.toLocaleString('en-GB')}
+                        </p>
+                        <p style={{ fontSize: '11px', color: '#64748b', margin: '2px 0 0' }}>{lrRefreshResult.regionName}</p>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button
+                        type="button"
+                        onClick={() => applyLRRefresh(lrRefreshResult.estimatedValue)}
+                        style={{
+                          flex: 1, padding: '7px', background: '#4edea3', color: '#003824',
+                          border: 'none', borderRadius: '7px', fontSize: '12px', fontWeight: 700, cursor: 'pointer',
+                        }}
+                      >
+                        Update
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setLrRefreshResult(null)}
+                        style={{
+                          padding: '7px 12px', background: 'rgba(173,198,255,0.1)', color: '#adc6ff',
+                          border: '1px solid rgba(173,198,255,0.2)', borderRadius: '7px',
+                          fontSize: '12px', fontWeight: 700, cursor: 'pointer',
+                        }}
+                      >
+                        Dismiss
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {lrRefreshResult?.error && (
+                  <div style={{
+                    display: 'flex', alignItems: 'flex-start', gap: '8px', padding: '10px 12px',
+                    background: 'rgba(255,107,107,0.06)', border: '1px solid rgba(255,107,107,0.2)',
+                    borderRadius: '8px',
+                  }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: '14px', color: '#ff6b6b', flexShrink: 0, marginTop: '1px' }}>error_outline</span>
+                    <p style={{ fontSize: '12px', color: '#ff6b6b', margin: 0, lineHeight: 1.5 }}>{lrRefreshResult.error}</p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 

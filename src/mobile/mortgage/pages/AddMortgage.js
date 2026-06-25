@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMortgageData } from '../MortgageDataContext';
 import MortgageDetailLayout from '../MortgageDetailLayout';
+import { lookupPropertyValue } from '../utils/propertyLookup';
 
 const MORTGAGE_TYPES = [
   { value: 'Residential',      label: 'Residential' },
@@ -119,6 +120,27 @@ export default function AddMortgage() {
 
   const [isSaving, setIsSaving] = useState(false);
 
+  // Land Registry lookup
+  const [lrLooking,  setLrLooking]  = useState(false);
+  const [lrResult,   setLrResult]   = useState(null);  // { lastSalePrice, lastSaleDateFormatted, estimatedValue, regionName } | { error }
+  const [lrDismissed, setLrDismissed] = useState(false);
+
+  const canLookup = name.trim().length >= 3 && postcode.trim().length >= 5;
+
+  async function handleLookup() {
+    setLrLooking(true);
+    setLrResult(null);
+    setLrDismissed(false);
+    const result = await lookupPropertyValue(name.trim(), postcode.trim());
+    setLrResult(result);
+    setLrLooking(false);
+  }
+
+  function applyLRValue(value) {
+    setPurchasePrice(String(value));
+    setLrDismissed(true);
+  }
+
   const canSubmit = name.trim().length > 0 && lender.trim().length > 0 && !isSaving;
 
   // Derived preview values
@@ -180,7 +202,7 @@ export default function AddMortgage() {
               className="input-field"
               placeholder="e.g. 12 Oak Street"
               value={name}
-              onChange={e => setName(e.target.value)}
+              onChange={e => { setName(e.target.value); setLrResult(null); setLrDismissed(false); }}
             />
           </Field>
 
@@ -190,10 +212,118 @@ export default function AddMortgage() {
               className="input-field"
               placeholder="e.g. SW1A 2AA"
               value={postcode}
-              onChange={e => setPostcode(e.target.value.toUpperCase())}
+              onChange={e => { setPostcode(e.target.value.toUpperCase()); setLrResult(null); setLrDismissed(false); }}
               maxLength={8}
             />
           </Field>
+
+          {/* Land Registry lookup */}
+          {canLookup && !lrDismissed && (
+            <div style={{ marginBottom: '16px' }}>
+              {!lrResult && (
+                <button
+                  type="button"
+                  onClick={handleLookup}
+                  disabled={lrLooking}
+                  style={{
+                    width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    gap: '6px', padding: '10px 14px',
+                    background: 'rgba(173,198,255,0.06)',
+                    border: '1px dashed rgba(173,198,255,0.25)',
+                    borderRadius: '10px', cursor: lrLooking ? 'default' : 'pointer',
+                    color: '#adc6ff', fontSize: '13px', fontWeight: 600,
+                    transition: 'background 0.15s',
+                  }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
+                    {lrLooking ? 'hourglass_empty' : 'search'}
+                  </span>
+                  {lrLooking ? 'Looking up Land Registry…' : 'Look up current value estimate'}
+                </button>
+              )}
+
+              {lrResult && !lrResult.error && (
+                <div style={{
+                  background: 'rgba(78,222,163,0.07)',
+                  border: '1px solid rgba(78,222,163,0.2)',
+                  borderRadius: '12px', padding: '14px 16px',
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span className="material-symbols-outlined" style={{ fontSize: '16px', color: '#4edea3' }}>home_work</span>
+                      <span style={{ fontSize: '12px', fontWeight: 700, color: '#4edea3', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                        Land Registry Estimate
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setLrDismissed(true)}
+                      style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: '0', lineHeight: 1 }}
+                    >
+                      <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>close</span>
+                    </button>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                    <div>
+                      <p style={{ fontSize: '11px', color: '#adc6ff', margin: '0 0 2px' }}>Last sold</p>
+                      <p style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 800, fontSize: '16px', color: '#dae2fd', margin: 0 }}>
+                        £{lrResult.lastSalePrice.toLocaleString('en-GB')}
+                      </p>
+                      <p style={{ fontSize: '11px', color: '#64748b', margin: '2px 0 0' }}>{lrResult.lastSaleDateFormatted}</p>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <p style={{ fontSize: '11px', color: '#adc6ff', margin: '0 0 2px' }}>Estimated today</p>
+                      <p style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 800, fontSize: '16px', color: '#4edea3', margin: 0 }}>
+                        ~£{lrResult.estimatedValue.toLocaleString('en-GB')}
+                      </p>
+                      <p style={{ fontSize: '11px', color: '#64748b', margin: '2px 0 0' }}>{lrResult.regionName}</p>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button
+                      type="button"
+                      onClick={() => applyLRValue(lrResult.estimatedValue)}
+                      style={{
+                        flex: 1, padding: '8px', background: '#4edea3', color: '#003824',
+                        border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 700,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Use ~£{Math.round(lrResult.estimatedValue / 1000)}k estimate
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => applyLRValue(lrResult.lastSalePrice)}
+                      style={{
+                        flex: 1, padding: '8px',
+                        background: 'rgba(173,198,255,0.1)', color: '#adc6ff',
+                        border: '1px solid rgba(173,198,255,0.2)',
+                        borderRadius: '8px', fontSize: '12px', fontWeight: 700,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Use last sale £{Math.round(lrResult.lastSalePrice / 1000)}k
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {lrResult?.error && (
+                <div style={{
+                  display: 'flex', alignItems: 'flex-start', gap: '8px',
+                  padding: '10px 14px',
+                  background: 'rgba(255,107,107,0.06)',
+                  border: '1px solid rgba(255,107,107,0.2)',
+                  borderRadius: '10px',
+                }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '16px', color: '#ff6b6b', flexShrink: 0, marginTop: '1px' }}>error_outline</span>
+                  <p style={{ fontSize: '12px', color: '#ff6b6b', margin: 0, lineHeight: 1.5 }}>{lrResult.error}</p>
+                </div>
+              )}
+            </div>
+          )}
 
           <Field label="Mortgage Type">
             <select

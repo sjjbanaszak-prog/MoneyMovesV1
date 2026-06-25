@@ -5,6 +5,71 @@ import PremiumGate from '../../components/PremiumGate';
 
 const COLOR_PALETTE = ['#4edea3', '#adc6ff', '#ffb95f', '#f472b6', '#a78bfa', '#38bdf8'];
 
+// Interpolates amber → green → red based on allowance % used.
+// 0–60 %: #ffb95f (amber) → #4edea3 (green)
+// 60–99 %: #4edea3 (green) → near-red
+// 100 %+: #ff6b6b (red)
+function allowanceColor(pct) {
+  if (pct >= 100) return '#ff6b6b';
+  if (pct <= 60) {
+    const t = pct / 60;
+    return `rgb(${Math.round(255 + (78  - 255) * t)},${Math.round(185 + (222 - 185) * t)},${Math.round(95  + (163 - 95)  * t)})`;
+  }
+  const t = (pct - 60) / 39;
+  return `rgb(${Math.round(78  + (255 - 78)  * t)},${Math.round(222 + (107 - 222) * t)},${Math.round(163 + (107 - 163) * t)})`;
+}
+
+function cfLabel(amount, prefix) {
+  if (!amount) return null;
+  const val = amount >= 1000 ? `£${Math.round(amount / 1000)}k` : `£${amount.toLocaleString('en-GB')}`;
+  return `${prefix}${val} CF`;
+}
+
+// Single allowance year row — bar with carry-forward pills in the header.
+// +£Xk CF  = this year drew carry forward from prior years  (purple)
+// →£Xk CF  = this year's unused allowance was used by a future year  (muted teal)
+function AllowanceRow({ yr }) {
+  const usedLabel     = cfLabel(yr.carryForwardUsed,     '+');
+  const providedLabel = cfLabel(yr.carryForwardProvided, '→');
+
+  return (
+    <div style={{ marginBottom: '16px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+          <p style={{ fontSize: '13px', color: '#dae2fd', fontWeight: 600, margin: 0 }}>{yr.fy}</p>
+          {usedLabel && (
+            <span style={{
+              fontSize: '10px', fontWeight: 700, color: '#a78bfa',
+              background: 'rgba(167,139,250,0.12)', border: '1px solid rgba(167,139,250,0.25)',
+              borderRadius: '4px', padding: '1px 5px', lineHeight: '16px',
+            }}>
+              {usedLabel}
+            </span>
+          )}
+          {providedLabel && (
+            <span style={{
+              fontSize: '10px', fontWeight: 700, color: '#4edea3',
+              background: 'rgba(78,222,163,0.08)', border: '1px solid rgba(78,222,163,0.2)',
+              borderRadius: '4px', padding: '1px 5px', lineHeight: '16px',
+            }}>
+              {providedLabel}
+            </span>
+          )}
+        </div>
+        <p style={{ fontSize: '12px', color: '#bbcabf', margin: 0 }}>
+          £{yr.used.toLocaleString('en-GB')} / £{yr.limit.toLocaleString('en-GB')}
+        </p>
+      </div>
+      <div style={{ background: 'rgba(173,198,255,0.08)', borderRadius: '4px', height: '6px', overflow: 'hidden' }}>
+        <div style={{
+          width: `${yr.pct}%`, height: '100%', borderRadius: '4px',
+          background: yr.color, transition: 'width 0.5s ease',
+        }} />
+      </div>
+    </div>
+  );
+}
+
 function fmtK(n) {
   if (!n) return '£0';
   if (n >= 1000000) return `£${(n / 1000000).toFixed(1)}m`;
@@ -205,6 +270,7 @@ function DualLineChart({ valueSeries, contribSeries, labels }) {
 export default function PensionInsights() {
   const { entries, metrics } = usePensionData();
   const [timeframe, setTimeframe] = useState('12M');
+  const [showAllAllowance, setShowAllAllowance] = useState(false);
 
   const providers = useMemo(() => {
     const total = metrics.totalValue || 0;
@@ -337,8 +403,8 @@ export default function PensionInsights() {
     };
   }, [dualChartData, timeframe]);
 
-  // Allowance utilisation grouped by UK tax year
-  const allowanceYears = useMemo(() => {
+  // Allowance utilisation grouped by UK tax year, with FIFO carry-forward calculation.
+  const allAllowanceYears = useMemo(() => {
     const yearTotals = {};
     entries.forEach(entry => {
       (entry.paymentHistory || []).forEach(p => {
@@ -348,24 +414,75 @@ export default function PensionInsights() {
       });
     });
 
-    const COLORS = ['#4edea3', '#ffb95f', '#adc6ff'];
-    return Object.keys(yearTotals)
-      .map(Number)
+    const sortedFYs = Object.keys(yearTotals).map(Number).sort((a, b) => a - b);
+
+    // Per-year carry-forward used, keyed by fy integer.
+    // Must be computed oldest-first so intermediate-year consumption can be tracked.
+    const cfUsed = {}; // { fy: [{ fromFY, amount }] }
+    sortedFYs.forEach((fy, idx) => {
+      const used      = yearTotals[fy];
+      const allowance = fy >= 2023 ? 60000 : 40000;
+      if (used <= allowance) { cfUsed[fy] = []; return; }
+
+      let excess  = used - allowance;
+      const sources = [];
+
+      // FIFO: oldest eligible year first (up to 3 years back)
+      for (let i = Math.min(3, idx); i >= 1 && excess > 0; i--) {
+        const pastFY        = sortedFYs[idx - i];
+        const pastAllowance = pastFY >= 2023 ? 60000 : 40000;
+        let   pastUnused    = Math.max(0, pastAllowance - (yearTotals[pastFY] || 0));
+
+        // Deduct what intermediate years already drew from this past year
+        for (let j = idx - i + 1; j < idx; j++) {
+          const intermFY = sortedFYs[j];
+          (cfUsed[intermFY] || []).forEach(src => {
+            if (src.fromFY === pastFY) pastUnused = Math.max(0, pastUnused - src.amount);
+          });
+        }
+
+        const take = Math.min(excess, pastUnused);
+        if (take > 0) { sources.push({ fromFY: pastFY, amount: take }); excess -= take; }
+      }
+
+      cfUsed[fy] = sources;
+    });
+
+    // How much each year provided to future years
+    const cfProvided = {};
+    sortedFYs.forEach(fy => { cfProvided[fy] = 0; });
+    sortedFYs.forEach(fy => {
+      (cfUsed[fy] || []).forEach(src => {
+        cfProvided[src.fromFY] = (cfProvided[src.fromFY] || 0) + src.amount;
+      });
+    });
+
+    return sortedFYs
+      .slice()
       .sort((a, b) => b - a)
-      .slice(0, 4)
-      .map((fy, i) => {
-        const limit = fy >= 2023 ? 60000 : 40000;
-        const used  = yearTotals[fy] || 0;
-        const pct   = Math.min(100, Math.round((used / limit) * 100));
+      .map((fy) => {
+        const limit    = fy >= 2023 ? 60000 : 40000;
+        const used     = yearTotals[fy] || 0;
+        const pct      = Math.min(100, Math.round((used / limit) * 100));
+        const sources  = cfUsed[fy] || [];
+        const cfTotal  = sources.reduce((s, src) => s + src.amount, 0);
         return {
-          fy: taxYearLabel(fy),
+          fy:    taxYearLabel(fy),
           used,
           limit,
           pct,
-          color: pct >= 100 ? '#ff6b6b' : COLORS[i % COLORS.length],
+          color: allowanceColor(pct),
+          carryForwardUsed:     cfTotal,
+          carryForwardProvided: cfProvided[fy] || 0,
+          carryForwardSources:  sources.map(src => ({
+            fromLabel: taxYearLabel(src.fromFY),
+            amount:    src.amount,
+          })),
         };
       });
   }, [entries]);
+
+  const allowanceYears = allAllowanceYears.slice(0, 4);
 
   return (
     <PensionLayout>
@@ -463,30 +580,78 @@ export default function PensionInsights() {
 
         {/* Allowance Utilisation */}
         <div className="animate-in stagger-3 section-card" style={{ margin: '0 16px 24px' }}>
-          <h3 style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 800, fontSize: '16px', color: '#dae2fd', margin: '0 0 16px' }}>
-            Allowance Utilisation
-          </h3>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <h3 style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 800, fontSize: '16px', color: '#dae2fd', margin: 0 }}>
+              Allowance Utilisation
+            </h3>
+            {allAllowanceYears.length > 4 && (
+              <button
+                onClick={() => setShowAllAllowance(true)}
+                style={{ background: 'none', border: 'none', color: '#adc6ff', fontSize: '12px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+              >
+                View All
+                <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>arrow_forward</span>
+              </button>
+            )}
+          </div>
           {allowanceYears.length === 0 ? (
             <p style={{ fontSize: '13px', color: '#64748b', textAlign: 'center', padding: '8px 0', margin: 0 }}>
               No contribution history found
             </p>
           ) : allowanceYears.map(yr => (
-            <div key={yr.fy} style={{ marginBottom: '16px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-                <p style={{ fontSize: '13px', color: '#dae2fd', fontWeight: 600, margin: 0 }}>{yr.fy}</p>
-                <p style={{ fontSize: '12px', color: '#bbcabf', margin: 0 }}>
-                  £{yr.used.toLocaleString('en-GB')} / £{yr.limit.toLocaleString('en-GB')}
-                </p>
-              </div>
-              <div style={{ background: 'rgba(173,198,255,0.08)', borderRadius: '4px', height: '6px', overflow: 'hidden' }}>
-                <div style={{
-                  width: `${yr.pct}%`, height: '100%', borderRadius: '4px',
-                  background: yr.color, transition: 'width 0.5s ease',
-                }} />
-              </div>
-            </div>
+            <AllowanceRow key={yr.fy} yr={yr} />
           ))}
         </div>
+
+        {/* Allowance Utilisation — full history modal */}
+        {showAllAllowance && (
+          <div
+            onClick={() => setShowAllAllowance(false)}
+            style={{
+              position: 'fixed', inset: 0, zIndex: 200,
+              background: 'rgba(0,0,0,0.6)',
+              display: 'flex', alignItems: 'flex-end',
+            }}
+          >
+            <div
+              onClick={e => e.stopPropagation()}
+              style={{
+                width: '100%',
+                maxHeight: '80vh',
+                background: '#111827',
+                borderRadius: '20px 20px 0 0',
+                border: '1px solid rgba(173,198,255,0.1)',
+                display: 'flex',
+                flexDirection: 'column',
+              }}
+            >
+              {/* Modal header */}
+              <div style={{
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                padding: '20px 20px 16px',
+                borderBottom: '1px solid rgba(173,198,255,0.08)',
+                flexShrink: 0,
+              }}>
+                <h3 style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 800, fontSize: '16px', color: '#dae2fd', margin: 0 }}>
+                  Allowance Utilisation
+                </h3>
+                <button
+                  onClick={() => setShowAllAllowance(false)}
+                  style={{ background: 'none', border: 'none', color: '#adc6ff', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: 0 }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '22px' }}>close</span>
+                </button>
+              </div>
+
+              {/* Scrollable year list */}
+              <div style={{ overflowY: 'auto', padding: '16px 20px 32px' }}>
+                {allAllowanceYears.map(yr => (
+                  <AllowanceRow key={yr.fy} yr={yr} />
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
       </div>
       </PremiumGate>

@@ -86,7 +86,15 @@ export default function MobileNavDrawer() {
               background: 'none', border: 'none', padding: '8px',
               cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
-              <span className="material-symbols-outlined" style={{ fontSize: '24px', color: '#4edea3' }}>account_circle</span>
+              {currentUser?.photoURL ? (
+                <img
+                  src={currentUser.photoURL}
+                  alt="Profile"
+                  style={{ width: '24px', height: '24px', borderRadius: '50%', objectFit: 'cover' }}
+                />
+              ) : (
+                <span className="material-symbols-outlined" style={{ fontSize: '24px', color: '#4edea3' }}>account_circle</span>
+              )}
             </button>
           </Link>
         </div>
@@ -155,7 +163,7 @@ export default function MobileNavDrawer() {
           </div>
           <div style={{ minWidth: 0 }}>
             <p style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 900, fontSize: '16px', color: '#4edea3', margin: '0 0 1px' }}>
-              MoneyMoves
+              {currentUser?.displayName?.split(' ')[0] || 'MoneyMoves'}
             </p>
             <p style={{
               fontSize: '12px', color: '#adc6ff', margin: '0 0 2px',

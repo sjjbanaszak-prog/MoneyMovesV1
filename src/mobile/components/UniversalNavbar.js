@@ -27,7 +27,8 @@ const SECTIONS = ['pension', 'mortgage', 'savings', 'income'];
 // Segments enabled per section. Omitting a section means all tabs are enabled.
 // Segments listed here are navigable; all others are greyed-out and non-clickable.
 const ENABLED_SEGMENTS = {
-  income: ['', '/calculator'],
+  income:  ['', '/calculator'],
+  savings: [''],
 };
 
 export default function UniversalNavbar() {
