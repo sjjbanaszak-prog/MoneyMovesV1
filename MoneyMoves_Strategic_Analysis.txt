@@ -1,0 +1,401 @@
+MoneyMoves — Strategic Analysis
+Generated: June 2026
+================================================================================
+
+
+SECTION-BY-SECTION SWOT
+================================================================================
+
+
+PENSION
+-------
+
+Strengths
+- HMRC carry-forward calculations (FIFO, 3-year lookback) are genuinely rare in
+  consumer apps — most tools only show current-year usage
+- Salary sacrifice vs personal contribution comparison with real 20%/40%/45% tax
+  relief is more accurate than most calculators
+- IRR per provider from uploaded statement data gives actual performance
+  benchmarking, not just balance growth
+- Multi-provider tracking with intelligent CSV/Excel column mapping lowers the
+  data entry barrier
+- Peer comparison creates emotional engagement
+
+Weaknesses
+- No State Pension integration — a significant gap given the State Pension is
+  most users' largest single retirement asset
+- No defined benefit / final salary pension support — a large portion of the UK
+  workforce is excluded
+- CSV upload only; no connection to PensionDashboard.gov.uk or the Pension
+  Finder Service
+- Peer comparison data is static/synthetic, which users will eventually see through
+
+Opportunities
+- Pension Finder Service / MaPS API — when it goes live, early integration is a
+  genuine differentiator
+- State Pension forecast input (NI years + expected retirement date) — high
+  value, medium effort
+- Defined benefit modelling (accrual rate, normal pension age, commutation) —
+  opens up a large user segment
+
+Threats
+- PensionBee, Nutmeg, and Moneybox offer managed pension products with built-in
+  dashboards — lower friction than upload-based tracking
+- DWP "Check Your State Pension" is free and authoritative
+- The pension dashboard ecosystem (when mature) may make standalone trackers
+  redundant
+
+
+MORTGAGE
+--------
+
+Strengths
+- The health score across 5 factors (LTV, payment consistency, rate security,
+  capital progress, property appreciation) is genuinely differentiated — no other
+  UK consumer app does this
+- Real Land Registry UKHPI data avoids the Zoopla/Rightmove credibility problem
+- Overpayment scenario modelling (regular + one-off, multiple frequencies) is
+  more capable than most bank calculators
+- Rate change modelling (initial fixed → SVR) correctly reflects how UK
+  mortgages actually work
+- Deal switch calculator shows real cost/benefit of switching vs staying
+
+Weaknesses
+- No live mortgage rate data — rates are manually entered, so "market
+  comparison" is impossible
+- No affordability calculator (what can I borrow?) — a top-of-funnel acquisition
+  tool that's entirely absent
+- Single mortgage only — portfolio landlords and let-to-buy setups are excluded
+- No remortgage reminder when the fixed term is approaching expiry — the most
+  valuable alert possible
+
+Opportunities
+- Live rate feeds via Moneyfacts or a broker API — transforms the section from
+  calculator to advisor
+- Remortgage expiry alert (push notification when within 6 months of reverting
+  to SVR)
+- Stamp duty / SDLT calculator (first-time buyer, second home, buy-to-let
+  scenarios)
+- Affordability calculator linked to the Income section
+
+Threats
+- Habito, Trussle, L&C Mortgages offer free comparisons plus broker service —
+  they monetise via lender referrals and can undercut on price
+- MortgageGym and Dashly do live rate tracking
+- Bank apps (HSBC, Nationwide) now show real-time mortgage balances and
+  remaining terms
+
+
+SAVINGS
+-------
+
+Strengths
+- ISA allowance tracking from real transaction data (not user-entered figures) is
+  more accurate than any competitor
+- Premium Bonds analysis is genuinely unique — no other UK consumer fintech
+  models this properly
+- LISA allowance tracking with government bonus calculation is niche but highly
+  valued by the under-40 segment
+- Intelligent column mapping for varied CSV formats reduces upload friction
+  significantly
+- Monthly balance change visualisation surfaces patterns users wouldn't otherwise
+  notice
+
+Weaknesses
+- CSV upload only — no Open Banking means manual re-upload every time data needs
+  refreshing
+- No savings goal setting (target amount, target date, monthly required
+  contribution) — the most obvious missing feature
+- No interest rate comparison or best-buy alerts — users can see their data but
+  can't act on it
+- No emergency fund benchmark ("your 3-month buffer target is £X, you're at Y%")
+
+Opportunities
+- Open Banking via TrueLayer or Plaid UK — transforms the section from periodic
+  snapshot to live dashboard
+- Savings goal tracking with progress bars and projected achievement dates —
+  medium effort, high engagement
+- Best-buy savings rate integration (Moneyfacts API) — "your Easy Access ISA
+  pays 1.8%, you could get 5.1%"
+- NS&I direct API for Premium Bonds balance — removes the need to upload for the
+  most unique feature
+
+Threats
+- Emma, Plum, Chip, and MoneyDashboard all have Open Banking and are free —
+  the upload workflow is a meaningful friction disadvantage
+- Monzo and Starling now show ISA contribution tracking natively within their apps
+
+
+INCOME
+------
+
+Strengths
+- Accurate UK 2025/26 tax and NI calculations including the correct thresholds
+- Take-home comparison view allows basic scenario modelling
+
+Weaknesses
+- This is the thinnest section in the app by a considerable margin — it is
+  essentially a take-home calculator with a nav item
+- No payslip import or verification — all figures are manually entered
+- No support for self-employment, freelance, dividends, or multiple income
+  sources
+- No salary benchmarking by role or region — the most valuable addition for
+  most users
+- Overlaps with the Pension Builder's income inputs, creating confusion about
+  where the "source of truth" lives
+
+Opportunities
+- Payslip PDF/CSV upload and parsing — would make this section genuinely useful
+  vs a web calculator
+- Salary benchmarking by job title and location (ONS ASHE data is publicly
+  available)
+- IR35 and inside/outside determination for contractors — a significant
+  underserved audience
+- Tax code checker and explanation — a meaningful number of UK workers are on
+  the wrong tax code
+
+Threats
+- HMRC's own tax calculator is free and authoritative
+- MoneySavingExpert's take-home calculator is trusted and well-known
+- Without significant investment, the Income section risks being perceived as a
+  feature rather than a section — it may not justify its nav real estate
+
+
+INVESTMENTS
+-----------
+
+Strengths
+- Trading 212 CSV parsing with treemap, monthly performance and IRR is more
+  capable than Trading 212's own analytics
+- Asset allocation treemap gives a visual breakdown most platforms don't offer
+- Monthly performance tracking is polished
+
+Weaknesses
+- Only supports Trading 212 — excludes users of Hargreaves Lansdown, AJ Bell,
+  Vanguard, Freetrade, Interactive Investor, Nutmeg, and every other UK platform.
+  This is the majority of UK retail investors
+- No real-time prices — all data is static from the last upload; portfolio value
+  is always stale
+- No benchmark comparison (vs FTSE 100, S&P 500, global index) — users cannot
+  assess their performance meaningfully
+- No capital gains tax calculation — critical since the CGT allowance dropped to
+  £3k in 2024/25
+- ISA vs non-ISA holdings are not differentiated — the tax implications are
+  entirely ignored
+
+Opportunities
+- Multi-broker CSV support (HL Flex, Vanguard, Freetrade all export parseable
+  CSVs)
+- CGT calculator and annual reporting — high value given the current £3k
+  allowance
+- Dividend income tracking and forecasting — popular with income investors
+- Real-time portfolio valuation via Yahoo Finance or OpenFIGI — free APIs
+  available
+
+Threats
+- Sharesight directly competes on multi-broker portfolio tracking and does it
+  comprehensively
+- HL, Vanguard, and AJ Bell are improving their own analytics dashboards
+- The Trading 212-only constraint means the section is invisible to the majority
+  of potential users
+
+
+FAMILY
+------
+
+Strengths
+- Combined household allowances (ISA + pension + JISA + Junior SIPP + Premium
+  Bonds) is genuinely unique in UK consumer fintech
+- Live sync from primary user's Savings and Pension sections means no data
+  re-entry — a UX detail competitors miss
+- Children's accounts at the correct JISA/Junior SIPP/Premium Bonds limits is
+  technically accurate
+- HICBC warning on Child Benefit is practically valuable and rarely surfaced
+  elsewhere
+- The read-only design for primary user data ("manage it from your own section")
+  is the right call
+
+Weaknesses
+- Partner data is entirely manually entered — there is no way for a partner to
+  create a linked account and share real data
+- No inheritance or estate planning angle — the natural extension of a family
+  finance section
+- The mixture of live-synced and manually-entered figures could confuse users
+  about what's current
+
+Opportunities
+- Partner account linking (invite by email, accept, share selected financial
+  data) — would make the Family section dramatically more powerful and justify
+  the premium plan price
+- Children's savings projection to age 18/21/25 — emotionally compelling, drives
+  engagement and upgrades
+- Inheritance / estate tax calculator — high net worth families would find
+  significant value
+
+Threats
+- Family finance management is relatively niche; most households manage finances
+  separately
+- The manual partner data entry undermines trust in the combined view until
+  account linking exists
+
+
+DEBT
+----
+
+The Debt Manager is DISABLED — the nav item exists at 35% opacity but the
+section does not. This is the most glaring gap in the product. UK household debt
+(credit cards, personal loans, car finance, student loans) represents the primary
+source of financial stress for the target demographic. Avalanche vs snowball
+repayment comparison is a well-validated retention driver. Emma, Snoop, and
+MoneyDashboard all include it. Users with debt — likely a significant proportion
+of the user base — have nothing here.
+
+
+================================================================================
+PLATFORM SWOT
+================================================================================
+
+Strengths
+- Deep UK specificity is a genuine moat — HMRC rules, tax year, ISA/LISA/JISA
+  limits, UK mortgage structures. This is not a generic app with a £ sign bolted on
+- Cross-section integration (savings and pension feeding the family section, net
+  worth aggregation) shows architectural maturity rare at this stage
+- The Family section is a meaningful differentiator — no UK consumer app combines
+  adult and children's allowances with this depth
+- Demo mode with realistic data lowers the sign-up barrier significantly
+- Mobile-first design with consistent visual language is polished and coherent
+- Pricing (Individual £5.99/mo, Family £7.99/mo) is sensible for the value
+  proposition
+
+Weaknesses
+- No Open Banking — the most significant structural weakness. Every major
+  competitor has it. Upload-only means data is always stale, friction is high,
+  and retention is harder
+- The Debt section doesn't exist, and Income and Investments are underpowered
+  to the point of being liabilities
+- AI features are largely aspirational — multiple "See X Insights" buttons exist
+  but personalisation is thin
+- No proactive alerts or push notifications — the app is entirely reactive; users
+  must remember to return to it
+- No budgeting or spending categorisation — the most common entry point for
+  personal finance apps is entirely absent
+
+Opportunities
+- Open Banking would be the single highest-ROI investment — it makes every
+  section better simultaneously
+- A budgeting / spending tracker massively expands the addressable audience and
+  daily active use
+- Proactive alerts (ISA allowance running low, fixed rate expiring, salary
+  received) drive retention
+- Partner account linking strengthens the Family plan's value proposition
+  substantially
+- Regulated advice or robo-advice integration unlocks premium monetisation at a
+  higher price point
+
+Threats
+- Emma, Plum, MoneyDashboard, and Snoop all have Open Banking, are free or
+  freemium, and have established user bases
+- Monzo and Starling are building financial management features into their
+  banking apps — they already own the transaction data
+- MaPS (Money and Pensions Service) provides free, government-backed tools
+  including pension guidance
+- FCA COBS rules around financial promotions and advice boundaries require
+  careful navigation as AI features mature
+
+
+================================================================================
+MISSING FUNCTIONALITY — PRIORITISED BUILD LIST
+================================================================================
+
+#1  Open Banking integration                                    Effort: High | MUST-HAVE
+    Connect bank accounts via TrueLayer/Plaid UK; auto-refresh savings, current
+    accounts, and debt balances. Removes all upload friction — data is always
+    live. Makes every other section better simultaneously.
+
+#2  Debt Manager                                                Effort: High | MUST-HAVE
+    Avalanche vs snowball repayment modelling, credit card interest calculations,
+    debt-free date projections. The nav item already exists — the section needs
+    building.
+
+#3  Savings Goals                                               Effort: Low  | MUST-HAVE
+    Set target amount + target date per account; track progress; calculate
+    required monthly contribution. Drives regular app opens and emotional
+    engagement.
+
+#4  Proactive Alerts / Push Notifications                       Effort: Medium | MUST-HAVE
+    ISA allowance running low; fixed mortgage rate expiring in 90 days; annual
+    pension allowance approaching; salary received. The primary driver of
+    retention in any finance app.
+
+#5  Budget & Spending Tracker                                   Effort: High | High
+    Categorise transactions (via Open Banking); monthly budget vs actual;
+    spending trends. The most common entry point for personal finance apps —
+    entirely absent today.
+
+#6  Income Section Rebuild                                      Effort: Medium | High
+    Payslip import, salary benchmarking by role/region (ONS ASHE data),
+    self-employment support, IR35 calculator, tax code checker. Current section
+    is a calculator pretending to be a module.
+
+#7  Multi-Broker Investment Support                             Effort: Medium | High
+    Parse CSVs from HL, AJ Bell, Vanguard, Freetrade, Interactive Investor
+    alongside Trading 212. Opens the investments section to the majority of UK
+    retail investors.
+
+#8  Capital Gains Tax Calculator                                Effort: Medium | High
+    Track unrealised and realised gains across taxable investment accounts;
+    project CGT liability. CGT allowance is now £3k — every non-ISA investor
+    needs this.
+
+#9  Partner Account Linking                                     Effort: High | High
+    Invite partner by email; they create an account; selected financial data
+    shared to Family section. Makes the Family plan's value proposition
+    substantially stronger.
+
+#10 Remortgage Expiry Alert                                     Effort: Low  | High
+    Alert when fixed rate is within 90/180 days of expiring; link to rate
+    comparison. The highest-value mortgage alert possible — most people miss
+    their window.
+
+#11 State Pension Tracker                                       Effort: Low  | High
+    Input NI years, forecast remaining years; estimate State Pension income
+    alongside private pension projection. State Pension is most users' largest
+    retirement asset.
+
+#12 Live Mortgage Rate Comparison                               Effort: Medium | Medium
+    Integrate a rate feed (Moneyfacts) to show current best-buy rates vs user's
+    existing deal. Transforms the mortgage section from calculator to advisor;
+    natural funnel to broker referral revenue.
+
+#13 Savings Rate Comparison                                     Effort: Low  | Medium
+    Show best-buy rates for each account type vs user's current rate.
+    "You could earn £X more per year by switching."
+
+#14 Children's Savings Projections                              Effort: Low  | Medium
+    Project child's JISA/SIPP/Premium Bonds to age 18, 21, 57 at different
+    contribution rates. Emotionally compelling; drives Family plan adoption.
+
+#15 IR35 / Contractor Calculator                                Effort: Medium | Medium
+    Inside vs outside IR35; limited company vs umbrella vs PAYE take-home
+    comparison. Large underserved contractor audience with high disposable income.
+
+
+================================================================================
+KEY OBSERVATION
+================================================================================
+
+The gap between what Open Banking would unlock and the current upload-only model
+is so large it should be treated as an architectural decision, not a feature.
+Everything else on this list becomes easier and more valuable once transaction
+data is live. Building features on top of stale, upload-based data is building
+on sand.
+
+The three things that would move the needle most in the short term — and don't
+require Open Banking — are:
+
+  1. Debt Manager    — the nav item already exists, it just needs building
+  2. Savings Goals   — low effort, high retention impact
+  3. Remortgage alert — a single notification that saves users real money
+                        and builds trust
+
+================================================================================

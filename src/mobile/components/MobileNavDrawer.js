@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useUserPlan } from '../../contexts/UserPlanContext';
+import { useNotifications } from '../notifications/NotificationsContext';
 
 const NAV_ITEMS = [
   { label: 'Dashboard', icon: 'grid_view',        path: '/mobile/dashboard', match: '/mobile/dashboard' },
@@ -20,6 +21,8 @@ export default function MobileNavDrawer() {
   const { currentUser } = useAuth();
 
   const { isPremium } = useUserPlan();
+  const { unreadCount } = useNotifications();
+  const navigate = useNavigate();
   const close  = () => setIsOpen(false);
   const toggle = () => setIsOpen(prev => !prev);
 
@@ -77,11 +80,25 @@ export default function MobileNavDrawer() {
 
         {/* Right: notifications + profile */}
         <div style={{ display: 'flex', alignItems: 'center' }}>
-          <button style={{
-            background: 'none', border: 'none', padding: '8px',
-            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            <span className="material-symbols-outlined" style={{ fontSize: '24px', color: '#4edea3' }}>notifications</span>
+          <button
+            onClick={() => navigate('/mobile/notifications')}
+            style={{ background: 'none', border: 'none', padding: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: '24px', color: '#4edea3' }}>
+              {unreadCount > 0 ? 'notifications_unread' : 'notifications'}
+            </span>
+            {unreadCount > 0 && (
+              <span style={{
+                position: 'absolute', top: 4, right: 4,
+                minWidth: 16, height: 16, borderRadius: 8,
+                background: '#ff4d4d', color: '#fff',
+                fontSize: 9, fontWeight: 800,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                padding: '0 3px', lineHeight: 1,
+              }}>
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
           </button>
           <Link to="/mobile/settings" style={{ textDecoration: 'none' }}>
             <button style={{

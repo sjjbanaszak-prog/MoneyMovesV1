@@ -6,6 +6,7 @@ import { useSavingsData } from '../SavingsDataContext';
 import SavingsLayout from '../SavingsLayout';
 import { formatLastUpdated } from '../../utils/formatLastUpdated';
 import UpgradeSheet from '../../components/UpgradeSheet';
+import SavingsGoalsSection from '../components/SavingsGoalsSection';
 
 // ---- Helpers ----
 function fmt(n) {
@@ -339,6 +340,11 @@ export default function SavingsOverview() {
               })}
             </div>
           )}
+        </div>
+
+        {/* Savings Goals */}
+        <div className="animate-in stagger-4">
+          <SavingsGoalsSection />
         </div>
 
         {/* AI Teaser Card */}

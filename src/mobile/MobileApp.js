@@ -11,6 +11,11 @@ import EditProfilePage     from './settings/EditProfilePage';
 import ReportProblemPage   from './settings/ReportProblemPage';
 import MobileUpgradePage   from './upgrade/MobileUpgradePage';
 import FamilyApp           from './family/FamilyApp';
+import { SavingsDataProvider } from './savings/SavingsDataContext';
+import { PensionDataProvider } from './pension/PensionDataContext';
+import { NotificationsProvider } from './notifications/NotificationsContext';
+import NotificationEngine  from './notifications/NotificationEngine';
+import NotificationsPage   from './notifications/pages/NotificationsPage';
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -38,7 +43,10 @@ function ScrollToTop() {
  */
 export default function MobileApp() {
   return (
-    <>
+    <SavingsDataProvider>
+      <PensionDataProvider>
+        <NotificationsProvider>
+          <NotificationEngine />
     <ScrollToTop />
     <Routes>
       {/* Default landing → dashboard */}
@@ -68,9 +76,14 @@ export default function MobileApp() {
       <Route path="settings/report-problem"  element={<ReportProblemPage />} />
       <Route path="upgrade"                  element={<MobileUpgradePage />} />
 
+      {/* Notifications */}
+      <Route path="notifications" element={<NotificationsPage />} />
+
       {/* Catch-all */}
       <Route path="*" element={<Navigate to="/mobile/pension" replace />} />
     </Routes>
-    </>
+        </NotificationsProvider>
+      </PensionDataProvider>
+    </SavingsDataProvider>
   );
 }

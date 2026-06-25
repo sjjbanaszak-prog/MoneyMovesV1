@@ -72,6 +72,19 @@ service cloud.firestore {
       allow read, write: if isOwner(userId);
     }
 
+    // ── Family / household ────────────────────────────────────────────────
+    match /households/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    // ── Notifications ─────────────────────────────────────────────────────
+    match /notifications/{userId} {
+      allow read, write: if isOwner(userId);
+      match /items/{itemId} {
+        allow read, write: if isOwner(userId);
+      }
+    }
+
     // ── Problem reports ───────────────────────────────────────────────────
     // Users can only create reports attributed to themselves.
     // Reports are never readable from the client — use Firebase Console.

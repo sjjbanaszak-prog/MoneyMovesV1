@@ -1,0 +1,312 @@
+MoneyMoves — In-App Notification Triggers
+Last Updated: June 2026
+================================================================================
+
+This document lists every condition that will generate an in-app notification,
+the exact threshold that triggers it, the data source it reads from, and the
+notification text the user will see.
+
+Notifications are evaluated once per browser session after the user's data has
+finished loading. A notification with a given key is only ever created once —
+re-evaluating the same condition does not create a duplicate. Keys include the
+current tax year where relevant so they reset automatically on April 6th.
+
+Mortgage, LTV, and net worth milestone keys are NOT tax-year keyed — they are
+permanent lifetime events that fire once and stay in the list.
+
+
+================================================================================
+ISA ALLOWANCE
+================================================================================
+
+Trigger 1: ISA at 80%
+──────────────────────
+  Condition   : currentFYIsaDeposits >= 80% of isaAllowance (default £20,000)
+  Key         : isa_80pct_{taxYear}
+  Priority    : Medium   |   Icon colour: Amber (#ff9500)
+  Title       : "ISA allowance at 80%"
+  Body        : "You've contributed £X of your £20,000 ISA allowance —
+                 £Y remaining this tax year."
+  Deep link   : /mobile/savings
+  Resets      : April 6th (new tax year key)
+
+Trigger 2: ISA at 95%
+──────────────────────
+  Condition   : currentFYIsaDeposits >= 95% of isaAllowance
+  Key         : isa_95pct_{taxYear}
+  Priority    : High   |   Icon colour: Red (#ff4d4d)
+  Title       : "ISA allowance almost full"
+  Body        : "Only £X left of your £20,000 ISA allowance before April 5th
+                 — use it or lose it."
+  Deep link   : /mobile/savings
+  Resets      : April 6th
+  Notes       : When 95% fires, the 80% key still exists in the list.
+                The 95% notification appears as a separate higher-urgency alert.
+
+
+================================================================================
+LIFETIME ISA (LISA) ALLOWANCE
+================================================================================
+
+Trigger 3: LISA at 80%
+───────────────────────
+  Condition   : hasLisa = true AND currentFYLisaDeposits >= £3,200
+                (80% of the £4,000 annual LISA limit)
+  Key         : lisa_80pct_{taxYear}
+  Priority    : Medium   |   Icon colour: Amber (#ff9500)
+  Title       : "LISA approaching its limit"
+  Body        : "£X left in your Lifetime ISA — top up before April 5th to
+                 earn the full government bonus."
+  Deep link   : /mobile/savings
+  Resets      : April 6th
+  Notes       : Only fires if the user has a LISA account detected in their
+                savings data. Government bonus (25%) is forfeited on
+                contributions above £4,000.
+
+
+================================================================================
+PENSION ANNUAL ALLOWANCE
+================================================================================
+
+Trigger 4: Pension at 80%
+──────────────────────────
+  Condition   : currentFYTotal >= 80% of £60,000
+  Key         : pension_80pct_{taxYear}
+  Priority    : Medium   |   Icon colour: Purple (#a78bfa)
+  Title       : "Pension allowance at 80%"
+  Body        : "You've contributed £X toward your £60,000 annual allowance —
+                 £Y remaining this tax year."
+  Deep link   : /mobile/pension
+  Resets      : April 6th
+
+Trigger 5: Pension at 95%
+──────────────────────────
+  Condition   : currentFYTotal >= 95% of £60,000 (i.e. >= £57,000)
+  Key         : pension_95pct_{taxYear}
+  Priority    : High   |   Icon colour: Red (#ff4d4d)
+  Title       : "Pension allowance almost full"
+  Body        : "You've contributed £X — only £Y left of your £60,000 annual
+                 allowance before April 5th."
+  Deep link   : /mobile/pension
+  Resets      : April 6th
+  Notes       : Uses the standard £60,000 allowance. Does not account for the
+                tapered annual allowance (adjusted income > £260,000).
+
+
+================================================================================
+TAX YEAR END
+================================================================================
+
+Trigger 6: Tax year end — 6 weeks warning
+──────────────────────────────────────────
+  Condition   : Days until April 5th <= 42 AND > 14
+  Key         : tax_year_end_{taxYear}
+  Priority    : Medium   |   Icon colour: Amber (#ff9500)
+  Title       : "Tax year ends in 6 weeks"
+  Body        : "April 5th is approaching — last chance to maximise your ISA,
+                 LISA, and pension contributions for this tax year."
+  Deep link   : /mobile/savings
+  Resets      : April 6th
+
+Trigger 7: Tax year end — urgent (2 weeks)
+───────────────────────────────────────────
+  Condition   : Days until April 5th <= 14 AND > 0
+  Key         : tax_year_end_urgent_{taxYear}
+  Priority    : High   |   Icon colour: Red (#ff4d4d)
+  Title       : "Tax year ends in X day(s)"  (exact count)
+  Body        : "Final chance to use this year's ISA allowance (£20,000) and
+                 pension contributions before April 5th."
+  Deep link   : /mobile/savings
+  Resets      : April 6th
+
+
+================================================================================
+MORTGAGE — FIXED RATE EXPIRY
+================================================================================
+
+One set of alerts per mortgage. Expiry date is read from fixedRateEndDate if
+set, otherwise computed as fixedRateStartDate + fixedTermYears.
+
+Trigger 8: Fixed rate expiring in 180 days
+───────────────────────────────────────────
+  Condition   : Days until expiry <= 180 AND > 90
+  Key         : mortgage_expiry_180_{lender_name_slug}
+  Priority    : Medium   |   Icon colour: Green (#4edea3)
+  Title       : "Fixed rate expires in 6 months"
+  Body        : "[Mortgage name]'s fixed rate ends on [date]. A good time to
+                 start comparing deals — you can usually secure a rate 6 months
+                 ahead."
+  Deep link   : /mobile/mortgage
+  Permanent   : Does not reset annually — fires once per mortgage
+
+Trigger 9: Fixed rate expiring in 90 days
+──────────────────────────────────────────
+  Condition   : Days until expiry <= 90 AND > 30
+  Key         : mortgage_expiry_90_{lender_name_slug}
+  Priority    : High   |   Icon colour: Amber (#ff9500)
+  Title       : "Fixed rate expires within 90 days"
+  Body        : "[Mortgage name]'s fixed rate ends on [date]. Most lenders
+                 allow you to lock in a new rate up to 6 months early."
+  Deep link   : /mobile/mortgage
+  Permanent   : Does not reset annually — fires once per mortgage
+
+Trigger 10: Fixed rate expiring in 30 days
+───────────────────────────────────────────
+  Condition   : Days until expiry <= 30 AND >= 0
+  Key         : mortgage_expiry_30_{lender_name_slug}
+  Priority    : High   |   Icon colour: Red (#ff4d4d)
+  Title       : "Fixed rate expires in X day(s)"  (exact count)
+  Body        : "[Mortgage name]'s fixed rate ends on [date]. Act now to avoid
+                 reverting to the standard variable rate."
+  Deep link   : /mobile/mortgage
+  Permanent   : Does not reset annually — fires once per mortgage
+  Notes       : All three expiry keys (180/90/30) can coexist in the list as
+                the mortgage progresses through the windows.
+
+
+================================================================================
+MORTGAGE — LTV MILESTONES
+================================================================================
+
+Fires once when the current LTV (outstandingBalance / propertyValue × 100)
+drops below each threshold. LTV milestones correspond to UK mortgage rate bands.
+
+Trigger 11: LTV drops below 80%
+Trigger 12: LTV drops below 75%
+Trigger 13: LTV drops below 60%
+Trigger 14: LTV drops below 50%
+──────────────────────────────────────────
+  Condition   : (outstandingBalance / propertyValue) × 100 < threshold
+  Key         : ltv_below_{threshold}_{lender_name_slug}
+  Priority    : Low   |   Icon colour: Green (#4edea3)
+  Title       : "LTV dropped below X%"
+  Body        : "[Mortgage name] is now at Y.Z% LTV — you may qualify for
+                 better mortgage rates. Worth comparing deals at your next
+                 renewal."
+  Deep link   : /mobile/mortgage
+  Permanent   : Fires once when the threshold is crossed; does not reset.
+  Notes       : Multiple milestones can fire simultaneously if the user adds
+                a mortgage already below several thresholds.
+
+
+================================================================================
+NET WORTH MILESTONES
+================================================================================
+
+Net worth = pension totalValue + savings totalBalance + property equity
+(property equity = sum of (propertyValue - outstandingBalance) per mortgage)
+
+Fires once when the combined net worth crosses each threshold.
+
+Trigger 15: Net worth reaches £50,000
+Trigger 16: Net worth reaches £100,000
+Trigger 17: Net worth reaches £250,000
+Trigger 18: Net worth reaches £500,000
+Trigger 19: Net worth reaches £1,000,000
+──────────────────────────────────────────
+  Condition   : netWorth >= threshold
+  Key         : net_worth_{50k | 100k | 250k | 500k | 1m}
+  Priority    : Low   |   Icon colour: Gold (#ffd700)
+  Title       : "Net worth reached £X"
+  Body        : "Your combined pension, savings, and property equity has passed
+                 the £X mark. Keep going."
+  Deep link   : /mobile/dashboard
+  Permanent   : Fires once; does not reset.
+  Notes       : Multiple milestones can fire on first app use if the user is
+                already above several thresholds. All are created simultaneously.
+
+
+================================================================================
+JISA ALLOWANCE
+================================================================================
+
+One alert per child per tax year when their JISA contributions approach the
+annual £9,000 limit. Data source: households/{uid}.children[].accounts[jisa].
+
+Trigger 20: Child's JISA at 80%
+────────────────────────────────
+  Condition   : child.accounts[jisa].contributionsThisYear >= £7,200
+                (80% of the £9,000 annual JISA limit)
+  Key         : jisa_80pct_{child_id_or_name_slug}_{taxYear}
+  Priority    : Medium   |   Icon colour: Amber (#ff9500)
+  Title       : "[Child name]'s JISA approaching limit"
+  Body        : "[Child name] has contributed £X of the £9,000 annual JISA
+                 limit — £Y remaining this tax year."
+  Deep link   : /mobile/family/allowances
+  Resets      : April 6th (new tax year key)
+  Notes       : Fires for each child individually. Requires family section to
+                be set up with children added.
+
+
+================================================================================
+HOW DEDUPLICATION WORKS
+================================================================================
+
+Each notification has a unique `key` field stored in Firestore. Before creating
+any notification, the engine fetches all existing notification documents for the
+user and builds a set of existing keys. A new notification is only written if
+its key is not already present.
+
+This means:
+  - A user will never see the same alert twice
+  - If the user dismisses a notification, it is deleted from Firestore and will
+    be recreated on the next session if the condition still applies
+  - Tax-year-keyed alerts reset automatically on April 6th (new key)
+  - Permanent alerts (mortgage, LTV, net worth) fire once and never repeat
+    unless dismissed
+
+To prevent the engine running on every page navigation, the result is cached in
+sessionStorage under the key `mm_notif_engine_ran`. The engine runs once per
+login session. If financial data changes mid-session (e.g. new savings upload),
+new alerts appear on the next login.
+
+
+================================================================================
+DATA SOURCES USED BY THE ENGINE
+================================================================================
+
+  SavingsDataContext.metrics  (from MobileApp-level SavingsDataProvider)
+    - currentFYIsaDeposits      Total ISA contributions in current tax year
+    - currentFYLisaDeposits     Total LISA contributions in current tax year
+    - isaAllowance              £20,000 fixed per HMRC 2025/26
+    - hasLisa                   true if user has a LISA account
+    - totalBalance              Total savings balance (used for net worth)
+
+  PensionDataContext.metrics  (from MobileApp-level PensionDataProvider)
+    - currentFYTotal            Total pension contributions in current tax year
+    - totalValue                Total pension pot value (used for net worth)
+
+  Firestore: mortgagePots/{uid}  (direct getDoc — no provider required)
+    - mortgages[].fixedRateStartDate
+    - mortgages[].fixedTermYears
+    - mortgages[].fixedRateEndDate      (if manually set)
+    - mortgages[].outstandingBalance
+    - mortgages[].propertyValue
+    - mortgages[].lender
+    - mortgages[].name
+
+  Firestore: households/{uid}  (direct getDoc — no provider required)
+    - children[].id
+    - children[].name
+    - children[].accounts[].type                ('jisa')
+    - children[].accounts[].contributionsThisYear
+
+  System date
+    - Used to calculate days until April 5th (tax year end)
+    - Used to calculate days until mortgage fixed rate expiry
+    - Tax year key: if date >= April 6, key is YYYY_YYYY+1; else YYYY-1_YYYY
+
+
+================================================================================
+NOT YET IMPLEMENTED
+================================================================================
+
+The following were considered but require features or integrations not yet built:
+
+  - Savings rate below market best-buy     (requires Moneyfacts API)
+  - Child Benefit HICBC threshold warning  (requires income data in household)
+  - Savings goal X% complete              (requires savings goal feature)
+  - Premium Bonds prize won               (NS&I have no public API)
+  - Debt milestone / payoff alert         (requires Debt Manager to be built)
+
+================================================================================
