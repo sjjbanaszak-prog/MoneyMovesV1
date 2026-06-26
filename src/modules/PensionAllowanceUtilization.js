@@ -400,32 +400,38 @@ export default function PensionAllowanceUtilization({ yearlyTotals }) {
       stack.style.height = originalState.height;
       stack.style.transition = "height 0.8s cubic-bezier(0.4, 0, 0.2, 1)";
 
-      // Restore segments
-      let segmentsHTML = "";
-      originalState.segments.forEach((seg) => {
-        segmentsHTML += `<div class="${seg.className}" style="height: ${seg.height}; display: block; transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);"></div>`;
-      });
-      stack.innerHTML = segmentsHTML;
+      // Restore segments using safe DOM construction (no innerHTML)
+      stack.replaceChildren(
+        ...originalState.segments.map((seg) => {
+          const el = document.createElement('div');
+          el.className = seg.className;
+          el.style.cssText = `height: ${seg.height}; display: block; transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);`;
+          return el;
+        })
+      );
 
-      // Restore amount label with -£ for carry forward and +£ for consumed by future years
+      // Restore amount label using safe DOM construction (no innerHTML)
       const consumedFromThisYear = consumedByFuture[idx];
       const carryForwardTotal = yd.breakdown.carryForward.reduce(
         (sum, cf) => sum + cf.amount,
         0
       );
 
-      let labelHTML = `£${Math.round(yd.used).toLocaleString()}`;
+      amountLabel.replaceChildren();
+      const mainText = document.createTextNode(`£${Math.round(yd.used).toLocaleString()}`);
+      amountLabel.appendChild(mainText);
+
       if (carryForwardTotal > 0) {
-        labelHTML += `<div class="cf-usage-label">-£${Math.round(carryForwardTotal).toLocaleString()}</div>`;
+        const cfEl = document.createElement('div');
+        cfEl.className = 'cf-usage-label';
+        cfEl.textContent = `-£${Math.round(carryForwardTotal).toLocaleString()}`;
+        amountLabel.appendChild(cfEl);
       }
       if (consumedFromThisYear > 0) {
-        labelHTML += `<div class="cf-usage-label">+£${Math.round(consumedFromThisYear).toLocaleString()}</div>`;
-      }
-
-      if (carryForwardTotal > 0 || consumedFromThisYear > 0) {
-        amountLabel.innerHTML = labelHTML;
-      } else {
-        amountLabel.textContent = `£${Math.round(yd.used).toLocaleString()}`;
+        const conEl = document.createElement('div');
+        conEl.className = 'cf-usage-label';
+        conEl.textContent = `+£${Math.round(consumedFromThisYear).toLocaleString()}`;
+        amountLabel.appendChild(conEl);
       }
     });
 
