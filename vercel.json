@@ -1,4 +1,9 @@
 {
+  "build": {
+    "env": {
+      "INLINE_RUNTIME_CHUNK": "false"
+    }
+  },
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
   ],
@@ -28,7 +33,7 @@
         },
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://lh3.googleusercontent.com https://www.gstatic.com; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.firebase.google.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://api.postcodes.io https://landregistry.data.gov.uk wss://*.firebaseio.com wss://*.googleapis.com; frame-src https://accounts.google.com https://money-6a32f.firebaseapp.com; object-src 'none'; base-uri 'self'; form-action 'self';"
+          "value": "default-src 'self'; script-src 'self' https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://lh3.googleusercontent.com https://www.gstatic.com; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.firebase.google.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://api.postcodes.io https://landregistry.data.gov.uk wss://*.firebaseio.com wss://*.googleapis.com; frame-src https://accounts.google.com https://money-6a32f.firebaseapp.com; object-src 'none'; base-uri 'self'; form-action 'self';"
         },
         {
           "key": "X-DNS-Prefetch-Control",
