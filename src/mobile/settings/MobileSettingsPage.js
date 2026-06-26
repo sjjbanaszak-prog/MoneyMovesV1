@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { doc, getDoc } from 'firebase/firestore';
 import { useAuth } from '../../contexts/AuthContext';
@@ -10,7 +10,6 @@ export default function MobileSettingsPage() {
   const navigate = useNavigate();
   const { currentUser, logout } = useAuth();
   const { isPremium } = useUserPlan();
-  const [notificationsOn, setNotificationsOn] = useState(true);
   const [displayName, setDisplayName] = useState(
     currentUser?.displayName || currentUser?.email?.split('@')[0] || 'MoneyMoves User'
   );
@@ -120,8 +119,7 @@ export default function MobileSettingsPage() {
                 <span style={{ fontSize: '10px', fontWeight: 900, color: '#4edea3', letterSpacing: '0.2em', textTransform: 'uppercase' }}>Premium Tier</span>
               </div>
               <p style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 700, fontSize: '16px', color: '#dae2fd', margin: '0 0 4px' }}>Your subscription is active</p>
-              <p style={{ fontSize: '12px', color: '#bbcabf', margin: '0 0 16px' }}>Renewing on October 12, 2025</p>
-              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '16px' }}>
                 <button style={{
                   flex: 1, minWidth: '120px',
                   background: '#4edea3', color: '#003824',
@@ -179,36 +177,32 @@ export default function MobileSettingsPage() {
 
         {/* Preferences */}
         <SettingsSection label="Preferences">
-          <div style={rowStyle}>
+          <div style={{ ...rowStyle, opacity: 0.4, cursor: 'default' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <span className="material-symbols-outlined" style={{ fontSize: '22px', color: '#adc6ff' }}>notifications</span>
-              <span style={{ fontSize: '15px', color: '#dae2fd', fontWeight: 500 }}>Push Notifications</span>
+              <span className="material-symbols-outlined" style={{ fontSize: '22px', color: '#adc6ff' }}>notifications_off</span>
+              <div>
+                <span style={{ fontSize: '15px', color: '#dae2fd', fontWeight: 500, display: 'block' }}>Push Notifications</span>
+                <span style={{ fontSize: '11px', color: '#64748b' }}>Coming soon</span>
+              </div>
             </div>
-            {/* Toggle */}
-            <button
-              onClick={() => setNotificationsOn(v => !v)}
-              style={{
-                width: '48px', height: '26px', borderRadius: '13px',
-                background: notificationsOn ? '#4edea3' : 'rgba(173,198,255,0.2)',
-                border: 'none', position: 'relative', cursor: 'pointer',
-                transition: 'background 0.2s', flexShrink: 0,
-              }}
-            >
+            <div style={{
+              width: '48px', height: '26px', borderRadius: '13px',
+              background: 'rgba(173,198,255,0.1)',
+              position: 'relative', flexShrink: 0,
+            }}>
               <div style={{
                 width: '18px', height: '18px', borderRadius: '50%',
-                background: notificationsOn ? '#003824' : '#64748b',
-                position: 'absolute', top: '4px',
-                left: notificationsOn ? '26px' : '4px',
-                transition: 'left 0.2s, background 0.2s',
+                background: '#3c4a42',
+                position: 'absolute', top: '4px', left: '4px',
               }} />
-            </button>
+            </div>
           </div>
         </SettingsSection>
 
         {/* Data & Legal */}
         <SettingsSection label="Data & Legal">
-          <SettingsRow icon="shield" iconColor="#adc6ff" label="Data & Privacy" disabled />
-          <SettingsRow icon="gavel" iconColor="#adc6ff" label="Terms of Use" disabled />
+          <SettingsRow icon="shield" iconColor="#adc6ff" label="Privacy Policy" onClick={() => navigate('/mobile/settings/privacy-policy')} />
+          <SettingsRow icon="gavel" iconColor="#adc6ff" label="Terms of Use" onClick={() => navigate('/mobile/settings/terms-of-use')} />
         </SettingsSection>
 
         {/* Support */}

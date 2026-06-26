@@ -62,7 +62,7 @@ export default function AddSavingsAccount() {
       await addAccount(newAccount);
       navigate('/mobile/savings');
     } catch (e) {
-      setError('Failed to save account. Please try again.');
+      setError(e?.message || 'Failed to save account. Please try again.');
       setIsSaving(false);
     }
   }

@@ -9,6 +9,8 @@ import IncomeApp          from './income/IncomeApp';
 import MobileSettingsPage  from './settings/MobileSettingsPage';
 import EditProfilePage     from './settings/EditProfilePage';
 import ReportProblemPage   from './settings/ReportProblemPage';
+import PrivacyPolicyPage   from './settings/PrivacyPolicyPage';
+import TermsOfUsePage      from './settings/TermsOfUsePage';
 import MobileUpgradePage   from './upgrade/MobileUpgradePage';
 import FamilyApp           from './family/FamilyApp';
 import { SavingsDataProvider } from './savings/SavingsDataContext';
@@ -74,6 +76,8 @@ export default function MobileApp() {
       <Route path="settings"                  element={<MobileSettingsPage />} />
       <Route path="settings/edit-profile"    element={<EditProfilePage />} />
       <Route path="settings/report-problem"  element={<ReportProblemPage />} />
+      <Route path="settings/privacy-policy"  element={<PrivacyPolicyPage />} />
+      <Route path="settings/terms-of-use"    element={<TermsOfUsePage />} />
       <Route path="upgrade"                  element={<MobileUpgradePage />} />
 
       {/* Notifications */}

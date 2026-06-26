@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { collection, addDoc } from 'firebase/firestore';
 import { useAuth } from '../../contexts/AuthContext';
@@ -45,6 +45,11 @@ function detectOS() {
   return 'Unknown';
 }
 
+const MAX_FILES    = 3;
+const MAX_FILE_MB  = 5;
+const MAX_FILE_BYTES = MAX_FILE_MB * 1024 * 1024;
+const ALLOWED_TYPES  = ['image/png', 'image/jpeg', 'application/pdf'];
+
 export default function ReportProblemPage() {
   const navigate  = useNavigate();
   const { currentUser } = useAuth();
@@ -52,11 +57,43 @@ export default function ReportProblemPage() {
   const [category,    setCategory]    = useState('bug');
   const [subject,     setSubject]     = useState('');
   const [description, setDescription] = useState('');
+  const [attachments, setAttachments] = useState([]);
   const [submitting,  setSubmitting]  = useState(false);
   const [submitted,   setSubmitted]   = useState(false);
   const [error,       setError]       = useState(null);
+  const fileInputRef = useRef(null);
 
   const canSubmit = category && subject.trim() && description.trim() && !submitting;
+
+  function handleFiles(files) {
+    const incoming = Array.from(files);
+    const valid = [];
+    for (const file of incoming) {
+      if (!ALLOWED_TYPES.includes(file.type)) {
+        setError(`"${file.name}" is not a supported file type. Use PNG, JPG, or PDF.`);
+        return;
+      }
+      if (file.size > MAX_FILE_BYTES) {
+        setError(`"${file.name}" exceeds the ${MAX_FILE_MB}MB limit.`);
+        return;
+      }
+      valid.push(file);
+    }
+    setError(null);
+    setAttachments(prev => {
+      const combined = [...prev, ...valid];
+      return combined.slice(0, MAX_FILES);
+    });
+  }
+
+  function handleDrop(e) {
+    e.preventDefault();
+    handleFiles(e.dataTransfer.files);
+  }
+
+  function removeAttachment(index) {
+    setAttachments(prev => prev.filter((_, i) => i !== index));
+  }
 
   async function handleSubmit() {
     if (!canSubmit) return;
@@ -84,6 +121,7 @@ export default function ReportProblemPage() {
         status:      'open',
         browser:     detectBrowser(),
         os:          detectOS(),
+        attachments: attachments.map(f => ({ name: f.name, size: f.size, type: f.type })),
       });
       setSubmitted(true);
     } catch (e) {
@@ -214,22 +252,85 @@ export default function ReportProblemPage() {
 
                 {/* Attachments */}
                 <div>
-                  <label style={labelStyle}>Attachments (Optional)</label>
-                  <div style={{
-                    border: '2px dashed rgba(60,74,66,0.5)',
-                    borderRadius: '12px',
-                    padding: '28px 16px',
-                    display: 'flex', flexDirection: 'column', alignItems: 'center',
-                    background: 'rgba(255,255,255,0.02)',
-                    cursor: 'pointer',
-                    gap: '6px',
-                  }}>
-                    <span className="material-symbols-outlined" style={{ fontSize: '36px', color: '#3c4a42', marginBottom: '4px' }}>cloud_upload</span>
-                    <p style={{ fontSize: '13px', color: '#bbcabf', margin: 0, textAlign: 'center' }}>
-                      Drop screenshots here or <span style={{ color: '#4edea3', fontWeight: 600 }}>browse files</span>
-                    </p>
-                    <p style={{ fontSize: '10px', color: '#64748b', margin: 0 }}>Maximum file size: 5MB (PNG, JPG, PDF)</p>
-                  </div>
+                  <label style={labelStyle}>
+                    Attachments (Optional)
+                    {attachments.length > 0 && (
+                      <span style={{ color: '#4edea3', marginLeft: '8px', textTransform: 'none', letterSpacing: 0, fontSize: '11px', fontWeight: 500 }}>
+                        {attachments.length}/{MAX_FILES} added
+                      </span>
+                    )}
+                  </label>
+
+                  {/* Hidden file input */}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".png,.jpg,.jpeg,.pdf"
+                    multiple
+                    style={{ display: 'none' }}
+                    onChange={e => { handleFiles(e.target.files); e.target.value = ''; }}
+                  />
+
+                  {/* Drop zone */}
+                  {attachments.length < MAX_FILES && (
+                    <div
+                      onClick={() => fileInputRef.current?.click()}
+                      onDrop={handleDrop}
+                      onDragOver={e => e.preventDefault()}
+                      style={{
+                        border: '2px dashed rgba(78,222,163,0.3)',
+                        borderRadius: '12px',
+                        padding: '24px 16px',
+                        display: 'flex', flexDirection: 'column', alignItems: 'center',
+                        background: 'rgba(78,222,163,0.03)',
+                        cursor: 'pointer',
+                        gap: '6px',
+                        transition: 'border-color 0.2s',
+                        marginBottom: attachments.length > 0 ? '10px' : 0,
+                      }}
+                    >
+                      <span className="material-symbols-outlined" style={{ fontSize: '32px', color: '#4edea3', marginBottom: '4px', opacity: 0.7 }}>cloud_upload</span>
+                      <p style={{ fontSize: '13px', color: '#bbcabf', margin: 0, textAlign: 'center' }}>
+                        Drop screenshots here or <span style={{ color: '#4edea3', fontWeight: 600 }}>browse files</span>
+                      </p>
+                      <p style={{ fontSize: '10px', color: '#64748b', margin: 0 }}>PNG, JPG, PDF · Max {MAX_FILE_MB}MB each · Up to {MAX_FILES} files</p>
+                    </div>
+                  )}
+
+                  {/* Selected files list */}
+                  {attachments.length > 0 && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      {attachments.map((file, i) => (
+                        <div key={i} style={{
+                          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                          background: 'rgba(78,222,163,0.06)',
+                          border: '1px solid rgba(78,222,163,0.15)',
+                          borderRadius: '8px',
+                          padding: '10px 12px',
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', overflow: 'hidden' }}>
+                            <span className="material-symbols-outlined" style={{ fontSize: '18px', color: '#4edea3', flexShrink: 0 }}>
+                              {file.type === 'application/pdf' ? 'picture_as_pdf' : 'image'}
+                            </span>
+                            <div style={{ overflow: 'hidden' }}>
+                              <p style={{ fontSize: '12px', color: '#dae2fd', fontWeight: 600, margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                {file.name}
+                              </p>
+                              <p style={{ fontSize: '11px', color: '#64748b', margin: 0 }}>
+                                {(file.size / 1024).toFixed(0)} KB
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => removeAttachment(i)}
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', flexShrink: 0 }}
+                          >
+                            <span className="material-symbols-outlined" style={{ fontSize: '18px', color: '#64748b' }}>close</span>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
