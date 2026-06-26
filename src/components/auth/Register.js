@@ -110,8 +110,8 @@ const Register = () => {
       return;
     }
 
-    if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters');
+    if (formData.password.length < 8) {
+      setError('Password must be at least 8 characters');
       return;
     }
 
@@ -272,7 +272,7 @@ const Register = () => {
                   </span>
                 </div>
               )}
-              <p className="form-hint">Minimum 6 characters (8+ recommended)</p>
+              <p className="form-hint">Minimum 8 characters</p>
             </div>
 
             <div className="form-group">

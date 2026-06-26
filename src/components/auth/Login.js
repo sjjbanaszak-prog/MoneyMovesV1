@@ -33,9 +33,7 @@ const Login = () => {
       case 'auth/user-disabled':
         return 'This account has been disabled.';
       case 'auth/user-not-found':
-        return 'No account found with this email address.';
       case 'auth/wrong-password':
-        return 'Incorrect password. Please try again.';
       case 'auth/invalid-credential':
         return 'Invalid email or password. Please try again.';
       case 'auth/too-many-requests':

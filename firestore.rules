@@ -8,8 +8,16 @@ service cloud.firestore {
     }
 
     // ── User profiles ─────────────────────────────────────────────────────
+    // plan field is server-managed (Cloud Function / admin SDK only).
+    // Clients can read their document and update any field EXCEPT plan.
     match /users/{userId} {
-      allow read, write: if isOwner(userId);
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && !('plan' in request.resource.data);
+      allow update: if isOwner(userId)
+        && (!('plan' in request.resource.data)
+            || request.resource.data.plan == resource.data.plan);
+      allow delete: if false;
     }
 
     // ── Pension ───────────────────────────────────────────────────────────

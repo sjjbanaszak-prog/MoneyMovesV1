@@ -413,12 +413,22 @@ export function SavingsDataProvider({ children }) {
   async function addAccount(newAccount) {
     if (!user || isDemoMode) return;
     try {
+      // Firestore hard limit is 1MB per document. Guard against oversized uploads.
+      const rowCount = (newAccount.rawData || []).length;
+      if (rowCount > 10000) {
+        throw new Error(`Upload contains ${rowCount.toLocaleString()} rows — maximum is 10,000. Split the file into smaller date ranges.`);
+      }
       const snap = await getDoc(doc(db, 'savingsTracker', user.uid));
       const data = snap.exists() ? snap.data() : {};
       const uploads = [...(data.uploads || []), newAccount];
       const selectedAccounts = [...(data.selectedAccounts || (data.uploads || []).map(u => u.accountName)), newAccount.accountName];
       const now = new Date().toISOString();
-      await setDoc(doc(db, 'savingsTracker', user.uid), { ...data, uploads, selectedAccounts, lastUpdated: now }, { merge: true });
+      const payload = { ...data, uploads, selectedAccounts, lastUpdated: now };
+      const payloadBytes = new TextEncoder().encode(JSON.stringify(payload)).length;
+      if (payloadBytes > 900_000) {
+        throw new Error('Your savings data is approaching the storage limit. Please remove older accounts before adding new ones.');
+      }
+      await setDoc(doc(db, 'savingsTracker', user.uid), payload, { merge: true });
       setAccounts(prev => [...prev, newAccount]);
       setLastUpdated(now);
     } catch (e) {
