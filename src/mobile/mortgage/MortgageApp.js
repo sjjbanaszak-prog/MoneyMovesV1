@@ -13,6 +13,7 @@ import MortgageInsights      from './pages/MortgageInsights';
 import MortgageCalculator    from './pages/MortgageCalculator';
 import MortgageCompare       from './pages/MortgageCompare';
 import MortgageAIAnalysis    from './pages/MortgageAIAnalysis';
+import SwitchMortgage        from './pages/SwitchMortgage';
 
 /**
  * MortgageApp
@@ -37,6 +38,7 @@ export default function MortgageApp() {
         <Route path=":idx"                 element={<MortgageDetail />} />
         <Route path=":idx/payments"        element={<AllMortgagePayments />} />
         <Route path=":idx/add"             element={<AddMortgagePayment />} />
+        <Route path=":idx/switch"          element={<SwitchMortgage />} />
         <Route path="*"                    element={<Navigate to="/mobile/mortgage" replace />} />
       </Routes>
     </MortgageDataProvider>

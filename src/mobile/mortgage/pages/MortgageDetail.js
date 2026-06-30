@@ -797,6 +797,67 @@ export default function MortgageDetail() {
           />
         </div>
 
+        {/* Switch History — shown only if at least one switch has occurred */}
+        {(mortgage.switchHistory || []).length > 0 && (
+          <div className="animate-in stagger-5 section-card" style={{ marginBottom: '16px' }}>
+            <h3 style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 800, fontSize: '15px', color: '#dae2fd', margin: '0 0 14px' }}>
+              Switch History
+            </h3>
+            {[...(mortgage.switchHistory || [])].reverse().map((sw, i) => (
+              <div
+                key={i}
+                style={{
+                  paddingBottom: i < mortgage.switchHistory.length - 1 ? '14px' : 0,
+                  marginBottom: i < mortgage.switchHistory.length - 1 ? '14px' : 0,
+                  borderBottom: i < mortgage.switchHistory.length - 1 ? '1px solid rgba(173,198,255,0.06)' : 'none',
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                  <div>
+                    <p style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 700, fontSize: '13px', color: '#dae2fd', margin: '0 0 2px' }}>
+                      {sw.previousLender} → {sw.completion?.newLender}
+                    </p>
+                    <p style={{ fontSize: '12px', color: '#64748b', margin: 0 }}>
+                      {sw.switchDate ? new Date(sw.switchDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : '–'}
+                    </p>
+                  </div>
+                  {sw.cashReleasedToClient !== 0 && sw.cashReleasedToClient != null && (
+                    <span style={{
+                      fontSize: '12px', fontWeight: 700, padding: '3px 8px', borderRadius: '6px',
+                      background: sw.cashReleasedToClient > 0 ? 'rgba(78,222,163,0.1)' : 'rgba(255,185,95,0.1)',
+                      color: sw.cashReleasedToClient > 0 ? '#4edea3' : '#ffb95f',
+                    }}>
+                      {sw.cashReleasedToClient > 0
+                        ? `+${fmt(sw.cashReleasedToClient)} released`
+                        : `${fmt(Math.abs(sw.cashReleasedToClient))} paid`}
+                    </span>
+                  )}
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                  <div style={{ background: 'rgba(173,198,255,0.04)', borderRadius: '8px', padding: '8px 10px' }}>
+                    <p style={{ fontSize: '10px', color: '#64748b', margin: '0 0 2px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Redemption</p>
+                    <p style={{ fontSize: '13px', fontWeight: 700, color: '#ffb95f', margin: 0 }}>{fmt(sw.redemption?.totalRedemptionAmount)}</p>
+                  </div>
+                  <div style={{ background: 'rgba(173,198,255,0.04)', borderRadius: '8px', padding: '8px 10px' }}>
+                    <p style={{ fontSize: '10px', color: '#64748b', margin: '0 0 2px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>New Advance</p>
+                    <p style={{ fontSize: '13px', fontWeight: 700, color: '#4edea3', margin: 0 }}>{fmt(sw.completion?.newMortgageAdvance)}</p>
+                  </div>
+                  {sw.redemption?.earlyRepaymentCharge > 0 && (
+                    <div style={{ background: 'rgba(173,198,255,0.04)', borderRadius: '8px', padding: '8px 10px' }}>
+                      <p style={{ fontSize: '10px', color: '#64748b', margin: '0 0 2px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>ERC</p>
+                      <p style={{ fontSize: '13px', fontWeight: 700, color: '#adc6ff', margin: 0 }}>{fmt(sw.redemption.earlyRepaymentCharge)}</p>
+                    </div>
+                  )}
+                  <div style={{ background: 'rgba(173,198,255,0.04)', borderRadius: '8px', padding: '8px 10px' }}>
+                    <p style={{ fontSize: '10px', color: '#64748b', margin: '0 0 2px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>New Rate</p>
+                    <p style={{ fontSize: '13px', fontWeight: 700, color: '#dae2fd', margin: 0 }}>{sw.completion?.newInterestRate?.toFixed(2)}%</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* Recent Payments */}
         <div className="animate-in stagger-5 section-card" style={{ marginBottom: '24px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
@@ -846,32 +907,73 @@ export default function MortgageDetail() {
 
       </div>
 
-      {/* FAB — Add Payment */}
-      <button
-        onClick={() => navigate(`/mobile/mortgage/${idx}/add`)}
-        style={{
-          position: 'fixed',
-          bottom: '24px',
-          right: '20px',
-          background: '#4edea3',
-          color: '#003824',
-          border: 'none',
-          borderRadius: '16px',
-          padding: '14px 20px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          fontFamily: 'Inter, sans-serif',
-          fontWeight: 700,
-          fontSize: '15px',
-          cursor: 'pointer',
-          boxShadow: '0 4px 24px rgba(78,222,163,0.35)',
-          zIndex: 50,
-        }}
-      >
-        <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>add</span>
-        Add Payment
-      </button>
+      {/* Switch Mortgage CTA */}
+      <div style={{
+        margin: '0 16px 100px',
+        background: 'rgba(173,198,255,0.04)',
+        border: '1px dashed rgba(173,198,255,0.15)',
+        borderRadius: '14px',
+        padding: '16px',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <span className="material-symbols-outlined" style={{ fontSize: '20px', color: '#adc6ff' }}>swap_horiz</span>
+          <div>
+            <p style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 700, fontSize: '13px', color: '#dae2fd', margin: '0 0 2px' }}>Remortgaging?</p>
+            <p style={{ fontSize: '11px', color: '#64748b', margin: 0 }}>Record your redemption & completion statements</p>
+          </div>
+        </div>
+        <button
+          onClick={() => navigate(`/mobile/mortgage/${idx}/switch`)}
+          style={{
+            background: 'rgba(173,198,255,0.1)', color: '#adc6ff',
+            border: '1px solid rgba(173,198,255,0.2)', borderRadius: '10px',
+            padding: '8px 14px', fontFamily: 'Manrope, sans-serif',
+            fontWeight: 700, fontSize: '12px', cursor: 'pointer',
+            whiteSpace: 'nowrap', flexShrink: 0,
+          }}
+        >
+          Switch
+        </button>
+      </div>
+
+      {/* FABs */}
+      <div style={{ position: 'fixed', bottom: '24px', right: '20px', display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'flex-end', zIndex: 50 }}>
+        <button
+          onClick={() => navigate(`/mobile/mortgage/${idx}/switch`)}
+          style={{
+            background: '#1a2744',
+            color: '#adc6ff',
+            border: '1px solid rgba(173,198,255,0.2)',
+            borderRadius: '14px',
+            padding: '11px 16px',
+            display: 'flex', alignItems: 'center', gap: '6px',
+            fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '13px',
+            cursor: 'pointer',
+            boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
+          }}
+        >
+          <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>swap_horiz</span>
+          Switch Mortgage
+        </button>
+        <button
+          onClick={() => navigate(`/mobile/mortgage/${idx}/add`)}
+          style={{
+            background: '#4edea3',
+            color: '#003824',
+            border: 'none',
+            borderRadius: '16px',
+            padding: '14px 20px',
+            display: 'flex', alignItems: 'center', gap: '8px',
+            fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '15px',
+            cursor: 'pointer',
+            boxShadow: '0 4px 24px rgba(78,222,163,0.35)',
+          }}
+        >
+          <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>add</span>
+          Add Payment
+        </button>
+      </div>
 
     </MortgageDetailLayout>
   );

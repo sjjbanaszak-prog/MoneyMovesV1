@@ -106,8 +106,9 @@ export function MortgageDataProvider({ children }) {
    */
   const MORTGAGE_ALLOWED_FIELDS = [
     'name', 'lender', 'type', 'postcode', 'propertyValue', 'propertyValueHistory', 'purchasePrice',
-    'mortgageAmount', 'outstandingBalance', 'interestRate', 'monthlyPayment',
-    'termYears', 'startDate', 'fixedRateEndDate', 'notes', 'paymentHistory',
+    'mortgageAmount', 'outstandingBalance', 'interestRate', 'defaultRate', 'monthlyPayment',
+    'termYears', 'startDate', 'fixedRateStartDate', 'fixedRateEndDate', 'fixedTermYears',
+    'notes', 'paymentHistory', 'switchHistory',
   ];
 
   const updateMortgage = useCallback((idx, fields) => {
@@ -149,8 +150,68 @@ export function MortgageDataProvider({ children }) {
     }
   }
 
+  /**
+   * Complete a mortgage switch — archives old provider details, updates active fields,
+   * records a switch marker in payment history, and persists to Firestore.
+   */
+  async function switchMortgage(idx, { switchDate, redemption, completion, cashReleasedToClient }) {
+    const old = mortgages[idx];
+    if (!old) throw new Error('Mortgage not found');
+
+    const switchRecord = {
+      switchDate,
+      previousLender:        old.lender,
+      previousRate:          old.interestRate,
+      previousDefaultRate:   old.defaultRate,
+      previousBalance:       old.outstandingBalance,
+      previousTermYears:     old.termYears,
+      previousStartDate:     old.startDate,
+      previousMonthlyPayment: old.monthlyPayment,
+      redemption,
+      completion,
+      cashReleasedToClient,
+    };
+
+    const switchMarker = {
+      date:        switchDate,
+      amount:      0,
+      description: `Switch: ${old.lender} → ${completion.newLender}`,
+      type:        'switch',
+    };
+
+    const updated = {
+      ...old,
+      lender:              completion.newLender,
+      interestRate:        completion.newInterestRate,
+      defaultRate:         completion.newDefaultRate || old.defaultRate,
+      termYears:           completion.newTermYears,
+      outstandingBalance:  completion.newMortgageAdvance,
+      mortgageAmount:      completion.newMortgageAdvance,
+      monthlyPayment:      completion.newMonthlyPayment,
+      startDate:           switchDate,
+      fixedRateStartDate:  switchDate,
+      fixedTermYears:      completion.newFixedTermYears || null,
+      fixedRateEndDate:    completion.newFixedRateEndDate || null,
+      switchHistory:       [...(old.switchHistory || []), switchRecord],
+      paymentHistory:      [...(old.paymentHistory || []), switchMarker],
+    };
+
+    const next = mortgages.map((m, i) => (i === idx ? updated : m));
+    setMortgages(next);
+
+    if (!isDemoMode && user) {
+      const now = new Date().toISOString();
+      await setDoc(
+        doc(db, 'mortgagePots', user.uid),
+        { mortgages: next, lastUpdated: now },
+        { merge: true }
+      );
+      setLastUpdated(now);
+    }
+  }
+
   return (
-    <MortgageDataContext.Provider value={{ mortgages, updateMortgage, addMortgage, isDemoMode, lastUpdated }}>
+    <MortgageDataContext.Provider value={{ mortgages, updateMortgage, addMortgage, switchMortgage, isDemoMode, lastUpdated }}>
       {children}
     </MortgageDataContext.Provider>
   );
