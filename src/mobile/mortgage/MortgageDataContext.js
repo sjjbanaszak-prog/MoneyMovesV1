@@ -107,7 +107,7 @@ export function MortgageDataProvider({ children }) {
   const MORTGAGE_ALLOWED_FIELDS = [
     'name', 'lender', 'type', 'postcode', 'propertyValue', 'propertyValueHistory', 'purchasePrice',
     'mortgageAmount', 'outstandingBalance', 'interestRate', 'defaultRate', 'monthlyPayment',
-    'termYears', 'startDate', 'fixedRateStartDate', 'fixedRateEndDate', 'fixedTermYears',
+    'fees', 'termYears', 'startDate', 'fixedRateStartDate', 'fixedRateEndDate', 'fixedTermYears',
     'notes', 'paymentHistory', 'switchHistory',
   ];
 
@@ -179,15 +179,19 @@ export function MortgageDataProvider({ children }) {
       type:        'switch',
     };
 
+    // Product/arrangement fees can be rolled into the new mortgage balance.
+    const newBalance = (completion.newMortgageAdvance || 0) + (completion.feesAddedToLoan || 0);
+
     const updated = {
       ...old,
       lender:              completion.newLender,
       interestRate:        completion.newInterestRate,
       defaultRate:         completion.newDefaultRate || old.defaultRate,
       termYears:           completion.newTermYears,
-      outstandingBalance:  completion.newMortgageAdvance,
-      mortgageAmount:      completion.newMortgageAdvance,
+      outstandingBalance:  newBalance,
+      mortgageAmount:      newBalance,
       monthlyPayment:      completion.newMonthlyPayment,
+      fees:                completion.feesAddedToLoan || 0,
       startDate:           switchDate,
       fixedRateStartDate:  switchDate,
       fixedTermYears:      completion.newFixedTermYears || null,

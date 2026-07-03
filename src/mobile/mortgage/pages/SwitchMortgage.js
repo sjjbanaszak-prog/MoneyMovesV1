@@ -110,6 +110,10 @@ export default function SwitchMortgage() {
   const [newMonthlyPayment, setNewMonthlyPayment] = useState('');
   const [feesOnCompletion,  setFeesOnCompletion]  = useState('0');
 
+  // Product / arrangement fees rolled into the new mortgage balance
+  const [feesToLoanEnabled, setFeesToLoanEnabled] = useState(false);
+  const [feesToLoan,        setFeesToLoan]        = useState('');
+
   // ── Confirm step ─────────────────────────────────────────────────────────
   const [confirming, setConfirming] = useState(false);
   const [saving,     setSaving]     = useState(false);
@@ -124,17 +128,20 @@ export default function SwitchMortgage() {
 
     const advance  = parseFloat(newAdvance)         || 0;
     const fees     = parseFloat(feesOnCompletion)   || 0;
+    const addedFees = feesToLoanEnabled ? (parseFloat(feesToLoan) || 0) : 0;
 
+    // Fees rolled into the loan increase the debt but not the upfront cash movement.
+    const finalBalance    = advance + addedFees;
     const netBalance      = advance - totalRedemption - fees;
     const isEquityRelease = netBalance > 0;
     const isTopUp         = netBalance < 0;
 
     const propertyValue   = mortgage.propertyValue || 0;
-    const newLtv          = propertyValue > 0 ? (advance / propertyValue) * 100 : 0;
+    const newLtv          = propertyValue > 0 ? (finalBalance / propertyValue) * 100 : 0;
     const oldLtv          = propertyValue > 0
       ? ((mortgage.outstandingBalance || 0) / propertyValue) * 100
       : 0;
-    const newEquity       = propertyValue - advance;
+    const newEquity       = propertyValue - finalBalance;
     const oldEquity       = propertyValue - (mortgage.outstandingBalance || 0);
 
     return {
@@ -148,10 +155,12 @@ export default function SwitchMortgage() {
       oldEquity,
       advance,
       fees,
+      addedFees,
+      finalBalance,
     };
   }, [
     redemptionBalance, erc, exitFee,
-    newAdvance, feesOnCompletion,
+    newAdvance, feesOnCompletion, feesToLoanEnabled, feesToLoan,
     mortgage.outstandingBalance, mortgage.propertyValue,
   ]);
 
@@ -187,6 +196,7 @@ export default function SwitchMortgage() {
           newFixedRateEndDate: newFixedEndDate || null,
           newMonthlyPayment:  parseFloat(newMonthlyPayment) || 0,
           feesPayableOnCompletion: parseFloat(feesOnCompletion) || 0,
+          feesAddedToLoan:    calc.addedFees,
         },
         cashReleasedToClient: calc.netBalance,
       });
@@ -373,6 +383,42 @@ export default function SwitchMortgage() {
           />
         </div>
 
+        {/* ── Include Mortgage Fees (added to loan) ── */}
+        <div className="animate-in stagger-3 section-card" style={{ marginBottom: '12px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: feesToLoanEnabled ? '16px' : 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span className="material-symbols-outlined" style={{ color: '#ffb95f', fontSize: '20px' }}>payments</span>
+              <p style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 800, fontSize: '15px', color: '#dae2fd', margin: 0 }}>Include Mortgage Fees</p>
+            </div>
+            <div
+              onClick={() => setFeesToLoanEnabled(v => !v)}
+              style={{
+                width: '46px', height: '26px', borderRadius: '13px',
+                background: feesToLoanEnabled ? '#4edea3' : '#2d3449',
+                position: 'relative', cursor: 'pointer', transition: 'background 0.2s', flexShrink: 0,
+              }}
+            >
+              <div style={{
+                position: 'absolute', top: '3px',
+                left: feesToLoanEnabled ? '23px' : '3px',
+                width: '20px', height: '20px', borderRadius: '50%',
+                background: '#fff', transition: 'left 0.2s',
+                boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
+              }} />
+            </div>
+          </div>
+          {feesToLoanEnabled && (
+            <div>
+              <MoneyInput
+                label="Product / Arrangement Fee"
+                value={feesToLoan}
+                onChange={setFeesToLoan}
+                hint="Added to your new mortgage balance rather than paid upfront. This increases your outstanding balance and LTV."
+              />
+            </div>
+          )}
+        </div>
+
         {/* ── Switch Summary ── */}
         <div className="animate-in stagger-3 section-card" style={{ marginBottom: '12px' }}>
           <h3 style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 800, fontSize: '15px', color: '#dae2fd', margin: '0 0 16px' }}>
@@ -382,6 +428,12 @@ export default function SwitchMortgage() {
           <SummaryRow label="Total to redeem"    value={fmtFull(calc.totalRedemption)} valueColor="#ffb95f" />
           <SummaryRow label="New mortgage advance" value={fmt(calc.advance)}          valueColor="#4edea3" />
           <SummaryRow label="Fees on completion"  value={fmt(calc.fees)}              valueColor="#adc6ff" />
+          {calc.addedFees > 0 && (
+            <>
+              <SummaryRow label="Fees added to loan" value={`+${fmt(calc.addedFees)}`} valueColor="#ffb95f" />
+              <SummaryRow label="New mortgage balance" value={fmt(calc.finalBalance)}  valueColor="#dae2fd" borderTop />
+            </>
+          )}
 
           {/* Net position */}
           <div style={{

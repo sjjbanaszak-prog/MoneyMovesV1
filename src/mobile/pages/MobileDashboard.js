@@ -20,6 +20,110 @@ function fmtK(n) {
   return `£${Math.round(n)}`;
 }
 
+// ── Mortgage history helpers (switch-aware) ─────────────────────────────────────
+// A remortgage overwrites a mortgage's active fields (startDate, rate, balance…)
+// with the new provider's values and archives the old details in switchHistory.
+// For historical charts we must reconstruct the balance across each provider
+// segment and anchor the property to its ORIGINAL start date, not the switch date.
+
+function monthKeyFromDate(str) {
+  if (!str) return null;
+  const d = new Date(str);
+  if (isNaN(d.getTime())) return null;
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
+// The date the property was first mortgaged, tracing back through any switches.
+function originalMortgageStartDate(m) {
+  const switches = m.switchHistory || [];
+  if (switches.length) {
+    const sorted = [...switches].sort((a, b) => (a.switchDate || '').localeCompare(b.switchDate || ''));
+    return sorted[0].previousStartDate || m.startDate;
+  }
+  return m.startDate;
+}
+
+// Break a mortgage's life into provider segments, each with the known balance at
+// its end, so we can amortize backwards accurately within each segment.
+function mortgageBalanceSegments(m) {
+  const switches = [...(m.switchHistory || [])].sort((a, b) => (a.switchDate || '').localeCompare(b.switchDate || ''));
+  const segs = [];
+
+  if (switches.length === 0) {
+    segs.push({
+      startDate:  m.startDate,
+      endDate:    null, // runs to "now"
+      endBalance: m.outstandingBalance || 0,
+      rate:       (m.interestRate || 0) / 100 / 12,
+      payment:    m.monthlyPayment || 0,
+    });
+    return segs;
+  }
+
+  // Original mortgage: from its start to the first switch, ending at the
+  // redeemed balance (what was owed the moment the switch completed).
+  segs.push({
+    startDate:  switches[0].previousStartDate || m.startDate,
+    endDate:    switches[0].switchDate,
+    endBalance: switches[0].redemption?.outstandingBalance ?? switches[0].previousBalance ?? 0,
+    rate:       (switches[0].previousRate || 0) / 100 / 12,
+    payment:    switches[0].previousMonthlyPayment || 0,
+  });
+
+  // Intermediate providers between consecutive switches.
+  for (let i = 0; i < switches.length - 1; i++) {
+    segs.push({
+      startDate:  switches[i].switchDate,
+      endDate:    switches[i + 1].switchDate,
+      endBalance: switches[i + 1].redemption?.outstandingBalance ?? switches[i + 1].previousBalance ?? 0,
+      rate:       (switches[i + 1].previousRate || 0) / 100 / 12,
+      payment:    switches[i + 1].previousMonthlyPayment || 0,
+    });
+  }
+
+  // Current (active) mortgage: from the last switch to now.
+  const last = switches[switches.length - 1];
+  segs.push({
+    startDate:  last.switchDate,
+    endDate:    null,
+    endBalance: m.outstandingBalance || 0,
+    rate:       (m.interestRate || 0) / 100 / 12,
+    payment:    m.monthlyPayment || 0,
+  });
+
+  return segs;
+}
+
+// Amortize backwards from a known end balance to reach an earlier month.
+function amortizeBackwards(monthsAgo, endBalance, rate, payment) {
+  if (monthsAgo <= 0) return endBalance;
+  if (rate > 0 && payment > 0) {
+    const factor = Math.pow(1 + rate, monthsAgo);
+    return (endBalance + (payment / rate) * (factor - 1)) / factor;
+  }
+  return endBalance + payment * monthsAgo;
+}
+
+// Reconstructed outstanding balance for a mortgage at a given chart month.
+function historicalMortgageBalance(m, moKey, nowKey) {
+  const [moY, moM] = moKey.split('-').map(Number);
+  const segments = mortgageBalanceSegments(m);
+
+  for (const seg of segments) {
+    const segStartKey = monthKeyFromDate(seg.startDate);
+    const segEndKey   = seg.endDate ? monthKeyFromDate(seg.endDate) : nowKey;
+    if (segStartKey && moKey < segStartKey) continue; // month is before this segment
+    if (segEndKey && moKey > segEndKey)     continue; // month is after this segment
+
+    const [endY, endM] = (segEndKey || nowKey).split('-').map(Number);
+    const monthsAgo    = (endY - moY) * 12 + (endM - moM);
+    return Math.max(0, Math.round(amortizeBackwards(monthsAgo, seg.endBalance, seg.rate, seg.payment)));
+  }
+
+  // Month predates the property's earliest mortgage → no liability yet.
+  return 0;
+}
+
 // ── Demo toggle ───────────────────────────────────────────────────────────────
 
 function DemoToggle() {
@@ -440,12 +544,13 @@ function DashboardContent() {
     //   then all propertyValueHistory entries, then currentValue at today.
     // Forward-fill gives the property value at any chart month.
     const propertyHistories = Object.values(propertyMap).map(group => {
+      // Anchor at the ORIGINAL start date, tracing back through any remortgages,
+      // so a switch doesn't erase the property from before the switch date.
       const sorted = [...group].sort((a, b) =>
-        (a.startDate || '').localeCompare(b.startDate || '')
+        (originalMortgageStartDate(a) || '').localeCompare(originalMortgageStartDate(b) || '')
       );
       const first = sorted[0];
-      const sd    = first.startDate ? new Date(first.startDate) : null;
-      const startKey     = sd && !isNaN(sd) ? `${sd.getFullYear()}-${String(sd.getMonth() + 1).padStart(2, '0')}` : null;
+      const startKey      = monthKeyFromDate(originalMortgageStartDate(first));
       const purchasePrice = first.purchasePrice || first.propertyValue || 0;
       const currentValue  = Math.max(...group.map(m => m.propertyValue || 0));
 
@@ -480,36 +585,11 @@ function DashboardContent() {
     });
 
     // ── Liabilities series ───────────────────────────────────────────────────
-    // Reconstruct each mortgage's balance via amortization formula worked backwards.
-    const liabilitiesSeries = months.map(mo => {
-      const [moY, moM] = mo.split('-').map(Number);
-      return mortgages.reduce((sum, m) => {
-        const bal     = m.outstandingBalance || 0;
-        const rate    = (m.interestRate || 0) / 100 / 12;
-        const payment = m.monthlyPayment || 0;
-
-        if (m.startDate) {
-          const sd = new Date(m.startDate);
-          if (!isNaN(sd.getTime())) {
-            const startKey = `${sd.getFullYear()}-${String(sd.getMonth() + 1).padStart(2, '0')}`;
-            if (mo < startKey) return sum;
-          }
-        }
-
-        const monthsAgo = (nowY - moY) * 12 + (nowM - moM);
-        if (monthsAgo <= 0) return sum + bal;
-
-        let historicalBal;
-        if (rate > 0 && payment > 0) {
-          const factor = Math.pow(1 + rate, monthsAgo);
-          historicalBal = (bal + (payment / rate) * (factor - 1)) / factor;
-        } else {
-          historicalBal = bal + payment * monthsAgo;
-        }
-
-        return sum + Math.max(0, Math.round(historicalBal));
-      }, 0);
-    });
+    // Reconstruct each mortgage's balance across every provider segment so the
+    // debt line stays continuous through remortgages (including equity release).
+    const liabilitiesSeries = months.map(mo =>
+      mortgages.reduce((sum, m) => sum + historicalMortgageBalance(m, mo, nowKey), 0)
+    );
 
     const series = assetsSeries.map((a, i) => a - liabilitiesSeries[i]);
     return { series, assetsSeries, liabilitiesSeries, labels: dualChartData.labels };
