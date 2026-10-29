@@ -269,7 +269,7 @@ function DualLineChart({ valueSeries, contribSeries, labels }) {
 
 export default function PensionInsights() {
   const { entries, metrics } = usePensionData();
-  const [timeframe, setTimeframe] = useState('12M');
+  const [timeframe, setTimeframe] = useState('1Y');
   const [showAllAllowance, setShowAllAllowance] = useState(false);
 
   const providers = useMemo(() => {
@@ -388,12 +388,12 @@ export default function PensionInsights() {
     return { valueSeries, contribSeries, labels, firstValue, lastValue, lastContrib };
   }, [entries]);
 
-  // Slice dualChartData to the selected timeframe for display
+  // Slice dualChartData to the selected timeframe: 1Y = 12 months, 5Y = 60 months, AT = all
   const displayData = useMemo(() => {
     if (!dualChartData) return null;
     if (timeframe === 'AT') return dualChartData;
     const n = dualChartData.labels.length;
-    const count = Math.min(12, n);
+    const count = timeframe === '5Y' ? Math.min(60, n) : Math.min(12, n);
     const slice = (arr) => arr.slice(n - count);
     return {
       ...dualChartData,
@@ -534,7 +534,7 @@ export default function PensionInsights() {
               Growth History
             </h3>
             <div style={{ display: 'flex', background: '#060e20', borderRadius: '8px', padding: '2px', gap: '2px' }}>
-              {['12M', 'AT'].map(tf => (
+              {['1Y', '5Y', 'AT'].map(tf => (
                 <button
                   key={tf}
                   onClick={() => setTimeframe(tf)}

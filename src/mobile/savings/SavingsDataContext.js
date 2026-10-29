@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import dayjs from 'dayjs';
@@ -475,10 +475,10 @@ export function SavingsDataProvider({ children }) {
   }
 
   // Enrich each account with a derived currentBalance for display
-  const enrichedAccounts = accounts.map(a => ({
+  const enrichedAccounts = useMemo(() => accounts.map(a => ({
     ...a,
     currentBalance: deriveCurrentBalance(a),
-  }));
+  })), [accounts]);
 
   const metrics = computeMetrics(accounts);
 

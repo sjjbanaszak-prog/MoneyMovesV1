@@ -11,6 +11,7 @@ import {
   monthKeyFromDate,
   historicalMortgageBalance,
 } from '../mortgage/utils/mortgageHistory';
+import { savingsBalanceSeries, earliestSavingsMonth } from '../savings/utils/savingsHistory';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -310,14 +311,16 @@ function InsightTile({ icon, iconColor, label, value, barPct, barColor }) {
 function DashboardContent() {
   const { entries, metrics: pensionMetrics, isLoading: pensionLoading } = usePensionData();
   const { mortgages }               = useMortgageData();
-  const { metrics: savingsMetrics } = useSavingsData();
+  const { accounts: savingsAccounts, metrics: savingsMetrics } = useSavingsData();
 
   const [timeframe, setTimeframe] = useState('1Y');
 
   // ── Pension values (used in assets card) ──────────────────────────────────
   const { totalValue } = pensionMetrics;
 
-  // ── Pension value history (base for net worth history chart) ───────────────
+  // ── Pension value history + month range for the net worth history chart ────
+  // The range starts at the earliest data from ANY module, so users without
+  // pensions still get a chart from their savings and mortgage history.
   const dualChartData = useMemo(() => {
     const now    = new Date();
     const nowKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
@@ -340,6 +343,14 @@ function DashboardContent() {
         if (!firstKey || key < firstKey) firstKey = key;
         if (key > lastKey) lastKey = key;
       });
+    });
+
+    const savingsFirstKey = earliestSavingsMonth(savingsAccounts);
+    if (savingsFirstKey && (!firstKey || savingsFirstKey < firstKey)) firstKey = savingsFirstKey;
+
+    mortgages.forEach(mg => {
+      const key = monthKeyFromDate(originalMortgageStartDate(mg));
+      if (key && (!firstKey || key < firstKey)) firstKey = key;
     });
 
     if (!firstKey) return null;
@@ -410,7 +421,7 @@ function DashboardContent() {
     });
 
     return { valueSeries, contribSeries, labels, months };
-  }, [entries]);
+  }, [entries, savingsAccounts, mortgages]);
 
   // ── Mortgage / net worth totals ────────────────────────────────────────────
   const savingsBalance = savingsMetrics.totalBalance || 0;
@@ -420,7 +431,7 @@ function DashboardContent() {
     totalMortgageDebt:  mortgages.reduce((s, m) => s + (m.outstandingBalance || 0), 0),
   }), [mortgages]);
 
-  // Net worth history: pension value over time + amortized liabilities + interpolated property assets
+  // Net worth history: pension value over time + savings balance history + amortized liabilities + interpolated property assets
   const netWorthChartData = useMemo(() => {
     if (!dualChartData) return null;
     const { months } = dualChartData;
@@ -470,6 +481,11 @@ function DashboardContent() {
       return { startKey, pts };
     });
 
+    // ── Savings history ──────────────────────────────────────────────────────
+    // Month-end balance per account, so savings grow over time on the chart
+    // rather than showing today's total in every month.
+    const savingsSeries = savingsBalanceSeries(savingsAccounts, months, nowKey);
+
     // ── Assets series ────────────────────────────────────────────────────────
     const assetsSeries = months.map((mo, i) => {
       const propertyAtMonth = propertyHistories.reduce((sum, { startKey, pts }) => {
@@ -482,7 +498,7 @@ function DashboardContent() {
         return sum + val;
       }, 0);
 
-      return dualChartData.valueSeries[i] + savingsBalance + propertyAtMonth;
+      return dualChartData.valueSeries[i] + savingsSeries[i] + propertyAtMonth;
     });
 
     // ── Liabilities series ───────────────────────────────────────────────────
@@ -494,7 +510,7 @@ function DashboardContent() {
 
     const series = assetsSeries.map((a, i) => a - liabilitiesSeries[i]);
     return { series, assetsSeries, liabilitiesSeries, labels: dualChartData.labels };
-  }, [dualChartData, savingsBalance, mortgages]);
+  }, [dualChartData, savingsAccounts, mortgages]);
 
   // Slice to selected timeframe: 1Y = 12 months, 5Y = 60 months, AT = all
   const displayData = useMemo(() => {
@@ -537,16 +553,20 @@ function DashboardContent() {
   const pensionGrowthPct   = pensionMetrics.growthPct || 0;
   const savingsPct         = totalAssets > 0 ? (savingsBalance / totalAssets) * 100 : 0;
 
-  // Net worth growth pill: first non-zero vs last in the full chart
+  // Net worth growth pill: change over the timeframe selected on the Net Worth
+  // History chart. 1Y/5Y compare today against the value 12/60 months ago (or
+  // the earliest available month); AT compares against the first positive value.
   const { netWorthGrowth, netWorthGrowthPct } = useMemo(() => {
     if (!netWorthChartData) return { netWorthGrowth: 0, netWorthGrowthPct: 0 };
-    const s     = netWorthChartData.series;
-    const first = s.find(v => v > 0) || 0;
-    const last  = s[s.length - 1] || 0;
-    const change = last - first;
-    const pct    = first > 0 ? (change / first) * 100 : 0;
+    const s       = netWorthChartData.series;
+    const last    = s[s.length - 1] || 0;
+    const lookback = timeframe === '5Y' ? 60 : timeframe === '1Y' ? 12 : s.length;
+    const startIdx = Math.max(0, s.length - 1 - lookback);
+    const first   = s.slice(startIdx).find(v => v > 0) || 0;
+    const change  = last - first;
+    const pct     = first > 0 ? (change / first) * 100 : 0;
     return { netWorthGrowth: change, netWorthGrowthPct: pct };
-  }, [netWorthChartData]);
+  }, [netWorthChartData, timeframe]);
 
   // Assets-to-total bar percentage
   const totalForBar   = totalAssets + totalLiabilities;
