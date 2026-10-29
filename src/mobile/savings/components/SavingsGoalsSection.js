@@ -35,16 +35,16 @@ const DEMO_GOALS = [
   {
     id: 'demo1',
     name: 'Emergency Fund',
-    targetAmount: 10000,
-    targetDate: '2027-03',
-    linkedAccount: null,
+    targetAmount: 15000,
+    targetDate: '2027-06',
+    linkedAccount: 'Chase',
   },
   {
     id: 'demo2',
-    name: 'Holiday 2027',
-    targetAmount: 3500,
-    targetDate: '2026-12',
-    linkedAccount: null,
+    name: 'Kitchen Renovation',
+    targetAmount: 35000,
+    targetDate: '2027-09',
+    linkedAccount: 'Nationwide',
   },
 ];
 

@@ -82,6 +82,19 @@ export function amortizeBackwards(monthsAgo, endBalance, rate, payment) {
   return endBalance + payment * monthsAgo;
 }
 
+// Overpayment totals keyed by 'YYYY-MM' for months in (afterKey, throughKey].
+const OVERPAYMENT_TYPES = ['overpayment', 'lump_sum'];
+function overpaymentsByMonth(m, afterKey, throughKey) {
+  const totals = {};
+  (m.paymentHistory || []).forEach(p => {
+    if (!OVERPAYMENT_TYPES.includes(p.type)) return;
+    const key = monthKeyFromDate(p.date);
+    if (!key || key <= afterKey || key > throughKey) return;
+    totals[key] = (totals[key] || 0) + (p.amount || 0);
+  });
+  return totals;
+}
+
 // Reconstructed outstanding balance for a mortgage at a given chart month.
 export function historicalMortgageBalance(m, moKey, nowKey) {
   const [moY, moM] = moKey.split('-').map(Number);
@@ -103,7 +116,21 @@ export function historicalMortgageBalance(m, moKey, nowKey) {
     const segEndKey    = seg.endDate ? monthKeyFromDate(seg.endDate) : nowKey;
     const [endY, endM] = segEndKey.split('-').map(Number);
     const monthsAgo    = (endY - moY) * 12 + (endM - moM);
-    return Math.max(0, Math.round(amortizeBackwards(monthsAgo, seg.endBalance, seg.rate, seg.payment)));
+
+    // Overpayments made after this month (within the segment) also reduced the
+    // balance, so add them back when stepping backwards.
+    const overpayments = overpaymentsByMonth(m, moKey, segEndKey);
+    if (Object.keys(overpayments).length === 0) {
+      return Math.max(0, Math.round(amortizeBackwards(monthsAgo, seg.endBalance, seg.rate, seg.payment)));
+    }
+    let bal = seg.endBalance;
+    let y = endY, mo = endM;
+    for (let i = 0; i < monthsAgo; i++) {
+      bal = (bal + seg.payment + (overpayments[`${y}-${String(mo).padStart(2, '0')}`] || 0)) / (1 + seg.rate);
+      mo--;
+      if (mo < 1) { mo = 12; y--; }
+    }
+    return Math.max(0, Math.round(bal));
   }
 
   // Month predates the property's earliest mortgage → no liability yet.
