@@ -4,6 +4,10 @@ import MobileNavDrawer from '../components/MobileNavDrawer';
 
 const LAST_UPDATED = '4 November 2026';
 
+// The Family section is paused in the app, so its privacy wording is hidden.
+// Set to true when Family is re-enabled.
+const SHOW_FAMILY_SECTION = false;
+
 const sectionHeadStyle = {
   fontFamily: 'Manrope, sans-serif',
   fontWeight: 800,
@@ -103,7 +107,9 @@ export default function PrivacyPolicyPage() {
           <ul style={listStyle}>
             <li><strong style={{ color: '#dae2fd' }}>Account data:</strong> your name, email address, and date of birth when you register</li>
             <li><strong style={{ color: '#dae2fd' }}>Financial data:</strong> savings balances, pension contributions, mortgage details, and income figures you enter into the app</li>
-            <li><strong style={{ color: '#dae2fd' }}>Household data:</strong> details you choose to add about your partner and children (see "Information About Your Family" below)</li>
+            {SHOW_FAMILY_SECTION && (
+              <li><strong style={{ color: '#dae2fd' }}>Household data:</strong> details you choose to add about your partner and children (see "Information About Your Family" below)</li>
+            )}
             <li><strong style={{ color: '#dae2fd' }}>Usage data:</strong> how you interact with features (used solely to improve the service)</li>
             <li><strong style={{ color: '#dae2fd' }}>Technical data:</strong> browser type, operating system, and error logs when you submit a support report</li>
           </ul>
@@ -146,7 +152,7 @@ export default function PrivacyPolicyPage() {
           </p>
           <p style={{ ...bodyStyle, margin: 0 }}>
             We retain your data for as long as your account is active. When you delete your account (Settings → Delete
-            Account), your profile and all the financial and household data you've added are permanently deleted
+            Account), your profile and all the data you've added are permanently deleted
             straight away. Problem reports you've sent us are kept separately so we can follow up on them.
           </p>
         </Section>
@@ -195,6 +201,7 @@ export default function PrivacyPolicyPage() {
           </p>
         </Section>
 
+        {SHOW_FAMILY_SECTION && (
         <Section title="Information About Your Family">
           <p style={bodyStyle}>
             The Family section lets you add details about other people in your household so you can plan together.
@@ -216,13 +223,16 @@ export default function PrivacyPolicyPage() {
             when you delete your account.
           </p>
         </Section>
+        )}
 
         <Section title="Children's Privacy">
           <p style={{ ...bodyStyle, margin: 0 }}>
             Money Moves is intended for users aged 18 and over, and you must confirm you're 18 or over when you sign up.
-            Children can't hold an account. The only information we hold about children is what a parent or guardian adds
-            in the Family section, as described above. If you believe someone under 18 has registered, please contact us
-            and we will delete the account promptly.
+            Children can't hold an account
+            {SHOW_FAMILY_SECTION
+              ? '. The only information we hold about children is what a parent or guardian adds in the Family section, as described above.'
+              : ', and we do not knowingly collect data from anyone under 18.'}{' '}
+            If you believe someone under 18 has registered, please contact us and we will delete the account promptly.
           </p>
         </Section>
 
