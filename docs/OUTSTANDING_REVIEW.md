@@ -8,7 +8,7 @@
 - [x] "AI" wording removed everywhere users see it: bottom tab is now **Analyse**, pages are "Analysis", teaser and upgrade copy reworded (no AI claims; "recommendations" → "insights")
 - [x] Terms of Use tax-year line: now "based on current HMRC rates for the tax year shown"
 
-> The AI wording and Terms changes are **not yet committed**.
+> Committed in `d2a755d`.
 
 ## Functional (do first)
 
