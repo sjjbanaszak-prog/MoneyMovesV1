@@ -1,5 +1,5 @@
 import { buildDemoHousehold } from './demoHousehold';
-import { historicalMortgageBalance } from '../mobile/mortgage/utils/mortgageHistory';
+import { historicalMortgageBalance, monthlyPaymentSplit } from '../mobile/mortgage/utils/mortgageHistory';
 
 const TODAY = new Date(2026, 9, 29); // 29 Oct 2026
 const NOW_KEY = '2026-10';
@@ -97,5 +97,34 @@ describe('historicalMortgageBalance with overpayments', () => {
 
   test('current month equals the live outstanding balance', () => {
     expect(historicalMortgageBalance(oak, NOW_KEY, NOW_KEY)).toBe(Math.round(oak.outstandingBalance));
+  });
+});
+
+describe('monthlyPaymentSplit', () => {
+  const [oak] = buildDemoHousehold(TODAY).mortgages;
+
+  test('interest is the opening balance × the Halifax rate, and the split adds up', () => {
+    const split = monthlyPaymentSplit(oak, '2026-05', NOW_KEY);
+    const opening = historicalMortgageBalance(oak, '2026-04', NOW_KEY);
+    expect(split.interest).toBeCloseTo(opening * 0.0489 / 12, 0);
+    expect(split.principal + split.interest).toBeCloseTo(split.paid, 2);
+    expect(split.principal).toBeGreaterThan(0);
+  });
+
+  test('a lump sum overpayment counts entirely as principal', () => {
+    const april = monthlyPaymentSplit(oak, '2025-04', NOW_KEY);
+    const may   = monthlyPaymentSplit(oak, '2025-05', NOW_KEY);
+    expect(april.principal - may.principal).toBeGreaterThan(4900);
+    expect(Math.abs(april.interest - may.interest)).toBeLessThan(50);
+  });
+
+  test('uses the old deal rate before the switch', () => {
+    const split = monthlyPaymentSplit(oak, '2023-06', NOW_KEY);
+    const opening = historicalMortgageBalance(oak, '2023-05', NOW_KEY);
+    expect(split.interest).toBeCloseTo(opening * 0.0179 / 12, 0);
+  });
+
+  test('months without payments return null', () => {
+    expect(monthlyPaymentSplit(oak, '2020-01', NOW_KEY)).toBeNull();
   });
 });

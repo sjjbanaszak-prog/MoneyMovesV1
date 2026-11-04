@@ -136,3 +136,42 @@ export function historicalMortgageBalance(m, moKey, nowKey) {
   // Month predates the property's earliest mortgage → no liability yet.
   return 0;
 }
+
+function prevMonthKey(key) {
+  const [y, m] = key.split('-').map(Number);
+  return m === 1 ? `${y - 1}-12` : `${y}-${String(m - 1).padStart(2, '0')}`;
+}
+
+// Monthly interest rate of the deal that was active in a given month. Mirrors the
+// segment selection in historicalMortgageBalance (switch month → new deal).
+function monthlyRateFor(m, moKey) {
+  for (const seg of mortgageBalanceSegments(m)) {
+    const startKey = monthKeyFromDate(seg.startDate);
+    if (startKey && moKey < startKey) continue;
+    if (seg.endDate) {
+      const endKey = monthKeyFromDate(seg.endDate);
+      if (endKey && moKey >= endKey) continue;
+    }
+    return seg.rate;
+  }
+  return 0;
+}
+
+// Split what was paid in a month into interest and principal (capital repaid).
+// Interest = the month's opening balance × that deal's monthly rate, capped at the
+// regular payment; the rest of the payment and all overpayments reduce the balance.
+// Returns null for months with no payments.
+export function monthlyPaymentSplit(m, moKey, nowKey) {
+  let paid = 0;
+  let overpaid = 0;
+  (m.paymentHistory || []).forEach(p => {
+    if (p.type === 'switch' || monthKeyFromDate(p.date) !== moKey) return;
+    paid += p.amount || 0;
+    if (OVERPAYMENT_TYPES.includes(p.type)) overpaid += p.amount || 0;
+  });
+  if (paid <= 0) return null;
+
+  const opening  = historicalMortgageBalance(m, prevMonthKey(moKey), nowKey);
+  const interest = Math.max(0, Math.min(paid - overpaid, opening * monthlyRateFor(m, moKey)));
+  return { paid, interest, principal: paid - interest };
+}

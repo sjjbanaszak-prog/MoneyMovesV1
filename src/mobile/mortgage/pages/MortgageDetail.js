@@ -3,6 +3,7 @@ import { useParams, Navigate, Link, useNavigate } from 'react-router-dom';
 import { useMortgageData } from '../MortgageDataContext';
 import MortgageDetailLayout from '../MortgageDetailLayout';
 import { lookupPropertyValue } from '../utils/propertyLookup';
+import { monthlyPaymentSplit } from '../utils/mortgageHistory';
 
 // ---- Helpers ----
 function fmt(n) {
@@ -147,6 +148,9 @@ function EditableValue({ label, value, color, onSave }) {
 }
 
 // ---- Principal / Interest bar chart ----
+// Each month's payments split into principal (capital repaid, incl. overpayments) and
+// interest, worked out from the reconstructed balance and the deal's rate. The cards
+// beneath sum the selected FY/CY: Payments (total paid), Interest, and Principal.
 function MortgagePaymentChart({ mortgage, mode = 'fy' }) {
   const [hoveredIdx, setHoveredIdx] = useState(null);
 
@@ -155,74 +159,41 @@ function MortgagePaymentChart({ mortgage, mode = 'fy' }) {
   const nowMonth = today.getMonth(); // 0-indexed
   const nowDay   = today.getDate();
   const fyStart  = (nowMonth > 3 || (nowMonth === 3 && nowDay >= 6)) ? nowYear : nowYear - 1;
+  const nowKey   = `${nowYear}-${String(nowMonth + 1).padStart(2, '0')}`;
 
-  const { months, periodTotal, currentBucketIdx, periodLabel } = useMemo(() => {
-    const history = mortgage.paymentHistory || [];
-
-    if (mode === 'cy') {
-      const buckets = Array.from({ length: 12 }, (_, i) => {
-        const total = history.reduce((s, p) => {
-          if (!p.date) return s;
-          const d = new Date(p.date);
-          return d.getFullYear() === nowYear && d.getMonth() === i ? s + (p.amount || 0) : s;
-        }, 0);
-        return {
-          label:     new Date(nowYear, i, 1).toLocaleString('en-GB', { month: 'short' }),
-          isFuture:  i > nowMonth,
-          isCurrent: i === nowMonth,
-          payment:   total > 0 ? total : null,
-        };
-      });
+  const months = useMemo(() => {
+    const currentBucket = mode === 'cy'
+      ? nowMonth
+      : (nowMonth === 3 && nowDay < 6) ? 11 : (nowMonth - 3 + 12) % 12;
+    return Array.from({ length: 12 }, (_, i) => {
+      const calMonth = mode === 'cy' ? i : (3 + i) % 12;
+      const calYear  = mode === 'cy' ? nowYear : (calMonth >= 3 ? fyStart : fyStart + 1);
+      const key      = `${calYear}-${String(calMonth + 1).padStart(2, '0')}`;
+      const isFuture = i > currentBucket;
       return {
-        months:           buckets,
-        periodTotal:      buckets.reduce((s, b) => s + (b.payment || 0), 0),
-        currentBucketIdx: nowMonth,
-        periodLabel:      String(nowYear),
-      };
-    }
-
-    // FY: April (bucket 0) → March (bucket 11)
-    const currentBucket = (nowMonth === 3 && nowDay < 6) ? 11 : (nowMonth - 3 + 12) % 12;
-    const buckets = Array.from({ length: 12 }, (_, i) => {
-      const calMonth = (3 + i) % 12;
-      const year     = calMonth >= 3 ? fyStart : fyStart + 1;
-      const total    = history.reduce((s, p) => {
-        if (!p.date) return s;
-        const d  = new Date(p.date);
-        const dM = d.getMonth() + 1;
-        const dD = d.getDate();
-        const dY = d.getFullYear();
-        const txFY = (dM > 4 || (dM === 4 && dD >= 6)) ? dY : dY - 1;
-        return txFY === fyStart && d.getMonth() === calMonth ? s + (p.amount || 0) : s;
-      }, 0);
-      return {
-        label:     new Date(year, calMonth, 1).toLocaleString('en-GB', { month: 'short' }),
-        isFuture:  i > currentBucket,
+        label:     new Date(calYear, calMonth, 1).toLocaleString('en-GB', { month: 'short' }),
+        calMonth, calYear, isFuture,
         isCurrent: i === currentBucket,
-        payment:   total > 0 ? total : null,
+        split:     isFuture ? null : monthlyPaymentSplit(mortgage, key, nowKey),
       };
     });
-    return {
-      months:           buckets,
-      periodTotal:      buckets.reduce((s, b) => s + (b.payment || 0), 0),
-      currentBucketIdx: currentBucket,
-      periodLabel:      `${fyStart}/${String(fyStart + 1).slice(-2)}`,
-    };
-  }, [mortgage.paymentHistory, mode, nowYear, nowMonth, nowDay, fyStart]);
+  }, [mortgage, mode, nowYear, nowMonth, nowDay, fyStart, nowKey]);
 
-  // Estimated principal/interest split
-  const monthlyInterest = (mortgage.outstandingBalance || 0) * ((mortgage.interestRate || 0) / 100 / 12);
-  const monthlyPayment  = mortgage.monthlyPayment || 0;
-  const interestFrac    = monthlyPayment > 0 ? monthlyInterest / monthlyPayment : 0.5;
+  const summary = useMemo(() => {
+    const principal = months.reduce((s, m) => s + (m.split?.principal || 0), 0);
+    const interest  = months.reduce((s, m) => s + (m.split?.interest  || 0), 0);
+    return { total: principal + interest, interest, principal };
+  }, [months]);
 
-  const maxBar   = Math.max(...months.map(m => m.payment).filter(v => v !== null), monthlyPayment || 1);
-  const allTotal = (mortgage.paymentHistory || []).reduce((s, p) => s + (p.amount || 0), 0);
+  const maxBar = Math.max(...months.map(m => m.split?.paid || 0), mortgage.monthlyPayment || 1);
 
   const tooltipLeft = hoveredIdx !== null
     ? Math.min(Math.max((hoveredIdx + 0.5) / 12 * 100, 14), 86)
     : 50;
 
-  const isHoveringPayment = hoveredIdx !== null && months[hoveredIdx].payment !== null;
+  const hovered = hoveredIdx !== null ? months[hoveredIdx] : null;
+  const isHoveringPayment = !!hovered?.split;
+  const gbp = n => '£' + Math.round(n || 0).toLocaleString('en-GB');
 
   return (
     <div>
@@ -236,6 +207,10 @@ function MortgagePaymentChart({ mortgage, mode = 'fy' }) {
             bottom: 'calc(100% + 6px)',
             left: `${tooltipLeft}%`,
             transform: 'translateX(-50%)',
+            // Fixed width so the tooltip doesn't resize as values change month to month
+            width: '160px',
+            boxSizing: 'border-box',
+            fontVariantNumeric: 'tabular-nums',
             background: '#1a2744',
             border: '1px solid rgba(173,198,255,0.15)',
             borderRadius: '10px',
@@ -246,16 +221,16 @@ function MortgagePaymentChart({ mortgage, mode = 'fy' }) {
             boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
           }}>
             <p style={{ fontSize: '11px', fontWeight: 700, color: '#dae2fd', margin: '0 0 6px', fontFamily: 'Manrope, sans-serif' }}>
-              {months[hoveredIdx].label} {periodLabel}
+              {new Date(hovered.calYear, hovered.calMonth, 1).toLocaleString('en-GB', { month: 'short', year: '2-digit' })}
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: '16px' }}>
                 <span style={{ fontSize: '11px', color: '#4edea3' }}>Principal</span>
-                <span style={{ fontSize: '11px', fontWeight: 600, color: '#dae2fd' }}>~{'£' + Math.round((months[hoveredIdx].payment || 0) * (1 - interestFrac)).toLocaleString('en-GB')}</span>
+                <span style={{ fontSize: '11px', fontWeight: 600, color: '#4edea3' }}>{gbp(hovered.split.principal)}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: '16px' }}>
-                <span style={{ fontSize: '11px', color: '#adc6ff' }}>Interest</span>
-                <span style={{ fontSize: '11px', fontWeight: 600, color: '#dae2fd' }}>~{'£' + Math.round((months[hoveredIdx].payment || 0) * interestFrac).toLocaleString('en-GB')}</span>
+                <span style={{ fontSize: '11px', color: '#ffb4ab' }}>Interest</span>
+                <span style={{ fontSize: '11px', fontWeight: 600, color: '#ffb4ab' }}>{gbp(hovered.split.interest)}</span>
               </div>
               <div style={{
                 display: 'flex', justifyContent: 'space-between', gap: '16px',
@@ -263,7 +238,7 @@ function MortgagePaymentChart({ mortgage, mode = 'fy' }) {
                 paddingTop: '3px', marginTop: '1px',
               }}>
                 <span style={{ fontSize: '11px', color: '#bbcabf' }}>Total paid</span>
-                <span style={{ fontSize: '11px', fontWeight: 700, color: '#dae2fd' }}>{'£' + Math.round(months[hoveredIdx].payment || 0).toLocaleString('en-GB')}</span>
+                <span style={{ fontSize: '11px', fontWeight: 700, color: '#dae2fd' }}>{gbp(hovered.split.paid)}</span>
               </div>
             </div>
           </div>
@@ -272,35 +247,35 @@ function MortgagePaymentChart({ mortgage, mode = 'fy' }) {
         {/* Bars */}
         <div style={{ display: 'flex', gap: '4px', height: '52px', alignItems: 'flex-end' }}>
           {months.map((m, i) => {
-            const barHeightPct = m.payment !== null ? Math.max(8, (m.payment / maxBar) * 100) : 0;
+            const paid         = m.split?.paid || 0;
+            const barHeightPct = paid > 0 ? Math.max(8, (paid / maxBar) * 100) : 0;
+            const interestFrac = paid > 0 ? m.split.interest / paid : 0;
             return (
               <div
                 key={i}
-                style={{ flex: 1, height: '52px', display: 'flex', alignItems: 'flex-end', cursor: m.payment !== null ? 'pointer' : 'default' }}
+                style={{ flex: 1, height: '52px', display: 'flex', alignItems: 'flex-end', cursor: m.split ? 'pointer' : 'default' }}
                 onMouseEnter={() => setHoveredIdx(i)}
               >
                 <div style={{
                   width: '100%',
-                  height: m.isFuture ? '100%' : `${barHeightPct}%`,
+                  height: m.split ? `${barHeightPct}%` : '3px',
                   display: 'flex',
                   flexDirection: 'column',
                   borderRadius: '3px',
                   overflow: 'hidden',
-                  outline: m.isCurrent && m.payment !== null
+                  outline: m.isCurrent && m.split
                     ? '1px solid rgba(78,222,163,0.4)'
-                    : hoveredIdx === i && m.payment !== null ? '1px solid rgba(173,198,255,0.25)' : 'none',
+                    : hoveredIdx === i && m.split ? '1px solid rgba(173,198,255,0.25)' : 'none',
                   opacity: isHoveringPayment && hoveredIdx !== i ? 0.4 : 1,
                   transition: 'opacity 0.15s',
                 }}>
-                  {m.isFuture ? (
-                    <div style={{ flex: 1, background: 'rgba(173,198,255,0.06)' }} />
-                  ) : m.payment !== null ? (
+                  {m.split ? (
                     <>
-                      <div style={{ width: '100%', height: `${interestFrac * 100}%`, background: 'rgba(173,198,255,0.35)' }} />
+                      <div style={{ width: '100%', height: `${interestFrac * 100}%`, background: 'rgba(255,180,171,0.5)' }} />
                       <div style={{ width: '100%', flex: 1, background: 'rgba(78,222,163,0.45)' }} />
                     </>
                   ) : (
-                    <div style={{ flex: 1, background: 'rgba(173,198,255,0.04)' }} />
+                    <div style={{ flex: 1, background: 'rgba(173,198,255,0.06)' }} />
                   )}
                 </div>
               </div>
@@ -312,7 +287,7 @@ function MortgagePaymentChart({ mortgage, mode = 'fy' }) {
         <div style={{ display: 'flex', gap: '4px', marginTop: '4px' }}>
           {months.map((m, i) => (
             <div key={i} style={{ flex: 1, textAlign: 'center' }}>
-              <span style={{ fontSize: '8px', color: m.isCurrent ? '#4edea3' : '#64748b' }}>
+              <span style={{ fontSize: '8px', color: m.isCurrent || hoveredIdx === i ? '#4edea3' : '#64748b' }}>
                 {m.label.slice(0, 1)}
               </span>
             </div>
@@ -327,25 +302,25 @@ function MortgagePaymentChart({ mortgage, mode = 'fy' }) {
           <span style={{ fontSize: '11px', color: '#bbcabf' }}>Principal</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <div style={{ width: '10px', height: '10px', borderRadius: '2px', background: 'rgba(173,198,255,0.35)' }} />
+          <div style={{ width: '10px', height: '10px', borderRadius: '2px', background: 'rgba(255,180,171,0.5)' }} />
           <span style={{ fontSize: '11px', color: '#bbcabf' }}>Interest</span>
         </div>
       </div>
 
-      {/* Summary row */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '12px', padding: '12px', background: 'rgba(173,198,255,0.04)', borderRadius: '10px' }}>
-        <div>
-          <p style={{ fontSize: '11px', color: '#bbcabf', margin: '0 0 2px' }}>{periodLabel} total</p>
-          <p style={{ fontWeight: 700, fontSize: '14px', color: '#4edea3', margin: 0 }}>
-            {'£' + Math.round(periodTotal).toLocaleString('en-GB')}
-          </p>
-        </div>
-        <div style={{ textAlign: 'right' }}>
-          <p style={{ fontSize: '11px', color: '#bbcabf', margin: '0 0 2px' }}>All payments</p>
-          <p style={{ fontWeight: 700, fontSize: '14px', color: '#dae2fd', margin: 0 }}>
-            {'£' + Math.round(allTotal).toLocaleString('en-GB')}
-          </p>
-        </div>
+      {/* Period summary: total paid, interest, and principal repaid */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginTop: '12px' }}>
+        {[
+          { label: 'Payments',    value: gbp(summary.total),     color: '#dae2fd' },
+          { label: 'Interest',    value: gbp(summary.interest),  color: '#ffb4ab' },
+          { label: 'Principal',   value: gbp(summary.principal), color: '#4edea3' },
+        ].map(c => (
+          <div key={c.label} style={{ padding: '10px 12px', background: 'rgba(173,198,255,0.04)', borderRadius: '10px', minWidth: 0, textAlign: 'center' }}>
+            <p style={{ fontSize: '10px', color: '#bbcabf', margin: '0 0 3px', lineHeight: 1.3 }}>{c.label}</p>
+            <p style={{ fontWeight: 700, fontSize: '14px', color: c.color, margin: 0, fontVariantNumeric: 'tabular-nums' }}>
+              {c.value}
+            </p>
+          </div>
+        ))}
       </div>
     </div>
   );
