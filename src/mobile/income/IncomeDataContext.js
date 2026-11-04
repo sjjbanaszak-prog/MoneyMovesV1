@@ -60,6 +60,9 @@ export function IncomeDataProvider({ children }) {
   const [incomes,     setIncomes]     = useState([]);
   const [isLoading,   setLoading]     = useState(true);
   const [lastUpdated, setLastUpdated] = useState(null);
+  // Whether the signed-in user has ever saved an income entry (ignores demo data).
+  // The Overview tab is only available to users who have.
+  const [hasSavedIncomes, setHasSavedIncomes] = useState(false);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, u => {
@@ -75,23 +78,19 @@ export function IncomeDataProvider({ children }) {
     async function load() {
       setLoading(true);
       try {
+        const snap = await getDoc(doc(db, 'incomePots', user.uid));
+        const data = snap.exists() ? snap.data() : {};
+        setHasSavedIncomes((data.incomes || []).length > 0);
         if (isDemoMode) {
           setIncomes(DEMO_INCOMES);
           setLastUpdated(null);
         } else {
-          const snap = await getDoc(doc(db, 'incomePots', user.uid));
-          if (snap.exists()) {
-            const data = snap.data();
-            setIncomes(data.incomes || []);
-            setLastUpdated(data.lastUpdated || null);
-          } else {
-            setIncomes([]);
-            setLastUpdated(null);
-          }
+          setIncomes(data.incomes || []);
+          setLastUpdated(data.lastUpdated || null);
         }
       } catch (e) {
         console.error('IncomeDataContext: failed to load', e);
-        setIncomes([]);
+        setIncomes(isDemoMode ? DEMO_INCOMES : []);
         setLastUpdated(null);
       } finally {
         setLoading(false);
@@ -113,6 +112,7 @@ export function IncomeDataProvider({ children }) {
           { merge: true }
         );
         setLastUpdated(now);
+        setHasSavedIncomes(true);
       } catch (e) {
         console.error('IncomeDataContext: failed to save', e);
         setIncomes(incomes);
@@ -142,7 +142,7 @@ export function IncomeDataProvider({ children }) {
   const metrics = computeMetrics(incomes);
 
   return (
-    <IncomeDataContext.Provider value={{ incomes, metrics, isLoading, isDemoMode, lastUpdated, addIncome, updateIncome }}>
+    <IncomeDataContext.Provider value={{ incomes, metrics, isLoading, isDemoMode, lastUpdated, hasSavedIncomes, addIncome, updateIncome }}>
       {children}
     </IncomeDataContext.Provider>
   );

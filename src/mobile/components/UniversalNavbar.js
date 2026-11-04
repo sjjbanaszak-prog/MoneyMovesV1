@@ -31,7 +31,9 @@ const ENABLED_SEGMENTS = {
   savings: [''],
 };
 
-export default function UniversalNavbar() {
+// `disabledSegments` lets a section grey out extra tabs at runtime
+// (e.g. Income's Overview for users with no saved incomes).
+export default function UniversalNavbar({ disabledSegments = [] }) {
   const { pathname } = useLocation();
 
   const section = SECTIONS.find(s => pathname.startsWith(`/mobile/${s}`)) || 'pension';
@@ -45,6 +47,7 @@ export default function UniversalNavbar() {
   }
 
   function isEnabled(segment) {
+    if (disabledSegments.includes(segment)) return false;
     if (!enabledSet) return true;
     return enabledSet.includes(segment);
   }
