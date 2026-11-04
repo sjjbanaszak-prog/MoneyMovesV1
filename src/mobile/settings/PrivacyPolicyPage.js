@@ -153,7 +153,7 @@ export default function PrivacyPolicyPage() {
           <p style={{ ...bodyStyle, margin: 0 }}>
             We retain your data for as long as your account is active. When you delete your account (Settings → Delete
             Account), your profile and all the data you've added are permanently deleted
-            straight away. Problem reports you've sent us are kept separately so we can follow up on them, and are automatically deleted 12 months after you send them.
+            straight away. Problem reports you've sent us are kept separately so we can follow up on them, and are deleted 12 months after you send them.
           </p>
         </Section>
 
