@@ -70,6 +70,10 @@ function AllowanceRow({ yr }) {
   );
 }
 
+function fmtShort(n) {
+  return '£' + Math.round(n || 0).toLocaleString('en-GB');
+}
+
 function fmtK(n) {
   if (!n) return '£0';
   if (n >= 1000) return `£${Math.round(n / 1000).toLocaleString('en-GB')}k`;
@@ -285,7 +289,7 @@ function DualLineChart({ valueSeries, contribSeries, labels }) {
 
 export default function PensionInsights() {
   const { entries, metrics } = usePensionData();
-  const [timeframe, setTimeframe] = useState('1Y');
+  const [timeframe, setTimeframe] = useState('AT');
   const [showAllAllowance, setShowAllAllowance] = useState(false);
 
   const providers = useMemo(() => {
@@ -404,18 +408,28 @@ export default function PensionInsights() {
     return { valueSeries, contribSeries, labels, firstValue, lastValue, lastContrib };
   }, [entries]);
 
-  // Slice dualChartData to the selected timeframe: 1Y = 12 months, 5Y = 60 months, AT = all
+  // Slice dualChartData to the selected timeframe: 1Y = 12 months, 5Y = 60 months, AT = all.
+  // The summary cards cover the same window: contributions paid in during it, growth
+  // (change in value minus those contributions), and the total change in value.
   const displayData = useMemo(() => {
     if (!dualChartData) return null;
-    if (timeframe === 'AT') return dualChartData;
     const n = dualChartData.labels.length;
-    const count = timeframe === '5Y' ? Math.min(60, n) : Math.min(12, n);
+    const count = timeframe === 'AT' ? n : Math.min(timeframe === '5Y' ? 60 : 12, n);
     const slice = (arr) => arr.slice(n - count);
+
+    // Baseline = the month before the window (or nothing, for All Time)
+    const baseIdx      = n - count - 1;
+    const startContrib = baseIdx >= 0 ? dualChartData.contribSeries[baseIdx] : 0;
+    const startValue   = baseIdx >= 0 ? dualChartData.valueSeries[baseIdx]   : 0;
+    const contributions = dualChartData.lastContrib - startContrib;
+    const total         = dualChartData.lastValue - startValue;
+
     return {
       ...dualChartData,
-      valueSeries:  slice(dualChartData.valueSeries),
+      valueSeries:   slice(dualChartData.valueSeries),
       contribSeries: slice(dualChartData.contribSeries),
       labels:        slice(dualChartData.labels),
+      summary: { contributions, growth: total - contributions, total },
     };
   }, [dualChartData, timeframe]);
 
@@ -576,15 +590,24 @@ export default function PensionInsights() {
                 contribSeries={displayData.contribSeries}
                 labels={displayData.labels}
               />
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '12px', background: 'rgba(173,198,255,0.04)', borderRadius: '10px', padding: '12px' }}>
-                <div>
-                  <p style={{ fontSize: '11px', color: '#bbcabf', margin: '0 0 3px' }}>Total contributed</p>
-                  <p style={{ fontWeight: 700, fontSize: '14px', color: '#adc6ff', margin: 0 }}>{fmtK(dualChartData.lastContrib)}</p>
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                  <p style={{ fontSize: '11px', color: '#bbcabf', margin: '0 0 3px' }}>Current value</p>
-                  <p style={{ fontWeight: 700, fontSize: '14px', color: '#4edea3', margin: 0 }}>{fmtK(dualChartData.lastValue)}</p>
-                </div>
+              {/* Timeframe summary: contributions + growth = total change in value */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginTop: '12px' }}>
+                {[
+                  { label: 'Contributions', value: fmtShort(displayData.summary.contributions), color: '#adc6ff' },
+                  {
+                    label: 'Growth',
+                    value: (displayData.summary.growth < 0 ? '−' : '+') + fmtShort(Math.abs(displayData.summary.growth)),
+                    color: displayData.summary.growth < 0 ? '#ffb4ab' : '#4edea3',
+                  },
+                  { label: 'Total', value: fmtShort(displayData.summary.total), color: '#dae2fd' },
+                ].map(c => (
+                  <div key={c.label} style={{ padding: '10px 12px', background: 'rgba(173,198,255,0.04)', borderRadius: '10px', minWidth: 0, textAlign: 'center' }}>
+                    <p style={{ fontSize: '10px', color: '#bbcabf', margin: '0 0 3px', lineHeight: 1.3 }}>{c.label}</p>
+                    <p style={{ fontWeight: 700, fontSize: '14px', color: c.color, margin: 0, fontVariantNumeric: 'tabular-nums' }}>
+                      {c.value}
+                    </p>
+                  </div>
+                ))}
               </div>
             </>
           ) : (
