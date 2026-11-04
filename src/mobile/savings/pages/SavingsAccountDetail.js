@@ -1,11 +1,10 @@
 import React, { useMemo, useState } from 'react';
 import { useParams, useNavigate, Navigate, Link } from 'react-router-dom';
-import dayjs from 'dayjs';
-import customParseFormat from 'dayjs/plugin/customParseFormat';
 import { useSavingsData } from '../SavingsDataContext';
 import SavingsDetailLayout from '../SavingsDetailLayout';
-
-dayjs.extend(customParseFormat);
+import {
+  parseAmount, parseDate, isReturnDescription, getAllTransactions, computeMonthlyHistory,
+} from '../utils/savingsTransactions';
 
 // ---- Helpers ----
 function fmt(n) {
@@ -57,101 +56,9 @@ const ACCOUNT_TYPES = [
   'Savings Account', 'Easy Access Savings', 'Current Account', 'Fixed Rate', 'Premium Bonds',
 ];
 
-function parseAmount(value) {
-  if (value == null || value === '') return 0;
-  if (typeof value === 'number') return isNaN(value) ? 0 : value;
-  return parseFloat(String(value).replace(/[£$€\s,]/g, '')) || 0;
-}
-
-// Interest, Premium Bond prizes and dividends are returns on the money saved,
-// not deposits, so they count towards growth everywhere on this page.
-function isReturnDescription(desc) {
-  return /interest|dividend|prize/i.test(String(desc || ''));
-}
-
-function parseDate(str, dateFormat) {
-  if (!str) return null;
-  const d = dateFormat
-    ? dayjs(String(str), dateFormat, true)
-    : dayjs(String(str));
-  return d.isValid() ? d.toDate() : null;
-}
-
 function formatDateShort(date) {
   if (!date) return '–';
   return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-}
-
-// Pull all transactions from rawData + manualTransactions, sorted descending by date.
-// Respects deletedRawIndices and rawOverrides set via the All Transactions page.
-function getAllTransactions(account) {
-  const {
-    rawData = [], mapping = {}, dateFormat,
-    deletedRawIndices = [], rawOverrides = {},
-  } = account;
-  const dateCol   = mapping.date;
-  const descCol   = mapping.description;
-  const creditCol = mapping.credit;
-  const debitCol  = mapping.debit;
-  const amountCol = mapping.amount;
-  const balCol    = mapping.balance;
-
-  const deletedSet = new Set(deletedRawIndices);
-
-  const rawTxs = rawData
-    .map((row, rawIdx) => {
-      if (deletedSet.has(rawIdx)) return null;
-
-      const override = rawOverrides[rawIdx];
-      if (override) {
-        const date = parseDate(override.date);
-        if (!date) return null;
-        return {
-          date,
-          dateRaw: override.date,
-          desc:    override.description || '',
-          credit:  override.direction === 'credit' ? override.amount : 0,
-          debit:   override.direction === 'debit'  ? override.amount : 0,
-          balance: null,
-          isReturn: isReturnDescription(override.description),
-        };
-      }
-
-      const dateRaw = row[dateCol];
-      const date    = parseDate(dateRaw, dateFormat);
-      const desc    = row[descCol] || '';
-
-      let credit = 0, debit = 0;
-      if (creditCol && row[creditCol] != null && row[creditCol] !== '') {
-        credit = parseAmount(row[creditCol]);
-      }
-      if (debitCol && row[debitCol] != null && row[debitCol] !== '') {
-        debit = parseAmount(row[debitCol]);
-      }
-      if (!credit && !debit && amountCol) {
-        const amt = parseAmount(row[amountCol]);
-        if (amt >= 0) credit = amt;
-        else debit = Math.abs(amt);
-      }
-
-      const balance = balCol ? parseAmount(row[balCol]) : null;
-      return { date, dateRaw, desc, credit, debit, balance, isReturn: isReturnDescription(desc) };
-    })
-    .filter(Boolean);
-
-  const manualTxs = (account.manualTransactions || []).map(tx => ({
-    date:    tx.date ? new Date(tx.date) : null,
-    dateRaw: tx.date,
-    desc:    tx.description || tx.type || 'Transaction',
-    credit:  tx.direction === 'credit' ? tx.amount : 0,
-    debit:   tx.direction === 'debit'  ? tx.amount : 0,
-    balance: tx.balanceAfter != null ? tx.balanceAfter : null,
-    notes:   tx.notes || null,
-    isManual: true,
-    isReturn: tx.type === 'interest' || isReturnDescription(tx.description),
-  })).filter(tx => tx.date);
-
-  return [...rawTxs, ...manualTxs].sort((a, b) => b.date - a.date);
 }
 
 // Compute net deposits (total credits minus total debits, excluding interest/dividends/transfers)
@@ -207,76 +114,10 @@ function SavingsHistoryChart({ account, color, mode = 'fy' }) {
   const currentFYStart = (nowMonth > 4 || (nowMonth === 4 && nowDay >= 6))
     ? nowYear : nowYear - 1;
 
-  const { monthlyData, monthlyGrowth } = useMemo(() => {
-    const { rawData = [], mapping = {}, dateFormat } = account;
-    const creditCol = mapping.credit;
-    const amountCol = mapping.amount;
-    const debitCol  = mapping.debit;
-
-    // Buckets include calMonth/calYear for growth lookup and debit tracking
-    let buckets;
-    if (mode === 'cy') {
-      buckets = Array.from({ length: 12 }, (_, i) => ({
-        label: new Date(nowYear, i, 1).toLocaleString('en-GB', { month: 'short' }),
-        amount: 0, debit: 0, returns: 0, calMonth: i, calYear: nowYear,
-      }));
-    } else {
-      buckets = Array.from({ length: 12 }, (_, i) => {
-        const calMonth = (3 + i) % 12;
-        const calYear  = calMonth >= 3 ? currentFYStart : currentFYStart + 1;
-        return {
-          label: new Date(calYear, calMonth, 1).toLocaleString('en-GB', { month: 'short' }),
-          amount: 0, debit: 0, returns: 0, calMonth, calYear,
-        };
-      });
-    }
-
-    // Fill deposits, withdrawals and returns (interest / prizes / dividends) from all
-    // transactions, honouring deleted and edited statement rows
-    getAllTransactions(account).forEach(tx => {
-      const d = tx.date;
-      if (!d) return;
-      let bi;
-      if (mode === 'cy') {
-        if (d.getFullYear() !== nowYear) return;
-        bi = d.getMonth();
-      } else {
-        const dM = d.getMonth() + 1, dD = d.getDate(), dY = d.getFullYear();
-        const txFY = (dM > 4 || (dM === 4 && dD >= 6)) ? dY : dY - 1;
-        if (txFY !== currentFYStart) return;
-        bi = (d.getMonth() - 3 + 12) % 12;
-      }
-      if (tx.isReturn) {
-        buckets[bi].returns += (tx.credit || 0) - (tx.debit || 0);
-      } else {
-        buckets[bi].amount += tx.credit || 0;
-        buckets[bi].debit  += tx.debit  || 0;
-      }
-    });
-
-    // Growth = balance change minus money paid in/out, using balance history snapshots
-    // (so it includes interest, prizes, dividends and market moves). Without snapshots
-    // for a month, fall back to that month's interest / prizes / dividends.
-    const bHistory = (account.balanceHistory || [])
-      .map(bh => ({ date: new Date(bh.date), value: bh.value }))
-      .filter(bh => !isNaN(bh.date.getTime()))
-      .sort((a, b) => a.date - b.date);
-
-    const growth = buckets.map(({ calMonth, calYear, amount: credits, debit: debits, returns }) => {
-      const fallback = returns !== 0 ? returns : null;
-      if (bHistory.length < 2) return fallback;
-      const monthStart = new Date(calYear, calMonth, 1);
-      const monthEnd   = new Date(calYear, calMonth + 1, 0, 23, 59, 59);
-      const inMonth    = bHistory.filter(bh => bh.date >= monthStart && bh.date <= monthEnd);
-      if (!inMonth.length) return fallback;
-      const endValue = inMonth[inMonth.length - 1].value;
-      const before   = bHistory.filter(bh => bh.date < monthStart);
-      if (!before.length) return fallback;
-      return endValue - before[before.length - 1].value - (credits - debits);
-    });
-
-    return { monthlyData: buckets, monthlyGrowth: growth };
-  }, [account, mode, currentFYStart, nowYear]);
+  const { monthlyData, monthlyGrowth } = useMemo(
+    () => computeMonthlyHistory(account, mode, currentFYStart, nowYear),
+    [account, mode, currentFYStart, nowYear],
+  );
 
   // Bars above the zero line are deposits + positive growth; months where growth
   // was negative get a red bar below the line. Both share one scale, and the zero
@@ -554,40 +395,14 @@ export default function SavingsAccountDetail() {
   const firstTx = allTx.length > 0 ? allTx[allTx.length - 1] : null;
   const lastTx  = allTx.length > 0 ? allTx[0] : null;
 
-  // Deposits, growth and total for the selected FY or CY, built from the same
-  // transactions as the Savings History chart so the cards and bars agree.
-  //   Deposits = money paid in (not interest / prizes / dividends)
-  //   Growth   = today's balance − opening balance − net money paid in or out
-  //   Total    = Deposits + Growth
-  // Opening balance is the last balanceHistory snapshot before the period, or £0 if
-  // the account has no transactions before it. Otherwise growth falls back to the
-  // period's interest / prizes / dividends.
+  // Deposits, growth and total for the selected FY or CY: the sum of the Savings
+  // History chart's months, so the cards always match the bars.
   const periodSummary = useMemo(() => {
-    const periodStart = periodType === 'fy'
-      ? new Date(fyStart, 3, 6)
-      : new Date(today.getFullYear(), 0, 1);
-    const inPeriod = allTx.filter(tx => tx.date && tx.date >= periodStart);
-
-    const deposits = inPeriod.reduce((s, tx) => s + (tx.isReturn ? 0 : (tx.credit || 0)), 0);
-    const netFlow  = inPeriod.reduce((s, tx) => s + (tx.isReturn ? 0 : (tx.credit || 0) - (tx.debit || 0)), 0);
-    const returns  = inPeriod.reduce((s, tx) => s + (tx.isReturn ? (tx.credit || 0) - (tx.debit || 0) : 0), 0);
-
-    const snapshotsBefore = (account.balanceHistory || [])
-      .map(bh => ({ date: new Date(bh.date), value: bh.value }))
-      .filter(bh => !isNaN(bh.date.getTime()) && bh.date < periodStart)
-      .sort((a, b) => a.date - b.date);
-    const hasTxBefore = allTx.some(tx => tx.date && tx.date < periodStart);
-
-    let growth;
-    if (snapshotsBefore.length) {
-      growth = currentBalance - snapshotsBefore[snapshotsBefore.length - 1].value - netFlow;
-    } else if (!hasTxBefore) {
-      growth = currentBalance - netFlow;
-    } else {
-      growth = returns;
-    }
+    const { monthlyData, monthlyGrowth } = computeMonthlyHistory(account, periodType, fyStart, today.getFullYear());
+    const deposits = monthlyData.reduce((s, b) => s + b.amount, 0);
+    const growth   = monthlyGrowth.reduce((s, g) => s + (g || 0), 0);
     return { deposits: Math.round(deposits), growth: Math.round(growth), total: Math.round(deposits + growth) };
-  }, [account, allTx, periodType, fyStart, currentBalance]);
+  }, [account, periodType, fyStart]);
 
   return (
     <SavingsDetailLayout backTo="/mobile/savings">
