@@ -5,6 +5,7 @@
   "keywords": [],
   "main": "src/index.tsx",
   "dependencies": {
+    "@vercel/analytics": "^2.0.1",
     "axios": "^1.18.1",
     "components": "0.1.0",
     "date-fns": "4.1.0",

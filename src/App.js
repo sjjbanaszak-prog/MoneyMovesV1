@@ -12,6 +12,7 @@ import { DemoModeProvider } from "./contexts/DemoModeContext";
 import { ReportProblemProvider } from "./contexts/ReportProblemContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import ReportProblemModal from "./components/ReportProblemModal";
+import { Analytics } from "@vercel/analytics/react";
 import Login from "./components/auth/Login";
 import Register from "./components/auth/Register";
 import ForgotPassword from "./components/auth/ForgotPassword";
@@ -51,6 +52,7 @@ const App = () => {
                 />
               </Routes>
               <ReportProblemModal />
+              <Analytics />
             </ReportProblemProvider>
           </DemoModeProvider>
         </UserPlanProvider>
