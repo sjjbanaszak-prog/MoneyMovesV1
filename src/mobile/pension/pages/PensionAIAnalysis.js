@@ -343,7 +343,7 @@ export default function PensionAIAnalysis() {
         icon: 'merge',
         color: '#4edea3',
         title: `Review Inactive ${inactive.length > 1 ? 'Pensions' : 'Pension'}`,
-        body: `${names} (${fmtShort(totalValue)} combined) ${inactive.length > 1 ? 'have' : 'has'} received no contributions recently. Consider reviewing or consolidating ${inactive.length > 1 ? 'these pots' : 'this pot'} to reduce fees and simplify your portfolio.`,
+        body: `${names} (${fmtShort(totalValue)} combined) ${inactive.length > 1 ? 'have' : 'has'} received no contributions recently. Reviewing ${inactive.length > 1 ? 'these pots' : 'this pot'} could help reduce fees and simplify your portfolio. Before moving a pension, check for exit fees or valuable guarantees.`,
         tag: 'Consolidation',
         tagColor: '#4edea3',
       });
@@ -443,7 +443,7 @@ export default function PensionAIAnalysis() {
         icon: 'savings',
         color: '#4edea3',
         title: 'Small Pots Causing Fee Drag',
-        body: `You have ${smallPots.length} pots each worth less than £5,000 (${fmtShort(smallTotal)} combined). Small pots often carry fixed annual fees that erode a larger percentage of their value. Consolidating into a single low-cost SIPP could meaningfully reduce fee drag over time.`,
+        body: `You have ${smallPots.length} pots each worth less than £5,000 (${fmtShort(smallTotal)} combined). Small pots often carry fixed annual fees that erode a larger percentage of their value. Combining pots could reduce fee drag over time. Before moving a pension, check for exit fees or valuable guarantees; transferring a final-salary pension worth over £30,000 requires regulated advice.`,
         tag: 'Consolidation',
         tagColor: '#4edea3',
       });
@@ -475,7 +475,7 @@ export default function PensionAIAnalysis() {
         icon: 'bar_chart',
         color: '#adc6ff',
         title: 'Low Growth — Review Fund Allocation',
-        body: `Your pots have grown by less than 3% overall against contributions made. This may indicate a conservative fund allocation. If you're more than 10 years from retirement, a higher-growth fund could significantly improve your long-term outcome.`,
+        body: `Your pots have grown by less than 3% overall against contributions made. This may indicate a conservative fund allocation. It may be worth reviewing your fund choice with your provider. Higher-growth funds can rise and fall more in value, so a regulated adviser can help you weigh this up.`,
         tag: 'Performance',
         tagColor: '#adc6ff',
       });
@@ -595,13 +595,13 @@ export default function PensionAIAnalysis() {
           </div>
         </div>
 
-        {/* Recommendations */}
+        {/* Opportunities */}
         <div style={{ padding: '0 16px' }}>
           <h3 style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 800, fontSize: '16px', color: '#dae2fd', margin: '0 0 12px' }}>
-            Smart Recommendations
+            Opportunities
           </h3>
           {recommendations.length === 0 ? (
-            <p style={{ fontSize: '13px', color: '#64748b', textAlign: 'center', padding: '16px 0' }}>No recommendations at this time</p>
+            <p style={{ fontSize: '13px', color: '#64748b', textAlign: 'center', padding: '16px 0' }}>Nothing to flag right now</p>
           ) : recommendations.map((rec, i) => (
             <div
               key={i}
@@ -634,6 +634,12 @@ export default function PensionAIAnalysis() {
             </div>
           ))}
         </div>
+
+        {/* General guidance disclaimer — keeps this page clear of regulated advice */}
+        <p style={{ fontSize: '11px', color: '#64748b', lineHeight: 1.6, textAlign: 'center', margin: '8px 24px 0' }}>
+          General guidance based on your data, not financial advice. For personal advice, speak to a regulated
+          financial adviser, or get free, impartial guidance from MoneyHelper.
+        </p>
 
       </div>
       </PremiumGate>

@@ -466,14 +466,14 @@ export default function MortgageAIAnalysis() {
           </div>
         </div>
 
-        {/* Recommendations */}
+        {/* Opportunities */}
         <div style={{ padding: '0 16px' }}>
           <h3 style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 800, fontSize: '16px', color: '#dae2fd', margin: '0 0 12px' }}>
-            Smart Recommendations
+            Opportunities
           </h3>
           {recommendations.length === 0 ? (
             <p style={{ fontSize: '13px', color: '#64748b', textAlign: 'center', padding: '16px 0' }}>
-              {mortgages.length === 0 ? 'Add a mortgage to see your analysis.' : 'No recommendations at this time.'}
+              {mortgages.length === 0 ? 'Add a mortgage to see your analysis.' : 'Nothing to flag right now.'}
             </p>
           ) : recommendations.map((rec, i) => (
             <div
@@ -507,6 +507,12 @@ export default function MortgageAIAnalysis() {
             </div>
           ))}
         </div>
+
+        {/* General guidance disclaimer — keeps this page clear of regulated advice */}
+        <p style={{ fontSize: '11px', color: '#64748b', lineHeight: 1.6, textAlign: 'center', margin: '8px 24px 0' }}>
+          General guidance based on your data, not financial advice. For personal advice, speak to a regulated
+          financial adviser, or get free, impartial guidance from MoneyHelper.
+        </p>
 
       </div>
       </PremiumGate>
