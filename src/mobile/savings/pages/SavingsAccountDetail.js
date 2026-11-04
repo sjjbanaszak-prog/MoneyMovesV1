@@ -8,7 +8,8 @@ import {
 
 // ---- Helpers ----
 function fmt(n) {
-  return '£' + Math.round(n || 0).toLocaleString('en-GB');
+  const v = Math.round(n || 0);
+  return (v < 0 ? '−' : '') + '£' + Math.abs(v).toLocaleString('en-GB');
 }
 function fmtFull(n) {
   return '£' + (n || 0).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -158,7 +159,7 @@ function SavingsHistoryChart({ account, color, mode = 'fy' }) {
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: '16px' }}>
               <span style={{ fontSize: '11px', color: '#adc6ff' }}>Deposits</span>
               <span style={{ fontSize: '11px', fontWeight: 600, color: '#dae2fd' }}>
-                {'£' + Math.round(hoveredBucket.amount || 0).toLocaleString('en-GB')}
+                {fmt(hoveredBucket.amount)}
               </span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: '16px' }}>
@@ -167,7 +168,7 @@ function SavingsHistoryChart({ account, color, mode = 'fy' }) {
               </span>
               <span style={{ fontSize: '11px', fontWeight: 600, color: hoveredGrowth !== null ? (hoveredGrowth >= 0 ? '#4edea3' : '#ffb4ab') : '#64748b' }}>
                 {hoveredGrowth !== null
-                  ? (hoveredGrowth >= 0 ? '+£' : '-£') + Math.round(Math.abs(hoveredGrowth)).toLocaleString('en-GB')
+                  ? (hoveredGrowth >= 0 ? '+' : '') + fmt(hoveredGrowth)
                   : '—'}
               </span>
             </div>
@@ -177,7 +178,7 @@ function SavingsHistoryChart({ account, color, mode = 'fy' }) {
             }}>
               <span style={{ fontSize: '11px', color: '#bbcabf' }}>Total</span>
               <span style={{ fontSize: '11px', fontWeight: 700, color: '#dae2fd' }}>
-                {'£' + Math.round((hoveredBucket.amount || 0) + (hoveredGrowth || 0)).toLocaleString('en-GB')}
+                {fmt((hoveredBucket.amount || 0) + (hoveredGrowth || 0))}
               </span>
             </div>
           </div>

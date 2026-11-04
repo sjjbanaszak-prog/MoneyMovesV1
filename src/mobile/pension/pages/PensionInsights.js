@@ -71,13 +71,17 @@ function AllowanceRow({ yr }) {
 }
 
 function fmtShort(n) {
-  return '£' + Math.round(n || 0).toLocaleString('en-GB');
+  const v = Math.round(n || 0);
+  return (v < 0 ? '−' : '') + '£' + Math.abs(v).toLocaleString('en-GB');
 }
 
+// Negative values put the minus before the £ (−£12k), never £-12k
 function fmtK(n) {
   if (!n) return '£0';
-  if (n >= 1000) return `£${Math.round(n / 1000).toLocaleString('en-GB')}k`;
-  return `£${Math.round(n)}`;
+  const sign = n < 0 ? '−' : '';
+  const abs  = Math.abs(n);
+  if (abs >= 1000) return `${sign}£${Math.round(abs / 1000).toLocaleString('en-GB')}k`;
+  return `${sign}£${Math.round(abs)}`;
 }
 
 // SVG donut chart

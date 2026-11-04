@@ -193,7 +193,7 @@ function MortgagePaymentChart({ mortgage, mode = 'fy' }) {
 
   const hovered = hoveredIdx !== null ? months[hoveredIdx] : null;
   const isHoveringPayment = !!hovered?.split;
-  const gbp = n => '£' + Math.round(n || 0).toLocaleString('en-GB');
+  const gbp = n => { const v = Math.round(n || 0); return (v < 0 ? '−' : '') + '£' + Math.abs(v).toLocaleString('en-GB'); };
 
   return (
     <div>

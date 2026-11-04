@@ -4,7 +4,7 @@ import { usePensionData, formatDate, parseDate, getTaxYearStart } from '../Pensi
 import PensionDetailLayout from '../PensionDetailLayout';
 
 function fmt(n)    { return '£' + (n || 0).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
-function fmtShort(n) { return '£' + Math.round(n || 0).toLocaleString('en-GB'); }
+function fmtShort(n) { const v = Math.round(n || 0); return (v < 0 ? '−' : '') + '£' + Math.abs(v).toLocaleString('en-GB'); }
 function fmtPct(n) { const s = n >= 0 ? '+' : ''; return `${s}${n.toFixed(2)}%`; }
 
 function providerInitials(name = '') {
@@ -188,7 +188,7 @@ function ContributionBarChart({ paymentHistory, color, mode, selectedYear, value
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: '16px' }}>
               <span style={{ fontSize: '11px', color: '#adc6ff' }}>Contributed</span>
               <span style={{ fontSize: '11px', fontWeight: 600, color: '#dae2fd' }}>
-                {'£' + Math.round(hoveredBucket.amount || 0).toLocaleString('en-GB')}
+                {fmtShort(hoveredBucket.amount)}
               </span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: '16px' }}>
@@ -197,7 +197,7 @@ function ContributionBarChart({ paymentHistory, color, mode, selectedYear, value
               </span>
               <span style={{ fontSize: '11px', fontWeight: 600, color: hoveredGrowth !== null ? (hoveredGrowth >= 0 ? '#4edea3' : '#ffb4ab') : '#64748b' }}>
                 {hoveredGrowth !== null
-                  ? (hoveredGrowth >= 0 ? '+£' : '-£') + Math.round(Math.abs(hoveredGrowth)).toLocaleString('en-GB')
+                  ? (hoveredGrowth >= 0 ? '+' : '') + fmtShort(hoveredGrowth)
                   : '—'}
               </span>
             </div>
@@ -208,7 +208,7 @@ function ContributionBarChart({ paymentHistory, color, mode, selectedYear, value
             }}>
               <span style={{ fontSize: '11px', color: '#bbcabf' }}>Total</span>
               <span style={{ fontSize: '11px', fontWeight: 700, color: '#dae2fd' }}>
-                {'£' + Math.round((hoveredBucket.amount || 0) + (hoveredGrowth || 0)).toLocaleString('en-GB')}
+                {fmtShort((hoveredBucket.amount || 0) + (hoveredGrowth || 0))}
               </span>
             </div>
           </div>
