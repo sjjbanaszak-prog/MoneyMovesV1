@@ -342,7 +342,7 @@ export default function SavingsOverview() {
           <SavingsGoalsSection />
         </div>
 
-        {/* AI Teaser Card */}
+        {/* Analysis Teaser Card (coming soon) */}
         <div className="animate-in stagger-4" style={{
           margin: '0 16px 24px',
           position: 'relative', overflow: 'hidden',
@@ -359,7 +359,7 @@ export default function SavingsOverview() {
               Optimise Your Savings
             </h3>
             <p style={{ fontSize: '13px', color: '#bbcabf', lineHeight: 1.6, maxWidth: '280px', margin: '0 0 16px' }}>
-              Our AI can identify ways to maximise your ISA allowance and grow your savings faster.
+              Coming soon: analysis to help you make the most of your ISA allowance and grow your savings faster.
             </p>
             <button className="primary-btn" disabled style={{ marginTop: '6px', opacity: 0.35, cursor: 'default' }}>See Savings Insights</button>
           </div>

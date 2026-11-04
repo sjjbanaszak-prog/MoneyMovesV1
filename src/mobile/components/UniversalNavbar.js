@@ -11,7 +11,7 @@ import { Link, useLocation } from 'react-router-dom';
  *   Calculator  → /mobile/{section}/calculator
  *   Compare     → /mobile/{section}/comparisons
  *   Insights    → /mobile/{section}/insights
- *   AI          → /mobile/{section}/ai
+ *   Analyse     → /mobile/{section}/ai
  */
 
 const TABS = [
@@ -19,7 +19,7 @@ const TABS = [
   { segment: '/calculator',  label: 'Calculator', icon: 'calculate'              },
   { segment: '/comparisons', label: 'Compare',    icon: 'balance'                },
   { segment: '/insights',    label: 'Insights',   icon: 'bar_chart'              },
-  { segment: '/ai',          label: 'AI',         icon: 'psychology'             },
+  { segment: '/ai',          label: 'Analyse',    icon: 'psychology'             },
 ];
 
 const SECTIONS = ['pension', 'mortgage', 'savings', 'income'];

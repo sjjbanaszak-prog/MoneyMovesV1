@@ -224,7 +224,7 @@ export default function MortgageOverview() {
           )}
         </div>
 
-        {/* AI Teaser Card */}
+        {/* Analysis Teaser Card */}
         <div className="animate-in stagger-4" style={{
           margin: '0 16px 24px',
           position: 'relative', overflow: 'hidden',
@@ -241,7 +241,7 @@ export default function MortgageOverview() {
               Optimise Your Mortgage
             </h3>
             <p style={{ fontSize: '13px', color: '#bbcabf', lineHeight: 1.6, maxWidth: '280px', margin: '0 0 16px' }}>
-              Our AI can identify overpayment opportunities and show you how to pay off your mortgage sooner.
+              Our analysis highlights overpayment opportunities and shows how you could pay off your mortgage sooner.
             </p>
             <button className="primary-btn" style={{ marginTop: '6px' }} onClick={() => navigate('/mobile/mortgage/ai')}>See Mortgage Insights</button>
           </div>

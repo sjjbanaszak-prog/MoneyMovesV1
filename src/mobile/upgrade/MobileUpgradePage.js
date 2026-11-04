@@ -35,8 +35,8 @@ const PREMIUM_FEATURES = [
     desc: 'Stay ahead of market shifts with instant notifications.',
   },
   {
-    title: 'Advanced pension tax-efficiency AI',
-    desc: 'Custom algorithms to maximise your future yields.',
+    title: 'Advanced pension tax-efficiency analysis',
+    desc: 'In-depth analysis to help you make the most of your pension.',
   },
   {
     title: 'Priority expert support',
@@ -154,7 +154,7 @@ export default function MobileUpgradePage() {
             Unlock Your <span style={{ color: '#4edea3' }}>Financial Potential</span>
           </h2>
           <p style={{ fontSize: '14px', color: '#adc6ff', lineHeight: 1.6, margin: 0 }}>
-            Experience precision wealth management with advanced AI tools and real-time insights.
+            Get the full picture of your finances with advanced analysis and real-time insights.
           </p>
         </section>
 

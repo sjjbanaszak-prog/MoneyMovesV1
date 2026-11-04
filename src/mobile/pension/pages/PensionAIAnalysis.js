@@ -512,8 +512,8 @@ export default function PensionAIAnalysis() {
   return (
     <PensionLayout>
       <PremiumGate
-        featureName="Pension AI Analysis"
-        description="AI-powered recommendations tailored to your pension data and retirement goals."
+        featureName="Pension Analysis"
+        description="Insights tailored to your pension data and retirement goals."
       >
       <div style={{ padding: '0 0 16px' }}>
 
@@ -521,7 +521,7 @@ export default function PensionAIAnalysis() {
         <div style={{ padding: '24px 20px 16px' }}>
           <p style={{ fontSize: '13px', color: '#bbcabf', marginBottom: '2px' }}>My Pensions</p>
           <h1 style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 900, fontSize: '26px', color: '#dae2fd', margin: 0 }}>
-            AI Analysis
+            Analysis
           </h1>
         </div>
 
@@ -544,7 +544,7 @@ export default function PensionAIAnalysis() {
               {recommendations.length} {recommendations.length === 1 ? 'Opportunity' : 'Opportunities'} Found
             </h2>
             <p style={{ fontSize: '13px', color: '#bbcabf', lineHeight: 1.6, margin: 0 }}>
-              Based on your pension data, our AI has identified actionable steps that could improve your retirement outcome.
+              Based on your pension data, we've highlighted steps that could improve your retirement outcome.
             </p>
           </div>
         </div>

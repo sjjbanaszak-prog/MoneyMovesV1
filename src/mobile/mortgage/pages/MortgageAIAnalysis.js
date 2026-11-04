@@ -383,8 +383,8 @@ export default function MortgageAIAnalysis() {
   return (
     <MortgageLayout>
       <PremiumGate
-        featureName="Mortgage AI Analysis"
-        description="AI-powered analysis of your mortgage strategy with personalised recommendations."
+        featureName="Mortgage Analysis"
+        description="Analysis of your mortgage with insights tailored to your situation."
       >
       <div style={{ padding: '0 0 16px' }}>
 
@@ -392,7 +392,7 @@ export default function MortgageAIAnalysis() {
         <div style={{ padding: '24px 20px 16px' }}>
           <p style={{ fontSize: '13px', color: '#bbcabf', marginBottom: '2px' }}>My Mortgages</p>
           <h1 style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 900, fontSize: '26px', color: '#dae2fd', margin: 0 }}>
-            AI Analysis
+            Analysis
           </h1>
         </div>
 
@@ -415,7 +415,7 @@ export default function MortgageAIAnalysis() {
               {recommendations.length} {recommendations.length === 1 ? 'Opportunity' : 'Opportunities'} Found
             </h2>
             <p style={{ fontSize: '13px', color: '#bbcabf', lineHeight: 1.6, margin: 0 }}>
-              Based on your mortgage data, our AI has identified actionable steps that could reduce your interest costs and improve your position at remortgage.
+              Based on your mortgage data, we've highlighted steps that could reduce your interest costs and improve your position at remortgage.
             </p>
           </div>
         </div>

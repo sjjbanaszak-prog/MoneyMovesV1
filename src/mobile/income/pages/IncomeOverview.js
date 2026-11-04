@@ -232,7 +232,7 @@ export default function IncomeOverview() {
           )}
         </div>
 
-        {/* AI Teaser Card */}
+        {/* Analysis Teaser Card (coming soon) */}
         <div className="animate-in stagger-3" style={{
           margin: '0 16px 24px',
           position: 'relative', overflow: 'hidden',
@@ -249,7 +249,7 @@ export default function IncomeOverview() {
               Maximise Your Earnings
             </h3>
             <p style={{ fontSize: '13px', color: '#bbcabf', lineHeight: 1.6, maxWidth: '280px', margin: '0 0 16px' }}>
-              Our AI can identify salary benchmarks, tax optimisation opportunities, and strategies to grow your take-home pay.
+              Coming soon: salary benchmarks and tax-efficiency insights to help you grow your take-home pay.
             </p>
             <button className="primary-btn" disabled style={{ marginTop: '6px', opacity: 0.35, cursor: 'default' }}>See Income Insights</button>
           </div>

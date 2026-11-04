@@ -316,7 +316,7 @@ export default function PensionOverview() {
           )}
         </div>
 
-        {/* AI Teaser Card */}
+        {/* Analysis Teaser Card */}
         <div className="animate-in stagger-4" style={{
           margin: '0 16px 24px',
           position: 'relative',
@@ -334,10 +334,10 @@ export default function PensionOverview() {
           <div style={{ position: 'absolute', top: '-40px', right: '-40px', width: '120px', height: '120px', background: 'rgba(78,222,163,0.05)', borderRadius: '50%', filter: 'blur(40px)', pointerEvents: 'none' }} />
           <div style={{ position: 'relative', zIndex: 1 }}>
             <h3 style={{ fontFamily: 'Manrope, sans-serif', fontSize: '20px', fontWeight: 900, color: '#dae2fd', margin: '0 0 8px' }}>
-              Optimize Your Future
+              Optimise Your Future
             </h3>
             <p style={{ fontSize: '13px', color: '#bbcabf', lineHeight: 1.6, maxWidth: '280px', margin: '0 0 16px' }}>
-              Our AI has identified potential opportunities to improve your pension strategy.
+              Our analysis of your pensions highlights potential opportunities to improve your retirement position.
             </p>
             {isPremium ? (
               <Link to="/mobile/pension/ai" style={{ textDecoration: 'none', display: 'block' }}>
@@ -348,11 +348,11 @@ export default function PensionOverview() {
                 className="primary-btn"
                 style={{ marginTop: '6px' }}
                 onClick={() => setUpgradeSheet({
-                  featureName: 'Pension AI Analysis',
-                  description: 'AI-powered recommendations tailored to your pension data and retirement goals.',
+                  featureName: 'Pension Analysis',
+                  description: 'Insights tailored to your pension data and retirement goals.',
                 })}
               >
-                Unlock AI Insights
+                Unlock Pension Analysis
               </button>
             )}
           </div>

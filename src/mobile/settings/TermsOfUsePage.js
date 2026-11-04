@@ -2,7 +2,7 @@ import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import MobileNavDrawer from '../components/MobileNavDrawer';
 
-const LAST_UPDATED = '26 June 2026';
+const LAST_UPDATED = '4 November 2026';
 
 const sectionHeadStyle = {
   fontFamily: 'Manrope, sans-serif',
@@ -176,7 +176,7 @@ export default function TermsOfUsePage() {
           </p>
           <p style={bodyStyle}>
             Tax calculations (income tax, National Insurance, pension allowances, ISA limits) are provided for
-            illustrative purposes only and are based on the 2025/26 tax year unless otherwise stated. Your actual
+            illustrative purposes only and are based on current HMRC rates for the tax year shown. Your actual
             tax position will depend on your full financial circumstances.
           </p>
           <p style={{ ...bodyStyle, margin: 0 }}>
