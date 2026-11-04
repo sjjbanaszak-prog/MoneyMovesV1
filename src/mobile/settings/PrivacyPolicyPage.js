@@ -193,6 +193,7 @@ export default function PrivacyPolicyPage() {
           <ul style={listStyle}>
             <li><strong style={{ color: '#dae2fd' }}>Google Firebase</strong> — authentication and data storage (Google LLC, EEA-hosted)</li>
             <li><strong style={{ color: '#dae2fd' }}>Google Sign-In</strong> — optional OAuth login</li>
+            <li><strong style={{ color: '#dae2fd' }}>Vercel</strong> — hosts and delivers the app; like any web host, its servers process your IP address and basic request details (such as browser type) to serve pages and protect against abuse (Vercel Inc.)</li>
             <li><strong style={{ color: '#dae2fd' }}>Vercel Analytics</strong> — anonymous, cookie-free page visit statistics (Vercel Inc.)</li>
             <li><strong style={{ color: '#dae2fd' }}>Google Fonts</strong> — serves the app's fonts; your browser connects to Google's servers to load them, which shares your IP address with Google (Google LLC)</li>
             <li><strong style={{ color: '#dae2fd' }}>HM Land Registry / ONS APIs</strong> — publicly available property and economic data (no personal data transmitted)</li>
