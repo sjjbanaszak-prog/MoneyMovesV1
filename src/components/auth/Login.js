@@ -202,6 +202,11 @@ const Login = () => {
             </svg>
             {loading ? 'Signing in...' : 'Sign in with Google'}
           </button>
+          <p className="auth-footer-text" style={{ fontSize: '0.8125rem', textAlign: 'center', marginTop: '0.75rem' }}>
+            New to Money Moves? Continuing with Google confirms you're 18 or over and agree to our{' '}
+            <Link to="/terms" className="auth-link-primary">Terms</Link> and{' '}
+            <Link to="/privacy" className="auth-link-primary">Privacy Policy</Link>.
+          </p>
 
           <div className="auth-footer">
             <p className="auth-footer-text">

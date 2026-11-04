@@ -9,6 +9,7 @@ import MobileNavDrawer from '../components/MobileNavDrawer';
 export default function MobileSettingsPage() {
   const navigate = useNavigate();
   const { currentUser, logout } = useAuth();
+  const [showDelete, setShowDelete] = useState(false);
   const { isPremium } = useUserPlan();
   const [displayName, setDisplayName] = useState(
     currentUser?.displayName || currentUser?.email?.split('@')[0] || 'MoneyMoves User'
@@ -203,6 +204,7 @@ export default function MobileSettingsPage() {
         <SettingsSection label="Data & Legal">
           <SettingsRow icon="shield" iconColor="#adc6ff" label="Privacy Policy" onClick={() => navigate('/mobile/settings/privacy-policy')} />
           <SettingsRow icon="gavel" iconColor="#adc6ff" label="Terms of Use" onClick={() => navigate('/mobile/settings/terms-of-use')} />
+          <SettingsRow icon="delete_forever" iconColor="#ffb4ab" label="Delete Account" onClick={() => setShowDelete(true)} />
         </SettingsSection>
 
         {/* Support */}
@@ -230,6 +232,131 @@ export default function MobileSettingsPage() {
           </button>
         </div>
 
+      </div>
+      {showDelete && <DeleteAccountSheet onClose={() => setShowDelete(false)} />}
+    </div>
+  );
+}
+
+function DeleteAccountSheet({ onClose }) {
+  const navigate = useNavigate();
+  const { currentUser, deleteAccount } = useAuth();
+  const isGoogle = currentUser?.providerData.some(p => p.providerId === 'google.com');
+  const [confirmText, setConfirmText] = useState('');
+  const [password, setPassword] = useState('');
+  const [deleting, setDeleting] = useState(false);
+  const [error, setError] = useState('');
+
+  const canDelete = confirmText === 'DELETE' && (isGoogle || password) && !deleting;
+
+  async function handleDelete() {
+    setError('');
+    setDeleting(true);
+    try {
+      await deleteAccount(password);
+      navigate('/login');
+    } catch (e) {
+      console.error('Account deletion failed', e);
+      if (e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential') {
+        setError('That password is incorrect.');
+      } else if (e.code === 'auth/popup-closed-by-user' || e.code === 'auth/cancelled-popup-request') {
+        setError('Google sign-in was cancelled, so nothing was deleted.');
+      } else {
+        setError('Something went wrong deleting your account. Please try again or contact support.');
+      }
+      setDeleting(false);
+    }
+  }
+
+  const inputStyle = {
+    width: '100%', padding: '12px 14px', borderRadius: '10px',
+    background: '#0b1326', border: '1px solid rgba(173,198,255,0.15)',
+    color: '#dae2fd', fontSize: '15px', marginBottom: '12px',
+  };
+
+  return (
+    <div
+      onClick={deleting ? undefined : onClose}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 1000,
+        background: 'rgba(0,0,0,0.6)',
+        display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+      }}
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        role="dialog"
+        aria-label="Delete account"
+        style={{
+          width: '100%', maxWidth: '600px',
+          background: '#171f33', borderRadius: '20px 20px 0 0',
+          padding: '24px 20px 32px',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+          <span className="material-symbols-outlined" style={{ fontSize: '26px', color: '#ffb4ab' }}>delete_forever</span>
+          <h3 style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 800, fontSize: '18px', color: '#dae2fd', margin: 0 }}>
+            Delete your account?
+          </h3>
+        </div>
+        <p style={{ fontSize: '14px', color: '#bbcabf', lineHeight: 1.6, margin: '0 0 16px' }}>
+          This permanently deletes your profile, pensions, savings, mortgages, income, family details and
+          notifications. It can't be undone.
+        </p>
+
+        {!isGoogle && (
+          <input
+            type="password"
+            placeholder="Your password"
+            autoComplete="current-password"
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+            disabled={deleting}
+            style={inputStyle}
+          />
+        )}
+        <input
+          type="text"
+          placeholder="Type DELETE to confirm"
+          autoCapitalize="characters"
+          value={confirmText}
+          onChange={e => setConfirmText(e.target.value)}
+          disabled={deleting}
+          style={inputStyle}
+        />
+        {isGoogle && (
+          <p style={{ fontSize: '12px', color: '#64748b', margin: '0 0 12px' }}>
+            You'll be asked to sign in with Google again to confirm.
+          </p>
+        )}
+
+        {error && <p style={{ fontSize: '13px', color: '#ffb4ab', margin: '0 0 12px' }}>{error}</p>}
+
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button
+            onClick={onClose}
+            disabled={deleting}
+            style={{
+              flex: 1, padding: '14px', borderRadius: '12px', cursor: 'pointer',
+              background: 'rgba(173,198,255,0.08)', border: 'none',
+              color: '#dae2fd', fontWeight: 600, fontSize: '15px',
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleDelete}
+            disabled={!canDelete}
+            style={{
+              flex: 1, padding: '14px', borderRadius: '12px',
+              cursor: canDelete ? 'pointer' : 'default',
+              background: canDelete ? '#93000a' : 'rgba(147,0,10,0.25)', border: 'none',
+              color: canDelete ? '#ffdad6' : 'rgba(255,218,214,0.4)', fontWeight: 700, fontSize: '15px',
+            }}
+          >
+            {deleting ? 'Deleting…' : 'Delete account'}
+          </button>
+        </div>
       </div>
     </div>
   );

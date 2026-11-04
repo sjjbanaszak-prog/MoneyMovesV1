@@ -17,6 +17,8 @@ import Login from "./components/auth/Login";
 import Register from "./components/auth/Register";
 import ForgotPassword from "./components/auth/ForgotPassword";
 import MobileApp from "./mobile/MobileApp";
+import PrivacyPolicyPage from "./mobile/settings/PrivacyPolicyPage";
+import TermsOfUsePage from "./mobile/settings/TermsOfUsePage";
 
 const App = () => {
   return (
@@ -30,6 +32,10 @@ const App = () => {
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
+
+                {/* Public legal pages (readable before signing up) */}
+                <Route path="/privacy" element={<PrivacyPolicyPage />} />
+                <Route path="/terms" element={<TermsOfUsePage />} />
 
                 {/* Mobile app */}
                 <Route

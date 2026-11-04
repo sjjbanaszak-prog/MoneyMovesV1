@@ -9,11 +9,42 @@ import {
   setPersistence,
   browserLocalPersistence,
   browserSessionPersistence,
+  deleteUser,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
+  reauthenticateWithPopup,
 } from 'firebase/auth';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, getDocs, deleteDoc, collection } from 'firebase/firestore';
 import { auth, provider, signInWithPopup, db } from '../firebase';
 
 const AuthContext = createContext();
+
+// Record of the user confirming they're 18+ and agreeing to the Terms and
+// Privacy Policy at sign-up. Bump TERMS_VERSION when either document changes.
+const TERMS_VERSION = '2026-11-04';
+
+function termsAcceptance() {
+  return { termsAcceptedAt: new Date().toISOString(), termsVersion: TERMS_VERSION };
+}
+
+// Every user-owned document (keyed by uid) and its subcollections. Keep in sync
+// with firestore.rules so account deletion removes everything we store.
+const USER_COLLECTIONS = {
+  pensionScenarios:     [],
+  pensionPots:          ['historical_positions'],
+  savingsTracker:       ['historical_positions'],
+  savingsAccounts:      ['historical_positions'],
+  mortgagePots:         [],
+  mortgageCalculations: [],
+  incomePots:           [],
+  userDebts:            [],
+  trading212Portfolios: [],
+  dashboardPreferences: [],
+  userPreferences:      [],
+  households:           [],
+  notifications:        ['items'],
+  users:                [], // last, so a failure part-way leaves the profile in place
+};
 
 export function useAuth() {
   const context = useContext(AuthContext);
@@ -59,6 +90,7 @@ export function AuthProvider({ children }) {
         createdAt: new Date().toISOString(),
         emailVerified: false,
         provider: 'email',
+        ...termsAcceptance(),
       });
 
       return userCredential;
@@ -116,6 +148,7 @@ export function AuthProvider({ children }) {
           createdAt: new Date().toISOString(),
           emailVerified: user.emailVerified,
           provider: 'google',
+          ...termsAcceptance(),
         });
       }
 
@@ -124,6 +157,35 @@ export function AuthProvider({ children }) {
       console.error('Google sign-in error:', error);
       throw error;
     }
+  }
+
+  /**
+   * Permanently delete the signed-in user's data and account.
+   * Firebase requires a recent sign-in to delete an account, so the user is
+   * re-authenticated first (password, or a Google popup) before anything is removed.
+   * @param {string} [password] - Required for email/password accounts
+   */
+  async function deleteAccount(password) {
+    const user = auth.currentUser;
+    if (!user) throw new Error('Not signed in');
+
+    const isGoogle = user.providerData.some(p => p.providerId === 'google.com');
+    if (isGoogle) {
+      await reauthenticateWithPopup(user, provider);
+    } else {
+      await reauthenticateWithCredential(user, EmailAuthProvider.credential(user.email, password));
+    }
+
+    for (const [name, subcollections] of Object.entries(USER_COLLECTIONS)) {
+      for (const sub of subcollections) {
+        const snap = await getDocs(collection(db, name, user.uid, sub));
+        await Promise.all(snap.docs.map(d => deleteDoc(d.ref)));
+      }
+      await deleteDoc(doc(db, name, user.uid));
+    }
+
+    localStorage.removeItem('moneyMovesDemoMode');
+    await deleteUser(user);
   }
 
   /**
@@ -231,6 +293,7 @@ export function AuthProvider({ children }) {
     login,
     logout,
     signInWithGoogle,
+    deleteAccount,
     resetPassword,
     resendEmailVerification,
     updateUserProfile,

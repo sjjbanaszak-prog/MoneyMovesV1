@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import MobileNavDrawer from '../components/MobileNavDrawer';
 
 const LAST_UPDATED = '26 June 2026';
@@ -43,15 +43,23 @@ function Section({ title, children }) {
 
 export default function TermsOfUsePage() {
   const navigate = useNavigate();
+  // Also served publicly at /privacy and /terms so it can be read before signing up
+  const inApp = useLocation().pathname.startsWith('/mobile');
+
+  function goBack() {
+    if (inApp) navigate('/mobile/settings');
+    else if (window.history.state?.idx > 0) navigate(-1);
+    else navigate('/login');
+  }
 
   return (
-    <div className="mobile-screen" style={{ paddingTop: '50px', paddingBottom: '40px', background: '#0b1326', minHeight: '100vh' }}>
-      <MobileNavDrawer />
+    <div className="mobile-screen" style={{ paddingTop: inApp ? '50px' : '0', paddingBottom: '40px', background: '#0b1326', minHeight: '100vh' }}>
+      {inApp && <MobileNavDrawer />}
 
       {/* Sub-header */}
       <div style={{ padding: '20px 20px 0', display: 'flex', alignItems: 'center', gap: '12px' }}>
         <button
-          onClick={() => navigate('/mobile/settings')}
+          onClick={goBack}
           style={{
             background: 'rgba(173,198,255,0.08)',
             border: 'none', borderRadius: '50%',
@@ -62,7 +70,7 @@ export default function TermsOfUsePage() {
         >
           <span className="material-symbols-outlined" style={{ color: '#adc6ff', fontSize: '20px' }}>arrow_back</span>
         </button>
-        <p style={{ fontSize: '13px', color: '#bbcabf', margin: 0 }}>Settings</p>
+        <p style={{ fontSize: '13px', color: '#bbcabf', margin: 0 }}>{inApp ? 'Settings' : 'Back'}</p>
       </div>
 
       <div style={{ padding: '16px', maxWidth: '600px', margin: '0 auto' }}>

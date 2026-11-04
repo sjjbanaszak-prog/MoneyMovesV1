@@ -3,6 +3,8 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import './AuthStyles.css';
 
+const AGREEMENT_ERROR = 'Please confirm you are 18 or over and agree to the Terms of Service and Privacy Policy';
+
 const Register = () => {
   const [formData, setFormData] = useState({
     name: '',
@@ -15,6 +17,7 @@ const Register = () => {
     label: '',
     color: '',
   });
+  const [agreed, setAgreed] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showVerificationMessage, setShowVerificationMessage] = useState(false);
@@ -125,6 +128,11 @@ const Register = () => {
       return;
     }
 
+    if (!agreed) {
+      setError(AGREEMENT_ERROR);
+      return;
+    }
+
     try {
       setError('');
       setLoading(true);
@@ -139,6 +147,10 @@ const Register = () => {
   };
 
   const handleGoogleSignIn = async () => {
+    if (!agreed) {
+      setError(AGREEMENT_ERROR);
+      return;
+    }
     try {
       setError('');
       setLoading(true);
@@ -290,6 +302,24 @@ const Register = () => {
                 disabled={loading}
                 autoComplete="new-password"
               />
+            </div>
+
+            <div className="form-group">
+              <label className="checkbox-label" style={{ alignItems: 'flex-start' }}>
+                <input
+                  type="checkbox"
+                  checked={agreed}
+                  onChange={(e) => setAgreed(e.target.checked)}
+                  className="checkbox-input"
+                  style={{ marginTop: '0.2rem', flexShrink: 0 }}
+                  disabled={loading}
+                />
+                <span>
+                  I'm 18 or over and agree to the{' '}
+                  <Link to="/terms" className="auth-link-primary">Terms of Service</Link> and{' '}
+                  <Link to="/privacy" className="auth-link-primary">Privacy Policy</Link>
+                </span>
+              </label>
             </div>
 
             <button

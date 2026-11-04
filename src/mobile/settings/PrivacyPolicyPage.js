@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import MobileNavDrawer from '../components/MobileNavDrawer';
 
 const LAST_UPDATED = '4 November 2026';
@@ -43,15 +43,23 @@ function Section({ title, children }) {
 
 export default function PrivacyPolicyPage() {
   const navigate = useNavigate();
+  // Also served publicly at /privacy and /terms so it can be read before signing up
+  const inApp = useLocation().pathname.startsWith('/mobile');
+
+  function goBack() {
+    if (inApp) navigate('/mobile/settings');
+    else if (window.history.state?.idx > 0) navigate(-1);
+    else navigate('/login');
+  }
 
   return (
-    <div className="mobile-screen" style={{ paddingTop: '50px', paddingBottom: '40px', background: '#0b1326', minHeight: '100vh' }}>
-      <MobileNavDrawer />
+    <div className="mobile-screen" style={{ paddingTop: inApp ? '50px' : '0', paddingBottom: '40px', background: '#0b1326', minHeight: '100vh' }}>
+      {inApp && <MobileNavDrawer />}
 
       {/* Sub-header */}
       <div style={{ padding: '20px 20px 0', display: 'flex', alignItems: 'center', gap: '12px' }}>
         <button
-          onClick={() => navigate('/mobile/settings')}
+          onClick={goBack}
           style={{
             background: 'rgba(173,198,255,0.08)',
             border: 'none', borderRadius: '50%',
@@ -62,7 +70,7 @@ export default function PrivacyPolicyPage() {
         >
           <span className="material-symbols-outlined" style={{ color: '#adc6ff', fontSize: '20px' }}>arrow_back</span>
         </button>
-        <p style={{ fontSize: '13px', color: '#bbcabf', margin: 0 }}>Settings</p>
+        <p style={{ fontSize: '13px', color: '#bbcabf', margin: 0 }}>{inApp ? 'Settings' : 'Back'}</p>
       </div>
 
       <div style={{ padding: '16px', maxWidth: '600px', margin: '0 auto' }}>
@@ -95,6 +103,7 @@ export default function PrivacyPolicyPage() {
           <ul style={listStyle}>
             <li><strong style={{ color: '#dae2fd' }}>Account data:</strong> your name, email address, and date of birth when you register</li>
             <li><strong style={{ color: '#dae2fd' }}>Financial data:</strong> savings balances, pension contributions, mortgage details, and income figures you enter into the app</li>
+            <li><strong style={{ color: '#dae2fd' }}>Household data:</strong> details you choose to add about your partner and children (see "Information About Your Family" below)</li>
             <li><strong style={{ color: '#dae2fd' }}>Usage data:</strong> how you interact with features (used solely to improve the service)</li>
             <li><strong style={{ color: '#dae2fd' }}>Technical data:</strong> browser type, operating system, and error logs when you submit a support report</li>
           </ul>
@@ -136,8 +145,9 @@ export default function PrivacyPolicyPage() {
             enforce strict user-level isolation — no other user or unauthorised party can access your records.
           </p>
           <p style={{ ...bodyStyle, margin: 0 }}>
-            We retain your data for as long as your account is active. On account deletion, your data is permanently
-            removed within 30 days.
+            We retain your data for as long as your account is active. When you delete your account (Settings → Delete
+            Account), your profile and all the financial and household data you've added are permanently deleted
+            straight away. Problem reports you've sent us are kept separately so we can follow up on them.
           </p>
         </Section>
 
@@ -146,7 +156,7 @@ export default function PrivacyPolicyPage() {
           <ul style={listStyle}>
             <li><strong style={{ color: '#dae2fd' }}>Access</strong> a copy of the personal data we hold about you</li>
             <li><strong style={{ color: '#dae2fd' }}>Rectify</strong> inaccurate data via your profile settings</li>
-            <li><strong style={{ color: '#dae2fd' }}>Erase</strong> your account and all associated data</li>
+            <li><strong style={{ color: '#dae2fd' }}>Erase</strong> your account and all associated data, at any time from Settings → Delete Account</li>
             <li><strong style={{ color: '#dae2fd' }}>Restrict</strong> processing in certain circumstances</li>
             <li><strong style={{ color: '#dae2fd' }}>Port</strong> your data in a machine-readable format on request</li>
             <li><strong style={{ color: '#dae2fd' }}>Object</strong> to processing based on legitimate interests</li>
@@ -185,10 +195,34 @@ export default function PrivacyPolicyPage() {
           </p>
         </Section>
 
+        <Section title="Information About Your Family">
+          <p style={bodyStyle}>
+            The Family section lets you add details about other people in your household so you can plan together.
+            This can include:
+          </p>
+          <ul style={listStyle}>
+            <li>your partner's name, email address and their allowance figures (ISA, pension, Lifetime ISA, Premium Bonds)</li>
+            <li>your children's names, dates of birth, and their account providers and balances (such as Junior ISAs)</li>
+            <li>whether you claim Child Benefit</li>
+          </ul>
+          <p style={bodyStyle}>
+            We use this only to show you household allowances, deadlines and projections inside your own account. Family
+            members don't get their own login, we never contact them, and their details are never shared or used for any
+            other purpose. Please only add someone's details if they're happy for you to do so, or if you're their parent
+            or guardian.
+          </p>
+          <p style={{ ...bodyStyle, margin: 0 }}>
+            You can edit or remove a family member at any time in the Family section, and all household data is deleted
+            when you delete your account.
+          </p>
+        </Section>
+
         <Section title="Children's Privacy">
           <p style={{ ...bodyStyle, margin: 0 }}>
-            Money Moves is intended for users aged 18 and over. We do not knowingly collect data from anyone under 18.
-            If you believe a minor has registered, please contact us and we will delete the account promptly.
+            Money Moves is intended for users aged 18 and over, and you must confirm you're 18 or over when you sign up.
+            Children can't hold an account. The only information we hold about children is what a parent or guardian adds
+            in the Family section, as described above. If you believe someone under 18 has registered, please contact us
+            and we will delete the account promptly.
           </p>
         </Section>
 
