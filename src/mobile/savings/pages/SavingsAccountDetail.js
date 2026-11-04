@@ -63,6 +63,12 @@ function parseAmount(value) {
   return parseFloat(String(value).replace(/[£$€\s,]/g, '')) || 0;
 }
 
+// Interest, Premium Bond prizes and dividends are returns on the money saved,
+// not deposits, so they count towards growth everywhere on this page.
+function isReturnDescription(desc) {
+  return /interest|dividend|prize/i.test(String(desc || ''));
+}
+
 function parseDate(str, dateFormat) {
   if (!str) return null;
   const d = dateFormat
@@ -107,6 +113,7 @@ function getAllTransactions(account) {
           credit:  override.direction === 'credit' ? override.amount : 0,
           debit:   override.direction === 'debit'  ? override.amount : 0,
           balance: null,
+          isReturn: isReturnDescription(override.description),
         };
       }
 
@@ -128,7 +135,7 @@ function getAllTransactions(account) {
       }
 
       const balance = balCol ? parseAmount(row[balCol]) : null;
-      return { date, dateRaw, desc, credit, debit, balance };
+      return { date, dateRaw, desc, credit, debit, balance, isReturn: isReturnDescription(desc) };
     })
     .filter(Boolean);
 
@@ -141,6 +148,7 @@ function getAllTransactions(account) {
     balance: tx.balanceAfter != null ? tx.balanceAfter : null,
     notes:   tx.notes || null,
     isManual: true,
+    isReturn: tx.type === 'interest' || isReturnDescription(tx.description),
   })).filter(tx => tx.date);
 
   return [...rawTxs, ...manualTxs].sort((a, b) => b.date - a.date);
@@ -159,7 +167,7 @@ function computeNetDeposits(account) {
 
   rawData.forEach(row => {
     const desc = String(row[descCol] || '').toLowerCase();
-    const isExcluded = desc.includes('interest') || desc.includes('dividend') || desc.includes('transfer');
+    const isExcluded = isReturnDescription(desc) || desc.includes('transfer');
     if (isExcluded) return;
 
     if (creditCol && row[creditCol] != null && row[creditCol] !== '') {
@@ -188,25 +196,16 @@ function computeNetDeposits(account) {
 }
 
 // ---- Monthly savings history bar chart ----
-function SavingsHistoryChart({ account, color, currentBalance, mode = 'fy' }) {
+function SavingsHistoryChart({ account, color, mode = 'fy' }) {
   const [hoveredIdx, setHoveredIdx] = useState(null);
 
   const today       = new Date();
   const nowYear     = today.getFullYear();
   const nowMonth    = today.getMonth() + 1;
-  const nowMonthIdx = today.getMonth();
   const nowDay      = today.getDate();
 
   const currentFYStart = (nowMonth > 4 || (nowMonth === 4 && nowDay >= 6))
     ? nowYear : nowYear - 1;
-
-  const currentBucketIdx = mode === 'cy'
-    ? nowMonthIdx
-    : (nowMonthIdx === 3 && nowDay < 6) ? 11 : (nowMonthIdx - 3 + 12) % 12;
-
-  const periodLabel = mode === 'cy'
-    ? String(nowYear)
-    : `${currentFYStart}/${String(currentFYStart + 1).slice(-2)}`;
 
   const { monthlyData, monthlyGrowth } = useMemo(() => {
     const { rawData = [], mapping = {}, dateFormat } = account;
@@ -219,7 +218,7 @@ function SavingsHistoryChart({ account, color, currentBalance, mode = 'fy' }) {
     if (mode === 'cy') {
       buckets = Array.from({ length: 12 }, (_, i) => ({
         label: new Date(nowYear, i, 1).toLocaleString('en-GB', { month: 'short' }),
-        amount: 0, debit: 0, calMonth: i, calYear: nowYear,
+        amount: 0, debit: 0, returns: 0, calMonth: i, calYear: nowYear,
       }));
     } else {
       buckets = Array.from({ length: 12 }, (_, i) => {
@@ -227,109 +226,71 @@ function SavingsHistoryChart({ account, color, currentBalance, mode = 'fy' }) {
         const calYear  = calMonth >= 3 ? currentFYStart : currentFYStart + 1;
         return {
           label: new Date(calYear, calMonth, 1).toLocaleString('en-GB', { month: 'short' }),
-          amount: 0, debit: 0, calMonth, calYear,
+          amount: 0, debit: 0, returns: 0, calMonth, calYear,
         };
       });
     }
 
-    // Fill credits and debits from rawData
-    rawData.forEach(row => {
-      if (!row[mapping.date]) return;
-      const d = parseDate(row[mapping.date], dateFormat);
+    // Fill deposits, withdrawals and returns (interest / prizes / dividends) from all
+    // transactions, honouring deleted and edited statement rows
+    getAllTransactions(account).forEach(tx => {
+      const d = tx.date;
       if (!d) return;
-      let credit = 0, debit = 0;
-      if (creditCol && row[creditCol] != null && row[creditCol] !== '') credit = parseAmount(row[creditCol]);
-      if (debitCol  && row[debitCol]  != null && row[debitCol]  !== '') debit  = parseAmount(row[debitCol]);
-      if (!credit && !debit && amountCol) {
-        const amt = parseAmount(row[amountCol]);
-        if (amt > 0) credit = amt; else debit = Math.abs(amt);
-      }
+      let bi;
       if (mode === 'cy') {
         if (d.getFullYear() !== nowYear) return;
-        const bi = d.getMonth();
-        if (credit > 0) buckets[bi].amount += credit;
-        if (debit  > 0) buckets[bi].debit  += debit;
+        bi = d.getMonth();
       } else {
         const dM = d.getMonth() + 1, dD = d.getDate(), dY = d.getFullYear();
         const txFY = (dM > 4 || (dM === 4 && dD >= 6)) ? dY : dY - 1;
         if (txFY !== currentFYStart) return;
-        const bi = (d.getMonth() - 3 + 12) % 12;
-        if (credit > 0) buckets[bi].amount += credit;
-        if (debit  > 0) buckets[bi].debit  += debit;
+        bi = (d.getMonth() - 3 + 12) % 12;
       }
-    });
-
-    // Fill credits and debits from manual transactions
-    (account.manualTransactions || []).forEach(tx => {
-      const d = tx.date ? new Date(tx.date) : null;
-      if (!d || isNaN(d.getTime())) return;
-      if (mode === 'cy') {
-        if (d.getFullYear() !== nowYear) return;
-        const bi = d.getMonth();
-        if (tx.direction === 'credit') buckets[bi].amount += tx.amount;
-        if (tx.direction === 'debit')  buckets[bi].debit  += tx.amount;
+      if (tx.isReturn) {
+        buckets[bi].returns += (tx.credit || 0) - (tx.debit || 0);
       } else {
-        const dM = d.getMonth() + 1, dD = d.getDate(), dY = d.getFullYear();
-        const txFY = (dM > 4 || (dM === 4 && dD >= 6)) ? dY : dY - 1;
-        if (txFY !== currentFYStart) return;
-        const bi = (d.getMonth() - 3 + 12) % 12;
-        if (tx.direction === 'credit') buckets[bi].amount += tx.amount;
-        if (tx.direction === 'debit')  buckets[bi].debit  += tx.amount;
+        buckets[bi].amount += tx.credit || 0;
+        buckets[bi].debit  += tx.debit  || 0;
       }
     });
 
-    // Balance history snapshots for monthly growth (growth = endBal - prevBal - netFlow)
+    // Growth = balance change minus money paid in/out, using balance history snapshots
+    // (so it includes interest, prizes, dividends and market moves). Without snapshots
+    // for a month, fall back to that month's interest / prizes / dividends.
     const bHistory = (account.balanceHistory || [])
       .map(bh => ({ date: new Date(bh.date), value: bh.value }))
       .filter(bh => !isNaN(bh.date.getTime()))
       .sort((a, b) => a.date - b.date);
 
-    const growth = bHistory.length > 1
-      ? buckets.map(({ calMonth, calYear, amount: credits, debit: debits }) => {
-          const monthStart = new Date(calYear, calMonth, 1);
-          const monthEnd   = new Date(calYear, calMonth + 1, 0, 23, 59, 59);
-          const inMonth    = bHistory.filter(bh => bh.date >= monthStart && bh.date <= monthEnd);
-          if (!inMonth.length) return null;
-          const endValue = inMonth[inMonth.length - 1].value;
-          const before   = bHistory.filter(bh => bh.date < monthStart);
-          if (!before.length) return null;
-          return endValue - before[before.length - 1].value - (credits - debits);
-        })
-      : buckets.map(() => null);
+    const growth = buckets.map(({ calMonth, calYear, amount: credits, debit: debits, returns }) => {
+      const fallback = returns !== 0 ? returns : null;
+      if (bHistory.length < 2) return fallback;
+      const monthStart = new Date(calYear, calMonth, 1);
+      const monthEnd   = new Date(calYear, calMonth + 1, 0, 23, 59, 59);
+      const inMonth    = bHistory.filter(bh => bh.date >= monthStart && bh.date <= monthEnd);
+      if (!inMonth.length) return fallback;
+      const endValue = inMonth[inMonth.length - 1].value;
+      const before   = bHistory.filter(bh => bh.date < monthStart);
+      if (!before.length) return fallback;
+      return endValue - before[before.length - 1].value - (credits - debits);
+    });
 
     return { monthlyData: buckets, monthlyGrowth: growth };
   }, [account, mode, currentFYStart, nowYear]);
 
-  // Value-trajectory line
-  const linePath = useMemo(() => {
-    const cv = currentBalance || 0;
-    if (!cv) return null;
-    const periodTotal = monthlyData.reduce((s, b) => s + b.amount, 0);
-    const openingVal  = Math.max(0, cv - periodTotal);
-    const values = [openingVal];
-    let running = openingVal;
-    for (let i = 0; i <= currentBucketIdx; i++) {
-      running = i === currentBucketIdx ? cv : running + monthlyData[i].amount;
-      values.push(running);
-    }
-    const COL_W = 100 / 12, CHART_H = 52, PAD_Y = 4;
-    const minVal = Math.min(...values), maxVal = Math.max(...values);
-    const range  = maxVal - minVal || 1;
-    const coords = values.map((v, i) => ({
-      x: i === 0 ? 0 : (i - 1 + 0.5) * COL_W,
-      y: CHART_H - PAD_Y - ((v - minVal) / range) * (CHART_H - PAD_Y * 2),
-    }));
-    const linePoints = coords.map(c => `${c.x.toFixed(2)},${c.y.toFixed(2)}`).join(' ');
-    const lastX = coords[coords.length - 1].x.toFixed(2);
-    const fillD = coords.map((c, i) => `${i === 0 ? 'M' : 'L'}${c.x.toFixed(2)},${c.y.toFixed(2)}`).join(' ')
-      + ` L${lastX},${CHART_H} L0,${CHART_H} Z`;
-    return { linePoints, fillD };
-  }, [monthlyData, currentBalance, currentBucketIdx]);
-
-  const barTotals        = monthlyData.map((b, i) => b.amount + (monthlyGrowth[i] !== null && monthlyGrowth[i] > 0 ? monthlyGrowth[i] : 0));
-  const maxBarValue      = Math.max(...barTotals, 1);
-  const hasAnyGrowthData = monthlyGrowth.some(g => g !== null);
-  const lineColor        = color || '#4edea3';
+  // Bars above the zero line are deposits + positive growth; months where growth
+  // was negative get a red bar below the line. Both share one scale, and the zero
+  // line moves down only as far as the largest loss needs.
+  const CHART_H = 52;
+  const barTotals = monthlyData.map((b, i) => b.amount + (monthlyGrowth[i] !== null && monthlyGrowth[i] > 0 ? monthlyGrowth[i] : 0));
+  const maxPos    = Math.max(...barTotals, 0);
+  const maxNeg    = Math.max(...monthlyGrowth.map(g => (g !== null && g < 0 ? -g : 0)), 0);
+  const scale     = CHART_H / (Math.max(maxPos + maxNeg, 1));
+  const posAreaH  = maxNeg > 0 ? maxPos * scale : CHART_H;
+  const negAreaH  = CHART_H - posAreaH;
+  const hasAnyGrowthData  = monthlyGrowth.some(g => g !== null);
+  const hasNegativeGrowth = maxNeg > 0;
+  const accentColor       = color || '#4edea3';
   const tooltipLeft      = hoveredIdx !== null ? Math.min(Math.max((hoveredIdx + 0.5) / 12 * 100, 14), 86) : 50;
   const hoveredBucket    = hoveredIdx !== null ? monthlyData[hoveredIdx] : null;
   const hoveredGrowth    = hoveredIdx !== null ? monthlyGrowth[hoveredIdx] : null;
@@ -343,25 +304,27 @@ function SavingsHistoryChart({ account, color, currentBalance, mode = 'fy' }) {
         <div style={{
           position: 'absolute', bottom: 'calc(100% + 6px)', left: `${tooltipLeft}%`,
           transform: 'translateX(-50%)', background: '#1a2744',
+          // Fixed width so the tooltip doesn't resize as values change month to month
+          width: '160px', boxSizing: 'border-box', fontVariantNumeric: 'tabular-nums',
           border: '1px solid rgba(173,198,255,0.15)', borderRadius: '10px',
           padding: '8px 12px', zIndex: 20, whiteSpace: 'nowrap',
           pointerEvents: 'none', boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
         }}>
           <p style={{ fontSize: '11px', fontWeight: 700, color: '#dae2fd', margin: '0 0 6px', fontFamily: 'Manrope, sans-serif' }}>
-            {hoveredBucket.label} {periodLabel}
+            {new Date(hoveredBucket.calYear, hoveredBucket.calMonth, 1).toLocaleString('en-GB', { month: 'short', year: '2-digit' })}
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: '16px' }}>
-              <span style={{ fontSize: '11px', color: 'rgba(78,222,163,0.9)' }}>Deposited</span>
+              <span style={{ fontSize: '11px', color: '#adc6ff' }}>Deposited</span>
               <span style={{ fontSize: '11px', fontWeight: 600, color: '#dae2fd' }}>
                 {'£' + Math.round(hoveredBucket.amount || 0).toLocaleString('en-GB')}
               </span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: '16px' }}>
-              <span style={{ fontSize: '11px', color: hoveredGrowth !== null ? (hoveredGrowth >= 0 ? '#adc6ff' : '#ff6b6b') : '#64748b' }}>
+              <span style={{ fontSize: '11px', color: hoveredGrowth !== null ? (hoveredGrowth >= 0 ? '#4edea3' : '#ffb4ab') : '#64748b' }}>
                 Growth
               </span>
-              <span style={{ fontSize: '11px', fontWeight: 600, color: hoveredGrowth !== null ? (hoveredGrowth >= 0 ? '#adc6ff' : '#ff6b6b') : '#64748b' }}>
+              <span style={{ fontSize: '11px', fontWeight: 600, color: hoveredGrowth !== null ? (hoveredGrowth >= 0 ? '#4edea3' : '#ffb4ab') : '#64748b' }}>
                 {hoveredGrowth !== null
                   ? (hoveredGrowth >= 0 ? '+£' : '-£') + Math.round(Math.abs(hoveredGrowth)).toLocaleString('en-GB')
                   : '—'}
@@ -380,59 +343,84 @@ function SavingsHistoryChart({ account, color, currentBalance, mode = 'fy' }) {
         </div>
       )}
 
-      {/* Value-trajectory line */}
-      {linePath && (
-        <svg viewBox="0 0 100 52" preserveAspectRatio="none"
-          style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '52px', pointerEvents: 'none', zIndex: 0 }}>
-          <path d={linePath.fillD} fill={lineColor} fillOpacity={0.07} />
-          <polyline points={linePath.linePoints} fill="none" stroke={lineColor}
-            strokeWidth="1.5" strokeOpacity={0.5} strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      )}
-
       {/* Bars */}
-      <div style={{ display: 'flex', gap: '4px', height: '52px', alignItems: 'flex-end', position: 'relative', zIndex: 1 }}>
+      <div style={{ display: 'flex', gap: '4px', height: `${CHART_H}px`, position: 'relative' }}>
         {monthlyData.map((b, i) => {
           const growthVal      = monthlyGrowth[i];
           const positiveGrowth = growthVal !== null ? Math.max(0, growthVal) : 0;
+          const negativeGrowth = growthVal !== null ? Math.max(0, -growthVal) : 0;
           const barTotal       = b.amount + positiveGrowth;
-          const barHeightPx    = barTotal > 0 ? Math.max(3, (barTotal / maxBarValue) * 52) : 3;
-          const hasSplit       = growthVal !== null && growthVal > 0 && b.amount > 0;
-          const growthFrac     = hasSplit ? positiveGrowth / barTotal : 0;
+          const barHeightPx    = barTotal > 0 ? Math.max(3, barTotal * scale) : (negativeGrowth > 0 ? 0 : 3);
+          const negHeightPx    = negativeGrowth > 0 ? Math.max(3, negativeGrowth * scale) : 0;
+          const hasSplit       = positiveGrowth > 0 && b.amount > 0;
+          const growthFrac     = barTotal > 0 ? positiveGrowth / barTotal : 0;
           const hasData        = b.amount > 0 || growthVal !== null;
+          const isHovered      = hoveredIdx === i && hasData;
           return (
             <div key={i}
-              style={{ flex: 1, height: '52px', display: 'flex', alignItems: 'flex-end', cursor: hasData ? 'pointer' : 'default' }}
-              onMouseEnter={() => setHoveredIdx(i)}>
-              <div style={{
-                width: '100%', height: `${barHeightPx}px`,
-                display: 'flex', flexDirection: 'column',
-                borderRadius: '3px 3px 2px 2px', overflow: 'hidden',
-                outline: hoveredIdx === i && hasData ? '1px solid rgba(173,198,255,0.25)' : 'none',
+              style={{
+                flex: 1, height: `${CHART_H}px`, display: 'flex', flexDirection: 'column',
+                cursor: hasData ? 'pointer' : 'default',
                 opacity: isHoveringBar && hoveredIdx !== i ? 0.4 : 1,
-                transition: 'height 0.4s ease, opacity 0.15s',
-              }}>
-                {hasSplit ? (
-                  <>
-                    <div style={{ width: '100%', height: `${growthFrac * 100}%`, background: 'rgba(173,198,255,0.35)' }} />
-                    <div style={{ width: '100%', flex: 1, background: 'rgba(78,222,163,0.45)' }} />
-                  </>
-                ) : b.amount > 0 ? (
-                  <div style={{ flex: 1, background: 'rgba(78,222,163,0.35)' }} />
-                ) : (
-                  <div style={{ flex: 1, background: 'rgba(173,198,255,0.06)' }} />
+                transition: 'opacity 0.15s',
+              }}
+              onMouseEnter={() => setHoveredIdx(i)}>
+              {/* Above the zero line: deposits (blue) + positive growth (green) */}
+              <div style={{ height: `${posAreaH}px`, display: 'flex', alignItems: 'flex-end' }}>
+                {barHeightPx > 0 && (
+                  <div style={{
+                    width: '100%', height: `${barHeightPx}px`,
+                    display: 'flex', flexDirection: 'column',
+                    borderRadius: '3px 3px 2px 2px', overflow: 'hidden',
+                    outline: isHovered ? '1px solid rgba(173,198,255,0.25)' : 'none',
+                    transition: 'height 0.4s ease',
+                  }}>
+                    {hasSplit ? (
+                      <>
+                        <div style={{ width: '100%', height: `${growthFrac * 100}%`, background: 'rgba(78,222,163,0.45)' }} />
+                        <div style={{ width: '100%', flex: 1, background: 'rgba(173,198,255,0.45)' }} />
+                      </>
+                    ) : b.amount > 0 ? (
+                      <div style={{ flex: 1, background: 'rgba(173,198,255,0.35)' }} />
+                    ) : positiveGrowth > 0 ? (
+                      <div style={{ flex: 1, background: 'rgba(78,222,163,0.45)' }} />
+                    ) : (
+                      <div style={{ flex: 1, background: 'rgba(173,198,255,0.06)' }} />
+                    )}
+                  </div>
                 )}
               </div>
+              {/* Below the zero line: negative growth (red) */}
+              {negAreaH > 0 && (
+                <div style={{ height: `${negAreaH}px` }}>
+                  {negHeightPx > 0 && (
+                    <div style={{
+                      width: '100%', height: `${negHeightPx}px`,
+                      background: 'rgba(255,180,171,0.5)',
+                      borderRadius: '2px 2px 3px 3px',
+                      outline: isHovered ? '1px solid rgba(255,180,171,0.35)' : 'none',
+                      transition: 'height 0.4s ease',
+                    }} />
+                  )}
+                </div>
+              )}
             </div>
           );
         })}
+        {/* Zero line, only needed when some months dip below it */}
+        {hasNegativeGrowth && (
+          <div style={{
+            position: 'absolute', left: 0, right: 0, top: `${posAreaH}px`,
+            borderTop: '1px solid rgba(173,198,255,0.15)', pointerEvents: 'none',
+          }} />
+        )}
       </div>
 
       {/* Month labels */}
       <div style={{ display: 'flex', gap: '4px', marginTop: '4px' }}>
         {monthlyData.map((b, i) => (
           <div key={i} style={{ flex: 1, textAlign: 'center' }}>
-            <span style={{ fontSize: '8px', color: hoveredIdx === i ? lineColor : '#64748b' }}>
+            <span style={{ fontSize: '8px', color: hoveredIdx === i ? accentColor : '#64748b' }}>
               {b.label.slice(0, 1)}
             </span>
           </div>
@@ -443,11 +431,17 @@ function SavingsHistoryChart({ account, color, currentBalance, mode = 'fy' }) {
       {hasAnyGrowthData && (
         <div style={{ display: 'flex', gap: '16px', marginTop: '10px', marginBottom: '2px', justifyContent: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <div style={{ width: '10px', height: '10px', borderRadius: '2px', background: 'rgba(78,222,163,0.45)' }} />
+            <div style={{ width: '10px', height: '10px', borderRadius: '2px', background: 'rgba(173,198,255,0.45)' }} />
             <span style={{ fontSize: '11px', color: '#bbcabf' }}>Deposits</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <div style={{ width: '10px', height: '10px', borderRadius: '2px', background: 'rgba(173,198,255,0.35)' }} />
+            {/* Split green/red when the period includes negative growth */}
+            <div style={{
+              width: '10px', height: '10px', borderRadius: '2px',
+              background: hasNegativeGrowth
+                ? 'linear-gradient(135deg, rgba(78,222,163,0.45) 50%, rgba(255,180,171,0.5) 50%)'
+                : 'rgba(78,222,163,0.45)',
+            }} />
             <span style={{ fontSize: '11px', color: '#bbcabf' }}>Growth</span>
           </div>
         </div>
@@ -574,7 +568,7 @@ export default function SavingsAccountDetail() {
       const d = parseDate(row[mapping.date], dateFormat);
       if (!d || d < fyStart) return;
       const desc = String(row[mapping.description] || '').toLowerCase();
-      if (desc.includes('interest') || desc.includes('dividend') || desc.includes('transfer')) return;
+      if (isReturnDescription(desc) || desc.includes('transfer')) return;
       let credit = 0;
       if (creditCol && row[creditCol] != null && row[creditCol] !== '') {
         credit = parseAmount(row[creditCol]);
@@ -605,7 +599,7 @@ export default function SavingsAccountDetail() {
       const d = parseDate(row[mapping.date], dateFormat);
       if (!d || d.getFullYear() !== nowY) return;
       const desc = String(row[mapping.description] || '').toLowerCase();
-      if (desc.includes('interest') || desc.includes('dividend') || desc.includes('transfer')) return;
+      if (isReturnDescription(desc) || desc.includes('transfer')) return;
       let credit = 0;
       if (creditCol && row[creditCol] != null && row[creditCol] !== '') {
         credit = parseAmount(row[creditCol]);
@@ -639,7 +633,7 @@ export default function SavingsAccountDetail() {
     const openingBal = before[before.length - 1].value;
     let netFlow = 0;
     allTx.forEach(tx => {
-      if (tx.date < periodStart) return;
+      if (tx.date < periodStart || tx.isReturn) return;
       netFlow += (tx.credit || 0) - (tx.debit || 0);
     });
     return Math.round(currentBalance - openingBal - netFlow);
@@ -791,7 +785,7 @@ export default function SavingsAccountDetail() {
               ))}
             </div>
           </div>
-          <SavingsHistoryChart account={account} color={color} currentBalance={currentBalance} mode={periodType} />
+          <SavingsHistoryChart account={account} color={color} mode={periodType} />
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '12px', padding: '12px', background: 'rgba(173,198,255,0.04)', borderRadius: '10px' }}>
             <div>
               <p style={{ fontSize: '11px', color: '#bbcabf', margin: '0 0 2px' }}>

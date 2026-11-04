@@ -74,34 +74,24 @@ const ACCOUNT_TYPES = [
 ];
 
 // Monthly bar chart — groups paymentHistory by month for a selected FY or CY.
-// Overlays a transparent value-trajectory line behind the bars.
 // Hover tooltip shows contribution amount + growth (derived from valueHistory snapshots).
-function ContributionBarChart({ paymentHistory, currentValue, color, mode, selectedYear, valueHistory }) {
+function ContributionBarChart({ paymentHistory, color, mode, selectedYear, valueHistory }) {
   const [hoveredIdx, setHoveredIdx] = useState(null);
 
-  const { monthlyData, currentBucketIdx, periodLabel, monthlyGrowth } = useMemo(() => {
-    const today = new Date();
-    let buckets, bucketIdx, pLabel;
+  const { monthlyData, monthlyGrowth } = useMemo(() => {
+    let buckets;
 
     if (mode === 'fy') {
-      const isCurrentFY = selectedYear === getTaxYearStart(today);
       buckets = Array.from({ length: 12 }, (_, i) => {
         const calMonth = (3 + i) % 12;
         const calYear  = calMonth >= 3 ? selectedYear : selectedYear + 1;
         return { label: new Date(calYear, calMonth, 1).toLocaleString('en-GB', { month: 'short' }), amount: 0, calMonth, calYear };
       });
-      bucketIdx = isCurrentFY
-        ? (today.getMonth() === 3 && today.getDate() < 6 ? 11 : (today.getMonth() - 3 + 12) % 12)
-        : 11;
-      pLabel = `${selectedYear}/${String(selectedYear + 1).slice(-2)}`;
     } else {
-      const isCurrentCY = selectedYear === today.getFullYear();
       buckets = Array.from({ length: 12 }, (_, i) => ({
         label: new Date(selectedYear, i, 1).toLocaleString('en-GB', { month: 'short' }),
         amount: 0, calMonth: i, calYear: selectedYear,
       }));
-      bucketIdx = isCurrentCY ? today.getMonth() : 11;
-      pLabel = String(selectedYear);
     }
 
     (paymentHistory || []).forEach(p => {
@@ -142,59 +132,25 @@ function ContributionBarChart({ paymentHistory, currentValue, color, mode, selec
       return endValue - prevValue - (bucket.amount || 0);
     });
 
-    return { monthlyData: buckets, currentBucketIdx: bucketIdx, periodLabel: pLabel, monthlyGrowth: growth };
+    return { monthlyData: buckets, monthlyGrowth: growth };
   }, [paymentHistory, valueHistory, mode, selectedYear]);
 
-  // Build the value-trajectory line:
-  //   values[0]   = estimated opening period value (currentValue minus period contributions)
-  //   values[i+1] = opening value + cumulative contributions through month i
-  //   values[last]= currentValue (anchors the line to what the user has set)
-  const linePath = useMemo(() => {
-    const cv = currentValue || 0;
-    if (!cv) return null;
-
-    const fyTotal = monthlyData.reduce((s, b) => s + b.amount, 0);
-    const openingValue = Math.max(0, cv - fyTotal);
-
-    const values = [openingValue];
-    let running = openingValue;
-    for (let i = 0; i <= currentBucketIdx; i++) {
-      running = i === currentBucketIdx ? cv : running + monthlyData[i].amount;
-      values.push(running);
-    }
-
-    // Map values onto the SVG coordinate space.
-    // viewBox is 0 0 100 52 — x is 0-100 (percentage-like), y is 0-52px.
-    // values[0] sits at x=0 (left edge); values[i+1] sits at the centre of column i.
-    const COL_W = 100 / 12;
-    const CHART_H = 52;
-    const PAD_Y = 4; // vertical padding so the line doesn't clip at edges
-
-    const minVal = Math.min(...values);
-    const maxVal = Math.max(...values);
-    const range = maxVal - minVal || 1;
-
-    const coords = values.map((v, i) => ({
-      x: i === 0 ? 0 : (i - 1 + 0.5) * COL_W,
-      y: CHART_H - PAD_Y - ((v - minVal) / range) * (CHART_H - PAD_Y * 2),
-    }));
-
-    const linePoints = coords.map(c => `${c.x.toFixed(2)},${c.y.toFixed(2)}`).join(' ');
-    const lastX = coords[coords.length - 1].x.toFixed(2);
-    const fillD = coords.map((c, i) => `${i === 0 ? 'M' : 'L'}${c.x.toFixed(2)},${c.y.toFixed(2)}`).join(' ')
-      + ` L${lastX},${CHART_H} L0,${CHART_H} Z`;
-
-    return { linePoints, fillD };
-  }, [monthlyData, currentValue, currentBucketIdx]);
-
-  // Bar height includes positive growth so the split bar reflects total value change
+  // Bars above the zero line are contributions + positive growth; months where
+  // growth was negative get a red bar below the line. Both share one scale, and the
+  // zero line moves down only as far as the largest loss needs.
+  const CHART_H = 52;
   const barTotals = monthlyData.map((b, i) => {
     const g = monthlyGrowth[i];
     return b.amount + (g !== null && g > 0 ? g : 0);
   });
-  const maxBarValue     = Math.max(...barTotals, 1);
-  const hasAnyGrowthData = monthlyGrowth.some(g => g !== null);
-  const lineColor = color || '#4edea3';
+  const maxPos = Math.max(...barTotals, 0);
+  const maxNeg = Math.max(...monthlyGrowth.map(g => (g !== null && g < 0 ? -g : 0)), 0);
+  const scale  = CHART_H / (Math.max(maxPos + maxNeg, 1));
+  const posAreaH = maxNeg > 0 ? maxPos * scale : CHART_H;
+  const negAreaH = CHART_H - posAreaH;
+  const hasAnyGrowthData   = monthlyGrowth.some(g => g !== null);
+  const hasNegativeGrowth  = maxNeg > 0;
+  const accentColor = color || '#4edea3';
 
   const tooltipLeft    = hoveredIdx !== null ? Math.min(Math.max((hoveredIdx + 0.5) / 12 * 100, 14), 86) : 50;
   const hoveredBucket  = hoveredIdx !== null ? monthlyData[hoveredIdx] : null;
@@ -212,6 +168,10 @@ function ContributionBarChart({ paymentHistory, currentValue, color, mode, selec
           bottom: 'calc(100% + 6px)',
           left: `${tooltipLeft}%`,
           transform: 'translateX(-50%)',
+          // Fixed width so the tooltip doesn't resize as values change month to month
+          width: '160px',
+          boxSizing: 'border-box',
+          fontVariantNumeric: 'tabular-nums',
           background: '#1a2744',
           border: '1px solid rgba(173,198,255,0.15)',
           borderRadius: '10px',
@@ -222,20 +182,20 @@ function ContributionBarChart({ paymentHistory, currentValue, color, mode, selec
           boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
         }}>
           <p style={{ fontSize: '11px', fontWeight: 700, color: '#dae2fd', margin: '0 0 6px', fontFamily: 'Manrope, sans-serif' }}>
-            {hoveredBucket.label} {periodLabel}
+            {new Date(hoveredBucket.calYear, hoveredBucket.calMonth, 1).toLocaleString('en-GB', { month: 'short', year: '2-digit' })}
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: '16px' }}>
-              <span style={{ fontSize: '11px', color: 'rgba(78,222,163,0.9)' }}>Contributed</span>
+              <span style={{ fontSize: '11px', color: '#adc6ff' }}>Contributed</span>
               <span style={{ fontSize: '11px', fontWeight: 600, color: '#dae2fd' }}>
                 {'£' + Math.round(hoveredBucket.amount || 0).toLocaleString('en-GB')}
               </span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: '16px' }}>
-              <span style={{ fontSize: '11px', color: hoveredGrowth !== null ? (hoveredGrowth >= 0 ? '#adc6ff' : '#ff6b6b') : '#64748b' }}>
+              <span style={{ fontSize: '11px', color: hoveredGrowth !== null ? (hoveredGrowth >= 0 ? '#4edea3' : '#ffb4ab') : '#64748b' }}>
                 Growth
               </span>
-              <span style={{ fontSize: '11px', fontWeight: 600, color: hoveredGrowth !== null ? (hoveredGrowth >= 0 ? '#adc6ff' : '#ff6b6b') : '#64748b' }}>
+              <span style={{ fontSize: '11px', fontWeight: 600, color: hoveredGrowth !== null ? (hoveredGrowth >= 0 ? '#4edea3' : '#ffb4ab') : '#64748b' }}>
                 {hoveredGrowth !== null
                   ? (hoveredGrowth >= 0 ? '+£' : '-£') + Math.round(Math.abs(hoveredGrowth)).toLocaleString('en-GB')
                   : '—'}
@@ -255,80 +215,90 @@ function ContributionBarChart({ paymentHistory, currentValue, color, mode, selec
         </div>
       )}
 
-      {/* Value-trajectory line — sits behind the bars */}
-      {linePath && (
-        <svg
-          viewBox="0 0 100 52"
-          preserveAspectRatio="none"
-          style={{
-            position: 'absolute',
-            top: 0, left: 0,
-            width: '100%', height: '52px',
-            pointerEvents: 'none',
-            zIndex: 0,
-          }}
-        >
-          <path d={linePath.fillD} fill={lineColor} fillOpacity={0.07} />
-          <polyline
-            points={linePath.linePoints}
-            fill="none"
-            stroke={lineColor}
-            strokeWidth="1.5"
-            strokeOpacity={0.5}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-      )}
-
-      {/* Contribution bars — rendered in front of the line */}
-      <div style={{ display: 'flex', gap: '4px', height: '52px', alignItems: 'flex-end', position: 'relative', zIndex: 1 }}>
+      {/* Contribution bars */}
+      <div style={{ display: 'flex', gap: '4px', height: `${CHART_H}px`, position: 'relative' }}>
         {monthlyData.map((b, i) => {
           const growthVal      = monthlyGrowth[i];
           const positiveGrowth = growthVal !== null ? Math.max(0, growthVal) : 0;
+          const negativeGrowth = growthVal !== null ? Math.max(0, -growthVal) : 0;
           const barTotal       = b.amount + positiveGrowth;
-          const barHeightPx    = barTotal > 0 ? Math.max(3, (barTotal / maxBarValue) * 52) : 3;
-          const hasSplit       = growthVal !== null && growthVal > 0 && b.amount > 0;
-          const growthFrac     = hasSplit ? positiveGrowth / barTotal : 0;
+          const barHeightPx    = barTotal > 0 ? Math.max(3, barTotal * scale) : (negativeGrowth > 0 ? 0 : 3);
+          const negHeightPx    = negativeGrowth > 0 ? Math.max(3, negativeGrowth * scale) : 0;
+          const hasSplit       = positiveGrowth > 0 && b.amount > 0;
+          const growthFrac     = barTotal > 0 ? positiveGrowth / barTotal : 0;
           const hasData        = b.amount > 0 || growthVal !== null;
+          const isHovered      = hoveredIdx === i && hasData;
           return (
             <div
               key={i}
-              style={{ flex: 1, height: '52px', display: 'flex', alignItems: 'flex-end', cursor: hasData ? 'pointer' : 'default' }}
+              style={{
+                flex: 1, height: `${CHART_H}px`, display: 'flex', flexDirection: 'column',
+                cursor: hasData ? 'pointer' : 'default',
+                opacity: isHoveringBar && hoveredIdx !== i ? 0.4 : 1,
+                transition: 'opacity 0.15s',
+              }}
               onMouseEnter={() => setHoveredIdx(i)}
             >
-              <div style={{
-                width: '100%',
-                height: `${barHeightPx}px`,
-                display: 'flex',
-                flexDirection: 'column',
-                borderRadius: '3px 3px 2px 2px',
-                overflow: 'hidden',
-                outline: hoveredIdx === i && hasData ? '1px solid rgba(173,198,255,0.25)' : 'none',
-                opacity: isHoveringBar && hoveredIdx !== i ? 0.4 : 1,
-                transition: 'height 0.4s ease, opacity 0.15s',
-              }}>
-                {hasSplit ? (
-                  <>
-                    <div style={{ width: '100%', height: `${growthFrac * 100}%`, background: 'rgba(173,198,255,0.35)' }} />
-                    <div style={{ width: '100%', flex: 1, background: 'rgba(78,222,163,0.45)' }} />
-                  </>
-                ) : b.amount > 0 ? (
-                  <div style={{ flex: 1, background: 'rgba(78,222,163,0.35)' }} />
-                ) : (
-                  <div style={{ flex: 1, background: 'rgba(173,198,255,0.06)' }} />
+              {/* Above the zero line: contributions (blue) + positive growth (green) */}
+              <div style={{ height: `${posAreaH}px`, display: 'flex', alignItems: 'flex-end' }}>
+                {barHeightPx > 0 && (
+                  <div style={{
+                    width: '100%',
+                    height: `${barHeightPx}px`,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    borderRadius: '3px 3px 2px 2px',
+                    overflow: 'hidden',
+                    outline: isHovered ? '1px solid rgba(173,198,255,0.25)' : 'none',
+                    transition: 'height 0.4s ease',
+                  }}>
+                    {hasSplit ? (
+                      <>
+                        <div style={{ width: '100%', height: `${growthFrac * 100}%`, background: 'rgba(78,222,163,0.45)' }} />
+                        <div style={{ width: '100%', flex: 1, background: 'rgba(173,198,255,0.45)' }} />
+                      </>
+                    ) : b.amount > 0 ? (
+                      <div style={{ flex: 1, background: 'rgba(173,198,255,0.35)' }} />
+                    ) : positiveGrowth > 0 ? (
+                      <div style={{ flex: 1, background: 'rgba(78,222,163,0.45)' }} />
+                    ) : (
+                      <div style={{ flex: 1, background: 'rgba(173,198,255,0.06)' }} />
+                    )}
+                  </div>
                 )}
               </div>
+              {/* Below the zero line: negative growth (red) */}
+              {negAreaH > 0 && (
+                <div style={{ height: `${negAreaH}px` }}>
+                  {negHeightPx > 0 && (
+                    <div style={{
+                      width: '100%',
+                      height: `${negHeightPx}px`,
+                      background: 'rgba(255,180,171,0.5)',
+                      borderRadius: '2px 2px 3px 3px',
+                      outline: isHovered ? '1px solid rgba(255,180,171,0.35)' : 'none',
+                      transition: 'height 0.4s ease',
+                    }} />
+                  )}
+                </div>
+              )}
             </div>
           );
         })}
+        {/* Zero line, only needed when some months dip below it */}
+        {hasNegativeGrowth && (
+          <div style={{
+            position: 'absolute', left: 0, right: 0, top: `${posAreaH}px`,
+            borderTop: '1px solid rgba(173,198,255,0.15)', pointerEvents: 'none',
+          }} />
+        )}
       </div>
 
       {/* Month labels */}
       <div style={{ display: 'flex', gap: '4px', marginTop: '4px' }}>
         {monthlyData.map((b, i) => (
           <div key={i} style={{ flex: 1, textAlign: 'center' }}>
-            <span style={{ fontSize: '8px', color: hoveredIdx === i ? lineColor : '#64748b' }}>
+            <span style={{ fontSize: '8px', color: hoveredIdx === i ? accentColor : '#64748b' }}>
               {b.label.slice(0, 1)}
             </span>
           </div>
@@ -339,11 +309,17 @@ function ContributionBarChart({ paymentHistory, currentValue, color, mode, selec
       {hasAnyGrowthData && (
         <div style={{ display: 'flex', gap: '16px', marginTop: '10px', marginBottom: '2px', justifyContent: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <div style={{ width: '10px', height: '10px', borderRadius: '2px', background: 'rgba(78,222,163,0.45)' }} />
+            <div style={{ width: '10px', height: '10px', borderRadius: '2px', background: 'rgba(173,198,255,0.45)' }} />
             <span style={{ fontSize: '11px', color: '#bbcabf' }}>Contributions</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <div style={{ width: '10px', height: '10px', borderRadius: '2px', background: 'rgba(173,198,255,0.35)' }} />
+            {/* Split green/red when the period includes negative growth */}
+            <div style={{
+              width: '10px', height: '10px', borderRadius: '2px',
+              background: hasNegativeGrowth
+                ? 'linear-gradient(135deg, rgba(78,222,163,0.45) 50%, rgba(255,180,171,0.5) 50%)'
+                : 'rgba(78,222,163,0.45)',
+            }} />
             <span style={{ fontSize: '11px', color: '#bbcabf' }}>Growth</span>
           </div>
         </div>
@@ -618,7 +594,6 @@ export default function ProviderDetail() {
 
           <ContributionBarChart
             paymentHistory={entry.paymentHistory}
-            currentValue={entry.currentValue}
             valueHistory={entry.valueHistory}
             color={color}
             mode={periodType}

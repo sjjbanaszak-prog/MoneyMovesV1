@@ -72,8 +72,7 @@ function AllowanceRow({ yr }) {
 
 function fmtK(n) {
   if (!n) return '£0';
-  if (n >= 1000000) return `£${(n / 1000000).toFixed(1)}m`;
-  if (n >= 1000) return `£${Math.round(n / 1000)}k`;
+  if (n >= 1000) return `£${Math.round(n / 1000).toLocaleString('en-GB')}k`;
   return `£${Math.round(n)}`;
 }
 
@@ -153,6 +152,9 @@ function DualLineChart({ valueSeries, contribSeries, labels }) {
   const hi = hoveredIdx;
   // Clamp tooltip left so it doesn't overflow the card edges
   const tooltipLeftPct = hi !== null ? Math.min(Math.max((hi / (n - 1)) * 100, 8), 92) : null;
+  // Investment growth at the hovered month: total value minus contributions paid in
+  const growth = hi !== null ? (valueSeries[hi] || 0) - (contribSeries[hi] || 0) : 0;
+  const growthColor = growth < 0 ? '#ffb4ab' : '#4edea3';
 
   return (
     <>
@@ -176,15 +178,29 @@ function DualLineChart({ valueSeries, contribSeries, labels }) {
             <p style={{ fontSize: '11px', fontWeight: 700, color: '#dae2fd', margin: '0 0 6px', fontFamily: 'Manrope, sans-serif' }}>
               {labels[hi]}
             </p>
-            <div style={{ display: 'flex', gap: '16px' }}>
-              <div>
-                <p style={{ fontSize: '10px', color: '#4edea3', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', margin: '0 0 2px' }}>Value</p>
-                <p style={{ fontSize: '12px', fontWeight: 700, color: '#4edea3', margin: 0 }}>{fmtK(valueSeries[hi])}</p>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', marginBottom: '3px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#4edea3', flexShrink: 0 }} />
+                <span style={{ fontSize: '11px', color: '#bbcabf' }}>Total value</span>
               </div>
-              <div>
-                <p style={{ fontSize: '10px', color: '#adc6ff', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', margin: '0 0 2px' }}>Contrib</p>
-                <p style={{ fontSize: '12px', fontWeight: 700, color: '#adc6ff', margin: 0 }}>{fmtK(contribSeries[hi])}</p>
+              <span style={{ fontSize: '12px', fontWeight: 700, color: '#4edea3' }}>{fmtK(valueSeries[hi])}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#adc6ff', flexShrink: 0 }} />
+                <span style={{ fontSize: '11px', color: '#bbcabf' }}>Contributions</span>
               </div>
+              <span style={{ fontSize: '12px', fontWeight: 700, color: '#adc6ff' }}>{fmtK(contribSeries[hi])}</span>
+            </div>
+            <div style={{ borderTop: '1px solid rgba(173,198,255,0.1)', margin: '5px 0 4px' }} />
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: growthColor, flexShrink: 0 }} />
+                <span style={{ fontSize: '11px', color: '#bbcabf' }}>Growth</span>
+              </div>
+              <span style={{ fontSize: '12px', fontWeight: 700, color: growthColor }}>
+                {growth < 0 ? '−' : '+'}{fmtK(Math.abs(growth))}
+              </span>
             </div>
           </div>
         )}
@@ -221,10 +237,10 @@ function DualLineChart({ valueSeries, contribSeries, labels }) {
 
           {/* Dots at hovered data points */}
           {hi !== null && valueSeries[hi] > 0 && (
-            <circle cx={toX(hi)} cy={toY(valueSeries[hi])} r="4" fill="#0b1326" stroke="#4edea3" strokeWidth="2" />
+            <circle cx={toX(hi)} cy={toY(valueSeries[hi])} r="3.5" fill="#0b1326" stroke="#4edea3" strokeWidth="2" />
           )}
           {hi !== null && contribSeries[hi] > 0 && (
-            <circle cx={toX(hi)} cy={toY(contribSeries[hi])} r="4" fill="#0b1326" stroke="#adc6ff" strokeWidth="2" />
+            <circle cx={toX(hi)} cy={toY(contribSeries[hi])} r="3.5" fill="#0b1326" stroke="#adc6ff" strokeWidth="2" />
           )}
 
           {/* Invisible hit strips — one per data point */}
