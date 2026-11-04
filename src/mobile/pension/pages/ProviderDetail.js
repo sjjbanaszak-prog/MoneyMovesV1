@@ -384,6 +384,30 @@ export default function ProviderDetail() {
     }, 0);
   }, [entry.paymentHistory, periodType, currentFYStart, currentCY]);
 
+  // Growth over the current FY or CY: today's value minus the value at the start of
+  // the period, minus contributions paid in during it. The opening value is the last
+  // valueHistory snapshot before the period; an account with no history before the
+  // period started from £0. Null when there's an earlier history but no snapshot.
+  const periodGrowth = useMemo(() => {
+    const periodStart = periodType === 'fy' ? new Date(currentFYStart, 3, 6) : new Date(currentCY, 0, 1);
+    const before = (entry.valueHistory || [])
+      .map(vh => ({ date: new Date(vh.date), value: vh.value }))
+      .filter(vh => !isNaN(vh.date.getTime()) && vh.date < periodStart)
+      .sort((a, b) => a.date - b.date);
+    let openingValue;
+    if (before.length) {
+      openingValue = before[before.length - 1].value;
+    } else {
+      const paidBefore = (entry.paymentHistory || []).some(p => {
+        const dt = parseDate(p.date);
+        return dt && dt < periodStart;
+      });
+      if (paidBefore) return null;
+      openingValue = 0;
+    }
+    return (entry.currentValue || 0) - openingValue - periodTotal;
+  }, [entry.valueHistory, entry.paymentHistory, entry.currentValue, periodType, currentFYStart, currentCY, periodTotal]);
+
   const growth = (entry.currentValue || 0) - (entry.deposits || 0);
   const growthPct = entry.deposits > 0 ? (growth / entry.deposits) * 100 : 0;
 
@@ -599,20 +623,40 @@ export default function ProviderDetail() {
             mode={periodType}
             selectedYear={periodType === 'fy' ? currentFYStart : currentCY}
           />
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '12px', padding: '12px', background: 'rgba(173,198,255,0.04)', borderRadius: '10px' }}>
-            <div>
-              <p style={{ fontSize: '11px', color: '#bbcabf', margin: '0 0 2px' }}>
-                {periodType === 'fy'
-                  ? `${currentFYStart}/${String(currentFYStart + 1).slice(-2)}`
-                  : String(currentCY)} total
-              </p>
-              <p style={{ fontWeight: 700, fontSize: '14px', color: '#4edea3', margin: 0 }}>{fmtShort(periodTotal)}</p>
-            </div>
-            <div style={{ textAlign: 'right' }}>
-              <p style={{ fontSize: '11px', color: '#bbcabf', margin: '0 0 2px' }}>All contributions</p>
-              <p style={{ fontWeight: 700, fontSize: '14px', color: '#dae2fd', margin: 0 }}>{fmtShort(entry.deposits)}</p>
-            </div>
-          </div>
+          {/* Period summary: contributions + growth = total change in value */}
+          {(() => {
+            const periodName = periodType === 'fy'
+              ? `${String(currentFYStart).slice(-2)}/${String(currentFYStart + 1).slice(-2)}`
+              : String(currentCY);
+            const growthColor = periodGrowth === null ? '#64748b' : periodGrowth < 0 ? '#ffb4ab' : '#4edea3';
+            const cards = [
+              { label: 'Contributions', value: fmtShort(periodTotal), color: '#adc6ff' },
+              {
+                label: 'Growth',
+                value: periodGrowth === null ? '—' : (periodGrowth < 0 ? '−' : '+') + fmtShort(Math.abs(periodGrowth)),
+                color: growthColor,
+              },
+              {
+                label: 'Total',
+                value: periodGrowth === null ? '—' : fmtShort(periodTotal + periodGrowth),
+                color: '#dae2fd',
+              },
+            ];
+            return (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginTop: '12px' }}>
+                {cards.map(c => (
+                  <div key={c.label} style={{ padding: '10px 12px', background: 'rgba(173,198,255,0.04)', borderRadius: '10px', minWidth: 0, textAlign: 'center' }}>
+                    <p style={{ fontSize: '10px', color: '#bbcabf', margin: '0 0 3px', lineHeight: 1.3 }}>
+                      {periodName} {c.label}
+                    </p>
+                    <p style={{ fontWeight: 700, fontSize: '14px', color: c.color, margin: 0, fontVariantNumeric: 'tabular-nums' }}>
+                      {c.value}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
         </div>
 
         {/* Account Details */}
