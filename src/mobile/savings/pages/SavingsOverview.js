@@ -142,14 +142,9 @@ export default function SavingsOverview() {
   const allowanceColor = allowancePct >= 90 ? '#ff6b6b' : allowancePct >= 70 ? '#ffb95f' : '#4edea3';
   const depositBarPct  = totalBalance > 0 ? Math.round((totalDeposited / totalBalance) * 100) : 0;
 
-  // Sort accounts: ISA first, then by balance descending
+  // Sort accounts by balance descending
   const sortedAccounts = React.useMemo(() => {
-    return [...accounts].sort((a, b) => {
-      const aIsa = (a.accountType || '').toLowerCase().includes('isa') ? 1 : 0;
-      const bIsa = (b.accountType || '').toLowerCase().includes('isa') ? 1 : 0;
-      if (aIsa !== bIsa) return bIsa - aIsa;
-      return (b.currentBalance || 0) - (a.currentBalance || 0);
-    });
+    return [...accounts].sort((a, b) => (b.currentBalance || 0) - (a.currentBalance || 0));
   }, [accounts]);
 
   return (

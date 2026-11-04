@@ -21,8 +21,7 @@ function fmt(n) {
 
 function fmtK(n) {
   if (!n) return '£0';
-  if (n >= 1000000) return `£${(n / 1000000).toFixed(1)}m`;
-  if (n >= 1000) return `£${Math.round(n / 1000)}k`;
+  if (n >= 1000) return `£${Math.round(n / 1000).toLocaleString('en-GB')}k`;
   return `£${Math.round(n)}`;
 }
 
