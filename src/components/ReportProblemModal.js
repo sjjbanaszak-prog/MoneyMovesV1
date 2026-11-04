@@ -3,6 +3,7 @@ import { AlertCircle, Lightbulb, HelpCircle, MessageSquare, Info, X } from 'luci
 import { useAuth } from '../context/AuthProvider';
 import { collection, addDoc } from 'firebase/firestore';
 import { db } from '../firebase';
+import { problemReportExpiry } from '../utils/problemReports';
 import { useReportProblem } from '../contexts/ReportProblemContext';
 import '../archive/web-pages/AccountSettingsStyles.css';
 
@@ -33,6 +34,7 @@ export default function ReportProblemModal() {
         subject: reportData.subject,
         description: reportData.description,
         timestamp: new Date(),
+        expireAt: problemReportExpiry(),
         status: 'open',
       });
 

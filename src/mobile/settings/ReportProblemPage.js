@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { collection, addDoc } from 'firebase/firestore';
 import { useAuth } from '../../contexts/AuthContext';
 import { db } from '../../firebase';
+import { problemReportExpiry } from '../../utils/problemReports';
 import MobileNavDrawer from '../components/MobileNavDrawer';
 
 const CATEGORIES = [
@@ -118,6 +119,7 @@ export default function ReportProblemPage() {
         subject:     subject.trim(),
         description: description.trim(),
         timestamp:   new Date(),
+        expireAt:    problemReportExpiry(),
         status:      'open',
         browser:     detectBrowser(),
         os:          detectOS(),

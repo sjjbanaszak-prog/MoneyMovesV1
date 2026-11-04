@@ -153,7 +153,7 @@ export default function PrivacyPolicyPage() {
           <p style={{ ...bodyStyle, margin: 0 }}>
             We retain your data for as long as your account is active. When you delete your account (Settings → Delete
             Account), your profile and all the data you've added are permanently deleted
-            straight away. Problem reports you've sent us are kept separately so we can follow up on them.
+            straight away. Problem reports you've sent us are kept separately so we can follow up on them, and are automatically deleted 12 months after you send them.
           </p>
         </Section>
 
@@ -194,6 +194,7 @@ export default function PrivacyPolicyPage() {
             <li><strong style={{ color: '#dae2fd' }}>Google Firebase</strong> — authentication and data storage (Google LLC, EEA-hosted)</li>
             <li><strong style={{ color: '#dae2fd' }}>Google Sign-In</strong> — optional OAuth login</li>
             <li><strong style={{ color: '#dae2fd' }}>Vercel Analytics</strong> — anonymous, cookie-free page visit statistics (Vercel Inc.)</li>
+            <li><strong style={{ color: '#dae2fd' }}>Google Fonts</strong> — serves the app's fonts; your browser connects to Google's servers to load them, which shares your IP address with Google (Google LLC)</li>
             <li><strong style={{ color: '#dae2fd' }}>HM Land Registry / ONS APIs</strong> — publicly available property and economic data (no personal data transmitted)</li>
           </ul>
           <p style={{ ...bodyStyle, margin: 0 }}>
