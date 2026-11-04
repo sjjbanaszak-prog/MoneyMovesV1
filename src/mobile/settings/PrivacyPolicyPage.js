@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import MobileNavDrawer from '../components/MobileNavDrawer';
 
-const LAST_UPDATED = '26 June 2026';
+const LAST_UPDATED = '4 November 2026';
 
 const sectionHeadStyle = {
   fontFamily: 'Manrope, sans-serif',
@@ -163,6 +163,10 @@ export default function PrivacyPolicyPage() {
             Money Moves uses Firebase Authentication tokens to keep you signed in securely. These are session tokens, not
             advertising or tracking cookies.
           </p>
+          <p style={bodyStyle}>
+            We use Vercel Analytics to count page visits so we can see which parts of the app are used. It does not use
+            cookies, does not identify you or track you across other websites, and never receives your financial data.
+          </p>
           <p style={{ ...bodyStyle, margin: 0 }}>
             We do not use third-party advertising networks, social media trackers, or behavioural analytics platforms.
           </p>
@@ -173,6 +177,7 @@ export default function PrivacyPolicyPage() {
           <ul style={listStyle}>
             <li><strong style={{ color: '#dae2fd' }}>Google Firebase</strong> — authentication and data storage (Google LLC, EEA-hosted)</li>
             <li><strong style={{ color: '#dae2fd' }}>Google Sign-In</strong> — optional OAuth login</li>
+            <li><strong style={{ color: '#dae2fd' }}>Vercel Analytics</strong> — anonymous, cookie-free page visit statistics (Vercel Inc.)</li>
             <li><strong style={{ color: '#dae2fd' }}>HM Land Registry / ONS APIs</strong> — publicly available property and economic data (no personal data transmitted)</li>
           </ul>
           <p style={{ ...bodyStyle, margin: 0 }}>
