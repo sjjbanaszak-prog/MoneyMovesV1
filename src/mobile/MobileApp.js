@@ -12,7 +12,6 @@ import ReportProblemPage   from './settings/ReportProblemPage';
 import PrivacyPolicyPage   from './settings/PrivacyPolicyPage';
 import TermsOfUsePage      from './settings/TermsOfUsePage';
 import MobileUpgradePage   from './upgrade/MobileUpgradePage';
-import FamilyApp           from './family/FamilyApp';
 import { SavingsDataProvider } from './savings/SavingsDataContext';
 import { PensionDataProvider } from './pension/PensionDataContext';
 import { NotificationsProvider } from './notifications/NotificationsContext';
@@ -69,8 +68,11 @@ export default function MobileApp() {
       {/* Income section — owns all /mobile/income/* routes */}
       <Route path="income/*" element={<IncomeApp />} />
 
-      {/* Family section — owns all /mobile/family/* routes */}
-      <Route path="family/*" element={<FamilyApp />} />
+      {/* Family section is paused while it gets more work. To re-enable, restore
+          `import FamilyApp from './family/FamilyApp'`, route family/* to <FamilyApp />,
+          remove `disabled` from the Family item in MobileNavDrawer, and restore the
+          demo_jisa_olivia demo notification. */}
+      <Route path="family/*" element={<Navigate to="/mobile/dashboard" replace />} />
 
       {/* Settings & Upgrade */}
       <Route path="settings"                  element={<MobileSettingsPage />} />

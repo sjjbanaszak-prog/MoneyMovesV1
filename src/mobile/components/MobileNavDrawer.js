@@ -12,7 +12,7 @@ const NAV_ITEMS = [
   { label: 'Income',    icon: 'payments',         path: '/mobile/income',   match: '/mobile/income'   },
   { label: 'Debt',      icon: 'credit_card',      path: '/debt-manager',    match: '/debt-manager',   disabled: true },
   { divider: true },
-  { label: 'Family',    icon: 'family_restroom',  path: '/mobile/family',   match: '/mobile/family'   },
+  { label: 'Family',    icon: 'family_restroom',  path: '/mobile/family',   match: '/mobile/family',  disabled: true },
 ];
 
 export default function MobileNavDrawer() {

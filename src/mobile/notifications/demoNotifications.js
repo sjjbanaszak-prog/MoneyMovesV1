@@ -52,18 +52,6 @@ export const DEMO_NOTIFICATIONS = [
     read:      false,
   },
   {
-    key:       'demo_jisa_olivia',
-    demo:      true,
-    category:  'isa',
-    priority:  'medium',
-    icon:      'child_care',
-    iconColor: '#ff9500',
-    title:     'Olivia\'s JISA has room to spare',
-    body:      'Olivia has £6,600 of her £9,000 JISA allowance left this tax year.',
-    link:      '/mobile/family/allowances',
-    read:      false,
-  },
-  {
     key:       'demo_ltv_60pct',
     demo:      true,
     category:  'mortgage',

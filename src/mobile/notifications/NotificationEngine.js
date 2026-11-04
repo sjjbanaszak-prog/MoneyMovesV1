@@ -50,8 +50,9 @@ async function runRealEngine(uid, savingsMetrics, pensionMetrics) {
     const mortgageSnap = await getDoc(doc(db, 'mortgagePots', uid));
     const mortgages = mortgageSnap.exists() ? (mortgageSnap.data().mortgages || []) : [];
 
-    const householdSnap = await getDoc(doc(db, 'households', uid));
-    const children = householdSnap.exists() ? (householdSnap.data().children || []) : [];
+    // Family section is paused, so there are no children to check for JISA alerts.
+    // Restore the households read when it's re-enabled.
+    const children = [];
 
     const candidates = evaluateRules({ savingsMetrics, pensionMetrics, mortgages, children });
 
