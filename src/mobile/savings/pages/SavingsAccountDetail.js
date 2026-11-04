@@ -315,7 +315,7 @@ function SavingsHistoryChart({ account, color, mode = 'fy' }) {
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: '16px' }}>
-              <span style={{ fontSize: '11px', color: '#adc6ff' }}>Deposited</span>
+              <span style={{ fontSize: '11px', color: '#adc6ff' }}>Deposits</span>
               <span style={{ fontSize: '11px', fontWeight: 600, color: '#dae2fd' }}>
                 {'£' + Math.round(hoveredBucket.amount || 0).toLocaleString('en-GB')}
               </span>
@@ -502,7 +502,6 @@ export default function SavingsAccountDetail() {
   const nowM     = today.getMonth() + 1;
   const nowD     = today.getDate();
   const fyStart  = (nowM > 4 || (nowM === 4 && nowD >= 6)) ? today.getFullYear() : today.getFullYear() - 1;
-  const fyLabel  = `${fyStart}/${String(fyStart + 1).slice(-2)}`;
 
   // Current balance edit handlers
   function handleEditClick() {
@@ -555,88 +554,39 @@ export default function SavingsAccountDetail() {
   const firstTx = allTx.length > 0 ? allTx[allTx.length - 1] : null;
   const lastTx  = allTx.length > 0 ? allTx[0] : null;
 
-  const fyTotal = useMemo(() => {
-    const now = new Date();
-    const yr  = now.getMonth() > 3 || (now.getMonth() === 3 && now.getDate() >= 6)
-      ? now.getFullYear() : now.getFullYear() - 1;
-    const fyStart = new Date(yr, 3, 6); // April 6
-    const { rawData = [], mapping = {}, dateFormat } = account;
-    const creditCol = mapping.credit;
-    const amountCol = mapping.amount;
-    let total = 0;
-    rawData.forEach(row => {
-      const d = parseDate(row[mapping.date], dateFormat);
-      if (!d || d < fyStart) return;
-      const desc = String(row[mapping.description] || '').toLowerCase();
-      if (isReturnDescription(desc) || desc.includes('transfer')) return;
-      let credit = 0;
-      if (creditCol && row[creditCol] != null && row[creditCol] !== '') {
-        credit = parseAmount(row[creditCol]);
-      } else if (amountCol) {
-        const amt = parseAmount(row[amountCol]);
-        if (amt > 0) credit = amt;
-      }
-      total += credit;
-    });
-    // Also include manual deposits in FY (excluding interest and ISA transfers)
-    (account.manualTransactions || []).forEach(tx => {
-      if (tx.direction !== 'credit') return;
-      if (tx.type === 'interest' || tx.type === 'transfer_in') return;
-      const d = tx.date ? new Date(tx.date) : null;
-      if (!d || d < fyStart) return;
-      total += tx.amount;
-    });
-    return Math.round(total);
-  }, [account]);
-
-  const cyTotal = useMemo(() => {
-    const nowY = new Date().getFullYear();
-    const { rawData = [], mapping = {}, dateFormat } = account;
-    const creditCol = mapping.credit;
-    const amountCol = mapping.amount;
-    let total = 0;
-    rawData.forEach(row => {
-      const d = parseDate(row[mapping.date], dateFormat);
-      if (!d || d.getFullYear() !== nowY) return;
-      const desc = String(row[mapping.description] || '').toLowerCase();
-      if (isReturnDescription(desc) || desc.includes('transfer')) return;
-      let credit = 0;
-      if (creditCol && row[creditCol] != null && row[creditCol] !== '') {
-        credit = parseAmount(row[creditCol]);
-      } else if (amountCol) {
-        const amt = parseAmount(row[amountCol]);
-        if (amt > 0) credit = amt;
-      }
-      total += credit;
-    });
-    (account.manualTransactions || []).forEach(tx => {
-      if (tx.direction !== 'credit') return;
-      if (tx.type === 'interest' || tx.type === 'transfer_in') return;
-      const d = tx.date ? new Date(tx.date) : null;
-      if (!d || d.getFullYear() !== nowY) return;
-      total += tx.amount;
-    });
-    return Math.round(total);
-  }, [account]);
-
-  const periodGrowth = useMemo(() => {
-    const bHistory = (account.balanceHistory || [])
-      .map(bh => ({ date: new Date(bh.date), value: bh.value }))
-      .filter(bh => !isNaN(bh.date.getTime()))
-      .sort((a, b) => a.date - b.date);
-    if (bHistory.length < 2) return null;
+  // Deposits, growth and total for the selected FY or CY, built from the same
+  // transactions as the Savings History chart so the cards and bars agree.
+  //   Deposits = money paid in (not interest / prizes / dividends)
+  //   Growth   = today's balance − opening balance − net money paid in or out
+  //   Total    = Deposits + Growth
+  // Opening balance is the last balanceHistory snapshot before the period, or £0 if
+  // the account has no transactions before it. Otherwise growth falls back to the
+  // period's interest / prizes / dividends.
+  const periodSummary = useMemo(() => {
     const periodStart = periodType === 'fy'
       ? new Date(fyStart, 3, 6)
       : new Date(today.getFullYear(), 0, 1);
-    const before = bHistory.filter(bh => bh.date < periodStart);
-    if (!before.length) return null;
-    const openingBal = before[before.length - 1].value;
-    let netFlow = 0;
-    allTx.forEach(tx => {
-      if (tx.date < periodStart || tx.isReturn) return;
-      netFlow += (tx.credit || 0) - (tx.debit || 0);
-    });
-    return Math.round(currentBalance - openingBal - netFlow);
+    const inPeriod = allTx.filter(tx => tx.date && tx.date >= periodStart);
+
+    const deposits = inPeriod.reduce((s, tx) => s + (tx.isReturn ? 0 : (tx.credit || 0)), 0);
+    const netFlow  = inPeriod.reduce((s, tx) => s + (tx.isReturn ? 0 : (tx.credit || 0) - (tx.debit || 0)), 0);
+    const returns  = inPeriod.reduce((s, tx) => s + (tx.isReturn ? (tx.credit || 0) - (tx.debit || 0) : 0), 0);
+
+    const snapshotsBefore = (account.balanceHistory || [])
+      .map(bh => ({ date: new Date(bh.date), value: bh.value }))
+      .filter(bh => !isNaN(bh.date.getTime()) && bh.date < periodStart)
+      .sort((a, b) => a.date - b.date);
+    const hasTxBefore = allTx.some(tx => tx.date && tx.date < periodStart);
+
+    let growth;
+    if (snapshotsBefore.length) {
+      growth = currentBalance - snapshotsBefore[snapshotsBefore.length - 1].value - netFlow;
+    } else if (!hasTxBefore) {
+      growth = currentBalance - netFlow;
+    } else {
+      growth = returns;
+    }
+    return { deposits: Math.round(deposits), growth: Math.round(growth), total: Math.round(deposits + growth) };
   }, [account, allTx, periodType, fyStart, currentBalance]);
 
   return (
@@ -786,25 +736,24 @@ export default function SavingsAccountDetail() {
             </div>
           </div>
           <SavingsHistoryChart account={account} color={color} mode={periodType} />
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '12px', padding: '12px', background: 'rgba(173,198,255,0.04)', borderRadius: '10px' }}>
-            <div>
-              <p style={{ fontSize: '11px', color: '#bbcabf', margin: '0 0 2px' }}>
-                {periodType === 'fy' ? fyLabel : String(today.getFullYear())} total
-              </p>
-              <p style={{ fontWeight: 700, fontSize: '14px', color: '#4edea3', margin: 0 }}>{fmt(periodType === 'fy' ? fyTotal : cyTotal)}</p>
-            </div>
-            <div style={{ textAlign: 'right' }}>
-              <p style={{ fontSize: '11px', color: '#bbcabf', margin: '0 0 2px' }}>
-                {periodType === 'fy' ? fyLabel : String(today.getFullYear())} growth
-              </p>
-              {periodGrowth !== null ? (
-                <p style={{ fontWeight: 700, fontSize: '14px', color: periodGrowth >= 0 ? '#4edea3' : '#ff6b6b', margin: 0 }}>
-                  {periodGrowth >= 0 ? '+' : ''}{fmt(periodGrowth)}
+          {/* Period summary: deposits + growth = total */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginTop: '12px' }}>
+            {[
+              { label: 'Deposits', value: fmt(periodSummary.deposits), color: '#adc6ff' },
+              {
+                label: 'Growth',
+                value: (periodSummary.growth < 0 ? '−' : '+') + fmt(Math.abs(periodSummary.growth)),
+                color: periodSummary.growth < 0 ? '#ffb4ab' : '#4edea3',
+              },
+              { label: 'Total', value: fmt(periodSummary.total), color: '#dae2fd' },
+            ].map(c => (
+              <div key={c.label} style={{ padding: '10px 12px', background: 'rgba(173,198,255,0.04)', borderRadius: '10px', minWidth: 0, textAlign: 'center' }}>
+                <p style={{ fontSize: '10px', color: '#bbcabf', margin: '0 0 3px', lineHeight: 1.3 }}>{c.label}</p>
+                <p style={{ fontWeight: 700, fontSize: '14px', color: c.color, margin: 0, fontVariantNumeric: 'tabular-nums' }}>
+                  {c.value}
                 </p>
-              ) : (
-                <p style={{ fontWeight: 700, fontSize: '14px', color: '#bbcabf', margin: 0 }}>—</p>
-              )}
-            </div>
+              </div>
+            ))}
           </div>
         </div>
 

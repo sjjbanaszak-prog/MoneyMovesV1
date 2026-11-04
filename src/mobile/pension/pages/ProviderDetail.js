@@ -625,9 +625,6 @@ export default function ProviderDetail() {
           />
           {/* Period summary: contributions + growth = total change in value */}
           {(() => {
-            const periodName = periodType === 'fy'
-              ? `${String(currentFYStart).slice(-2)}/${String(currentFYStart + 1).slice(-2)}`
-              : String(currentCY);
             const growthColor = periodGrowth === null ? '#64748b' : periodGrowth < 0 ? '#ffb4ab' : '#4edea3';
             const cards = [
               { label: 'Contributions', value: fmtShort(periodTotal), color: '#adc6ff' },
@@ -647,7 +644,7 @@ export default function ProviderDetail() {
                 {cards.map(c => (
                   <div key={c.label} style={{ padding: '10px 12px', background: 'rgba(173,198,255,0.04)', borderRadius: '10px', minWidth: 0, textAlign: 'center' }}>
                     <p style={{ fontSize: '10px', color: '#bbcabf', margin: '0 0 3px', lineHeight: 1.3 }}>
-                      {periodName} {c.label}
+                      {c.label}
                     </p>
                     <p style={{ fontWeight: 700, fontSize: '14px', color: c.color, margin: 0, fontVariantNumeric: 'tabular-nums' }}>
                       {c.value}
