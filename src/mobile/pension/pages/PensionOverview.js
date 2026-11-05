@@ -4,6 +4,7 @@ import { useDemoMode } from '../../../contexts/DemoModeContext';
 import { useUserPlan } from '../../../contexts/UserPlanContext';
 import { usePensionData, parseDate } from '../PensionDataContext';
 import PensionLayout from '../PensionLayout';
+import EmptyState from '../../components/EmptyState';
 import { formatLastUpdated } from '../../utils/formatLastUpdated';
 import UpgradeSheet from '../../components/UpgradeSheet';
 
@@ -85,6 +86,7 @@ function DemoToggle() {
 export default function PensionOverview() {
   const navigate = useNavigate();
   const { isPremium } = useUserPlan();
+  const { isDemoMode } = useDemoMode();
   const { entries, metrics, isLoading, lastUpdated } = usePensionData();
   const [upgradeSheet, setUpgradeSheet] = useState(null);
   const ANNUAL_ALLOWANCE = 60000;
@@ -248,9 +250,13 @@ export default function PensionOverview() {
               Loading providers...
             </div>
           ) : entries.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '32px 16px', background: '#171f33', borderRadius: '16px', color: '#64748b', fontSize: '14px' }}>
-              No pension accounts found. Add data on the desktop Pension Pots page.
-            </div>
+            <EmptyState
+              icon="account_balance"
+              title="No pensions yet"
+              body="Add your workplace or personal pensions to track their value, contributions and annual allowance in one place."
+              actionLabel="Add pension"
+              onAction={() => navigate('/mobile/pension/add')}
+            />
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {sortedEntries.map(({ entry, originalIdx }) => {
@@ -316,47 +322,49 @@ export default function PensionOverview() {
           )}
         </div>
 
-        {/* Analysis Teaser Card */}
-        <div className="animate-in stagger-4" style={{
-          margin: '0 16px 24px',
-          position: 'relative',
-          overflow: 'hidden',
-          padding: '28px 24px',
-          borderRadius: '16px',
-          borderTop: '4px solid rgba(78,222,163,0.6)',
-          background: 'linear-gradient(135deg, rgba(78,222,163,0.18) 0%, #222a3d 100%)',
-        }}>
-          {/* Ghost icon — bottom right */}
-          <div style={{ position: 'absolute', bottom: '-8px', right: '-8px', opacity: 0.1, pointerEvents: 'none', lineHeight: 1 }}>
-            <span className="material-symbols-outlined" style={{ fontSize: '140px', color: '#ffffff' }}>psychology</span>
+        {/* Analysis Teaser Card — only once there's data to analyse */}
+        {entries.length > 0 && (
+          <div className="animate-in stagger-4" style={{
+            margin: '0 16px 24px',
+            position: 'relative',
+            overflow: 'hidden',
+            padding: '28px 24px',
+            borderRadius: '16px',
+            borderTop: '4px solid rgba(78,222,163,0.6)',
+            background: 'linear-gradient(135deg, rgba(78,222,163,0.18) 0%, #222a3d 100%)',
+          }}>
+            {/* Ghost icon — bottom right */}
+            <div style={{ position: 'absolute', bottom: '-8px', right: '-8px', opacity: 0.1, pointerEvents: 'none', lineHeight: 1 }}>
+              <span className="material-symbols-outlined" style={{ fontSize: '140px', color: '#ffffff' }}>psychology</span>
+            </div>
+            {/* Blurred green orb — top right */}
+            <div style={{ position: 'absolute', top: '-40px', right: '-40px', width: '120px', height: '120px', background: 'rgba(78,222,163,0.05)', borderRadius: '50%', filter: 'blur(40px)', pointerEvents: 'none' }} />
+            <div style={{ position: 'relative', zIndex: 1 }}>
+              <h3 style={{ fontFamily: 'Manrope, sans-serif', fontSize: '20px', fontWeight: 900, color: '#dae2fd', margin: '0 0 8px' }}>
+                Optimise Your Future
+              </h3>
+              <p style={{ fontSize: '13px', color: '#bbcabf', lineHeight: 1.6, maxWidth: '280px', margin: '0 0 16px' }}>
+                Our analysis of your pensions highlights potential opportunities to improve your retirement position.
+              </p>
+              {isPremium || isDemoMode ? (
+                <Link to="/mobile/pension/ai" style={{ textDecoration: 'none', display: 'block' }}>
+                  <button className="primary-btn" style={{ marginTop: '6px' }}>See Pension Analysis</button>
+                </Link>
+              ) : (
+                <button
+                  className="primary-btn"
+                  style={{ marginTop: '6px' }}
+                  onClick={() => setUpgradeSheet({
+                    featureName: 'Pension Analysis',
+                    description: 'Insights tailored to your pension data and retirement goals.',
+                  })}
+                >
+                  Unlock Pension Analysis
+                </button>
+              )}
+            </div>
           </div>
-          {/* Blurred green orb — top right */}
-          <div style={{ position: 'absolute', top: '-40px', right: '-40px', width: '120px', height: '120px', background: 'rgba(78,222,163,0.05)', borderRadius: '50%', filter: 'blur(40px)', pointerEvents: 'none' }} />
-          <div style={{ position: 'relative', zIndex: 1 }}>
-            <h3 style={{ fontFamily: 'Manrope, sans-serif', fontSize: '20px', fontWeight: 900, color: '#dae2fd', margin: '0 0 8px' }}>
-              Optimise Your Future
-            </h3>
-            <p style={{ fontSize: '13px', color: '#bbcabf', lineHeight: 1.6, maxWidth: '280px', margin: '0 0 16px' }}>
-              Our analysis of your pensions highlights potential opportunities to improve your retirement position.
-            </p>
-            {isPremium ? (
-              <Link to="/mobile/pension/ai" style={{ textDecoration: 'none', display: 'block' }}>
-                <button className="primary-btn" style={{ marginTop: '6px' }}>See Deeper Insights</button>
-              </Link>
-            ) : (
-              <button
-                className="primary-btn"
-                style={{ marginTop: '6px' }}
-                onClick={() => setUpgradeSheet({
-                  featureName: 'Pension Analysis',
-                  description: 'Insights tailored to your pension data and retirement goals.',
-                })}
-              >
-                Unlock Pension Analysis
-              </button>
-            )}
-          </div>
-        </div>
+        )}
 
       </div>
 

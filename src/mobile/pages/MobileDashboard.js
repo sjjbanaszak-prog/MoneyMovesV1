@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import '../mobile-theme.css';
 import MobileNavDrawer from '../components/MobileNavDrawer';
 import { useDemoMode } from '../../contexts/DemoModeContext';
@@ -312,8 +312,14 @@ function InsightTile({ icon, iconColor, label, value, barPct, barColor }) {
 
 function DashboardContent() {
   const { entries, metrics: pensionMetrics, isLoading: pensionLoading } = usePensionData();
-  const { mortgages }               = useMortgageData();
-  const { accounts: savingsAccounts, metrics: savingsMetrics } = useSavingsData();
+  const { mortgages, isLoading: mortgageLoading } = useMortgageData();
+  const { accounts: savingsAccounts, metrics: savingsMetrics, isLoading: savingsLoading } = useSavingsData();
+  const { isDemoMode, toggleDemoMode } = useDemoMode();
+  const navigate = useNavigate();
+
+  // First visit: nothing added yet in any section
+  const isFirstRun = !pensionLoading && !mortgageLoading && !savingsLoading && !isDemoMode
+    && entries.length === 0 && savingsAccounts.length === 0 && mortgages.length === 0;
 
   const [timeframe, setTimeframe] = useState('1Y');
 
@@ -598,6 +604,51 @@ function DashboardContent() {
           </div>
         </div>
 
+        {/* ── Welcome: first visit, nothing added yet ───────────────────── */}
+        {isFirstRun && (
+          <div className="animate-in stagger-1" style={{
+            margin: '0 16px 16px',
+            padding: '24px 20px 20px',
+            borderRadius: '16px',
+            borderTop: '4px solid rgba(78,222,163,0.6)',
+            background: 'linear-gradient(135deg, rgba(78,222,163,0.18) 0%, #222a3d 100%)',
+          }}>
+            <h3 style={{ fontFamily: 'Manrope, sans-serif', fontSize: '20px', fontWeight: 900, color: '#dae2fd', margin: '0 0 6px' }}>
+              Welcome to MoneyMoves
+            </h3>
+            <p style={{ fontSize: '13px', color: '#bbcabf', lineHeight: 1.6, margin: '0 0 16px' }}>
+              Add your first account to start building your financial picture. Your net worth, charts and insights fill in as you go.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {[
+                { icon: 'account_balance', label: 'Add a pension',         path: '/mobile/pension/add' },
+                { icon: 'savings',         label: 'Add a savings account', path: '/mobile/savings/add' },
+                { icon: 'home',            label: 'Add a mortgage',        path: '/mobile/mortgage/add' },
+              ].map(a => (
+                <button
+                  key={a.path}
+                  onClick={() => navigate(a.path)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '12px', width: '100%',
+                    padding: '12px 14px', borderRadius: '12px', cursor: 'pointer', textAlign: 'left',
+                    background: 'rgba(11,19,38,0.55)', border: '1px solid rgba(173,198,255,0.08)',
+                  }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '20px', color: '#4edea3' }}>{a.icon}</span>
+                  <span style={{ flex: 1, fontSize: '14px', fontWeight: 600, color: '#dae2fd' }}>{a.label}</span>
+                  <span className="material-symbols-outlined" style={{ fontSize: '18px', color: '#64748b' }}>chevron_right</span>
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={toggleDemoMode}
+              style={{ marginTop: '14px', background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: '#adc6ff', fontSize: '13px', fontWeight: 600 }}
+            >
+              Or explore with sample data first
+            </button>
+          </div>
+        )}
+
         {/* ── Hero: Net Worth card ───────────────────────────────────────── */}
         <div className="animate-in stagger-1" style={{ margin: '0 16px 16px' }}>
           <div style={{
@@ -841,7 +892,7 @@ function DashboardContent() {
             iconColor="#4edea3"
             label="Asset Coverage"
             value={assetCoverageRatio != null ? `${assetCoverageRatio.toFixed(2)}x` : '—'}
-            barPct={totalLiabilities > 0 ? Math.min(100, (totalAssets / (totalAssets + totalLiabilities)) * 100) : 100}
+            barPct={totalLiabilities > 0 ? Math.min(100, (totalAssets / (totalAssets + totalLiabilities)) * 100) : (totalAssets > 0 ? 100 : 0)}
             barColor="#4edea3"
           />
         </div>

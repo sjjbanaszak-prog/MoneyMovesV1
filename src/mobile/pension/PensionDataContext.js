@@ -1,8 +1,9 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
-import { doc, getDoc, updateDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, setDoc, onSnapshot } from 'firebase/firestore';
 import { auth, db } from '../../firebase';
 import { useDemoMode } from '../../contexts/DemoModeContext';
+import { parseDate, getTaxYearStart, ageFromDob } from './utils/pensionDates';
 
 const PensionDataContext = createContext(null);
 
@@ -14,36 +15,9 @@ export function usePensionData() {
 
 // ---- date helpers ----
 
-/**
- * Parse a date string in DD/MM/YYYY or ISO format.
- * Returns a plain Date object, or null if invalid.
- */
-export function parseDate(str) {
-  if (!str) return null;
-  if (/^\d{2}\/\d{2}\/\d{4}$/.test(str)) {
-    const [d, m, y] = str.split('/').map(Number);
-    const dt = new Date(y, m - 1, d);
-    return isNaN(dt.getTime()) ? null : dt;
-  }
-  const d = new Date(str);
-  return isNaN(d.getTime()) ? null : d;
-}
-
-/**
- * Get the UK tax year start year for a given Date or date string.
- * Tax year runs April 6 → April 5.
- * e.g. April 5 2024 → 2023 (FY 23/24); April 6 2024 → 2024 (FY 24/25)
- */
-export function getTaxYearStart(date) {
-  if (!date) return null;
-  const d = date instanceof Date ? date : parseDate(date);
-  if (!d || isNaN(d.getTime())) return null;
-  const year = d.getFullYear();
-  const month = d.getMonth() + 1; // 1-based
-  const day = d.getDate();
-  if (month < 4 || (month === 4 && day < 6)) return year - 1;
-  return year;
-}
+// parseDate and getTaxYearStart live in utils/pensionDates.js (pure, testable)
+// and are re-exported here for existing imports.
+export { parseDate, getTaxYearStart };
 
 /** Format a tax year start to a label, e.g. 2024 → "FY 24/25" */
 export function taxYearLabel(startYear) {
@@ -92,7 +66,10 @@ export function PensionDataProvider({ children }) {
   const [entries, setEntries]   = useState([]);
   const [isLoading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState(null);
-  const [userProfile, setUserProfile] = useState({ currentAge: 38, retirementAge: 65 });
+  // Ages saved with the pensions (set from the Pension Calculator); currentAge is null
+  // until the user sets it. The date of birth on their profile takes precedence.
+  const [storedProfile, setStoredProfile] = useState({ currentAge: null, retirementAge: 65 });
+  const [dob, setDob] = useState(null);
 
   // Auth listener
   useEffect(() => {
@@ -102,6 +79,30 @@ export function PensionDataProvider({ children }) {
     });
     return () => unsub();
   }, []);
+
+  // Date of birth from the user's profile (kept live so edits apply straight away)
+  useEffect(() => {
+    if (!user || isDemoMode) return undefined;
+    return onSnapshot(doc(db, 'users', user.uid), snap => {
+      setDob(snap.exists() ? (snap.data().dob || null) : null);
+    }, () => setDob(null));
+  }, [user, isDemoMode]);
+
+  // Age used for projections: from date of birth if known, else the age set in the
+  // Pension Calculator, else an assumed 38. ageKnown is false only in that last case.
+  const userProfile = useMemo(() => {
+    const retirementAge = storedProfile.retirementAge || 65;
+    if (isDemoMode) {
+      return { currentAge: storedProfile.currentAge ?? 38, retirementAge, ageKnown: true, ageFromDob: false };
+    }
+    const dobAge = ageFromDob(dob);
+    return {
+      currentAge: dobAge ?? storedProfile.currentAge ?? 38,
+      retirementAge,
+      ageKnown: dobAge !== null || storedProfile.currentAge != null,
+      ageFromDob: dobAge !== null,
+    };
+  }, [storedProfile, dob, isDemoMode]);
 
   // Load data whenever user or demo mode changes
   useEffect(() => {
@@ -113,7 +114,7 @@ export function PensionDataProvider({ children }) {
         if (isDemoMode && demoData) {
           setEntries(demoData.pensionPots?.entries || []);
           if (demoData.pensionPots?.currentAge || demoData.pensionPots?.retirementAge) {
-            setUserProfile({
+            setStoredProfile({
               currentAge: demoData.pensionPots.currentAge || 38,
               retirementAge: demoData.pensionPots.retirementAge || 65,
             });
@@ -124,13 +125,14 @@ export function PensionDataProvider({ children }) {
             const data = snap.data();
             setEntries(data.pensions || data.entries || []);
             setLastUpdated(data.lastUpdated || null);
-            setUserProfile({
-              currentAge: data.currentAge || 38,
+            setStoredProfile({
+              currentAge: data.currentAge ?? null,
               retirementAge: data.retirementAge || 65,
             });
           } else {
             setEntries([]);
             setLastUpdated(null);
+            setStoredProfile({ currentAge: null, retirementAge: 65 });
           }
         }
       } catch (e) {
@@ -248,8 +250,9 @@ export function PensionDataProvider({ children }) {
    * Persists to Firestore when not in demo mode.
    */
   async function updateUserProfile(fields) {
-    const updated = { ...userProfile, ...fields };
-    setUserProfile(updated);
+    const previous = storedProfile;
+    const updated = { ...storedProfile, ...fields };
+    setStoredProfile(updated);
     if (!isDemoMode && user) {
       try {
         await setDoc(
@@ -259,7 +262,7 @@ export function PensionDataProvider({ children }) {
         );
       } catch (e) {
         console.error('PensionDataContext: failed to save userProfile', e);
-        setUserProfile(userProfile);
+        setStoredProfile(previous);
       }
     }
   }

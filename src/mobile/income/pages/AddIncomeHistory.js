@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useParams, Navigate, useNavigate } from 'react-router-dom';
 import { useIncomeData } from '../IncomeDataContext';
 import IncomeDetailLayout from '../IncomeDetailLayout';
+import { useDemoMode } from '../../../contexts/DemoModeContext';
+import DemoSaveNotice from '../../components/DemoSaveNotice';
 
 const EMPLOYMENT_TYPES = [
   { value: 'Full-time',     label: 'Full-time Employment' },
@@ -75,6 +77,7 @@ function BonusRow({ index, entry, onChange, onRemove, canRemove }) {
 }
 
 export default function AddIncomeHistory() {
+  const { isDemoMode } = useDemoMode(); // nothing is saved in demo mode
   const { idx }                   = useParams();
   const navigate                  = useNavigate();
   const { incomes, updateIncome } = useIncomeData();
@@ -144,6 +147,7 @@ export default function AddIncomeHistory() {
 
   return (
     <IncomeDetailLayout title="Add History" backTo={`/mobile/income/employer/${idx}`}>
+      <DemoSaveNotice />
       <div style={{ padding: '16px' }}>
 
         {/* Info pill */}
@@ -314,7 +318,7 @@ export default function AddIncomeHistory() {
         <button
           className="primary-btn"
           onClick={handleConfirm}
-          disabled={!canSubmit}
+          disabled={!canSubmit || isDemoMode}
           style={{ opacity: canSubmit ? 1 : 0.5 }}
         >
           {isSaving ? 'Saving…' : 'Add to History'}

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MobileNavDrawer from '../components/MobileNavDrawer';
+import { useUserPlan } from '../../contexts/UserPlanContext';
 
 const FREE_FEATURES = [
   {
@@ -76,6 +77,47 @@ export default function MobileUpgradePage() {
   const [plan, setPlan]                       = useState('individual'); // 'individual' | 'family'
   const [individualBilling, setIndivBilling]  = useState('annual');    // 'free' | 'monthly' | 'annual'
   const [familyBilling, setFamilyBilling]     = useState('monthly');   // 'monthly' | 'annual'
+  const { paywallEnabled } = useUserPlan();
+
+  // Paid plans aren't live yet — show a simple "coming soon" page instead of pricing
+  if (!paywallEnabled) {
+    return (
+      <div className="mobile-screen" style={{ paddingTop: '50px', paddingBottom: '40px', background: '#0b1326', minHeight: '100vh' }}>
+        <MobileNavDrawer />
+        <div style={{ padding: '20px 20px 0', display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <button
+            onClick={() => navigate(-1)}
+            aria-label="Back"
+            style={{
+              background: 'rgba(173,198,255,0.08)', border: 'none', borderRadius: '50%',
+              width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer', flexShrink: 0,
+            }}
+          >
+            <span className="material-symbols-outlined" style={{ color: '#adc6ff', fontSize: '20px' }}>arrow_back</span>
+          </button>
+          <p style={{ fontSize: '13px', color: '#bbcabf', margin: 0 }}>Back</p>
+        </div>
+        <div style={{ padding: '48px 24px 0', maxWidth: '480px', margin: '0 auto', textAlign: 'center' }}>
+          <div style={{
+            width: '56px', height: '56px', borderRadius: '16px', margin: '0 auto 20px',
+            background: 'rgba(78,222,163,0.1)', border: '1px solid rgba(78,222,163,0.25)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <span className="material-symbols-outlined" style={{ fontSize: '28px', color: '#4edea3' }}>rocket_launch</span>
+          </div>
+          <h1 style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 900, fontSize: '26px', color: '#dae2fd', margin: '0 0 10px' }}>
+            Premium plans coming soon
+          </h1>
+          <p style={{ fontSize: '14px', color: '#bbcabf', lineHeight: 1.6, margin: '0 0 28px' }}>
+            While we're in early access, every MoneyMoves feature is free, including Insights, Compare, Analysis
+            and unlimited accounts. We'll let you know before anything changes.
+          </p>
+          <button className="primary-btn" onClick={() => navigate('/mobile/dashboard')}>Back to dashboard</button>
+        </div>
+      </div>
+    );
+  }
 
   const isFamily   = plan === 'family';
   const isIndivFree    = !isFamily && individualBilling === 'free';

@@ -13,13 +13,13 @@ const ProtectedRoute = ({ children }) => {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: '#0f172a',
+        backgroundColor: '#0b1326',
       }}>
         <div style={{
           width: '48px',
           height: '48px',
-          border: '4px solid rgba(16, 185, 129, 0.2)',
-          borderTopColor: '#10b981',
+          border: '4px solid rgba(78, 222, 163, 0.2)',
+          borderTopColor: '#4edea3',
           borderRadius: '50%',
           animation: 'spin 0.8s linear infinite',
         }} />

@@ -47,3 +47,41 @@ describe('computeMonthlyHistory', () => {
     expect(monthlyGrowth[3]).toBe(25);
   });
 });
+
+describe('isaDepositsByTaxYear', () => {
+  const { isaDepositsByTaxYear } = require('./savingsTransactions');
+  const isa = {
+    accountType: 'Cash ISA',
+    mapping: MAPPING,
+    dateFormat: 'DD/MM/YYYY',
+    rawData: [
+      { date: '05/04/2026', description: 'Deposit', credit: 1000, amount: 1000 },          // 2025/26
+      { date: '06/04/2026', description: 'Deposit', credit: 2000, amount: 2000 },          // 2026/27
+      { date: '30/04/2026', description: 'Interest paid', credit: 40, amount: 40 },        // not a deposit
+      { date: '01/05/2026', description: 'ISA transfer in', credit: 5000, amount: 5000 },  // doesn't use allowance
+    ],
+  };
+  const easyAccess = { accountType: 'Easy Access', mapping: MAPPING, dateFormat: 'DD/MM/YYYY', rawData: [{ date: '10/05/2026', description: 'Deposit', credit: 900, amount: 900 }] };
+
+  test('counts ISA deposits by tax year, excluding interest, transfers and non-ISA accounts', () => {
+    expect(isaDepositsByTaxYear([isa, easyAccess])).toEqual({ 2025: 1000, 2026: 2000 });
+  });
+});
+
+describe('cumulativeNetDeposits', () => {
+  const { cumulativeNetDeposits } = require('./savingsTransactions');
+  const acc = {
+    mapping: MAPPING,
+    dateFormat: 'DD/MM/YYYY',
+    rawData: [
+      { date: '10/12/2025', description: 'Deposit', credit: 500, amount: 500 },
+      { date: '10/01/2026', description: 'Deposit', credit: 1000, amount: 1000 },
+      { date: '20/01/2026', description: 'Interest paid', credit: 5, amount: 5 },
+      { date: '15/02/2026', description: 'Withdrawal', debit: 300, amount: -300 },
+    ],
+  };
+
+  test('running deposits minus withdrawals, ignoring interest, including money paid in before the range', () => {
+    expect(cumulativeNetDeposits([acc], ['2026-01', '2026-02', '2026-03'])).toEqual([1500, 1200, 1200]);
+  });
+});

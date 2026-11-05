@@ -2,6 +2,8 @@ import React, { useState, useMemo } from 'react';
 import { useNavigate, useParams, Navigate } from 'react-router-dom';
 import { useMortgageData } from '../MortgageDataContext';
 import MortgageDetailLayout from '../MortgageDetailLayout';
+import { useDemoMode } from '../../../contexts/DemoModeContext';
+import DemoSaveNotice from '../../components/DemoSaveNotice';
 
 function fmt(n) {
   return '£' + Math.round(n || 0).toLocaleString('en-GB');
@@ -80,6 +82,7 @@ function SummaryRow({ label, value, valueColor, borderTop }) {
 }
 
 export default function SwitchMortgage() {
+  const { isDemoMode } = useDemoMode(); // nothing is saved in demo mode
   const { idx }                          = useParams();
   const navigate                         = useNavigate();
   const { mortgages, switchMortgage }    = useMortgageData();
@@ -209,6 +212,7 @@ export default function SwitchMortgage() {
 
   return (
     <MortgageDetailLayout title="Switch Mortgage" backTo={`/mobile/mortgage/${idx}`}>
+      <DemoSaveNotice />
       <div style={{ padding: '16px', paddingBottom: '40px' }}>
 
         {/* Property pill */}
@@ -531,7 +535,7 @@ export default function SwitchMortgage() {
           <button
             className="primary-btn"
             onClick={() => setConfirming(true)}
-            disabled={!canComplete}
+            disabled={!canComplete || isDemoMode}
             style={{ opacity: canComplete ? 1 : 0.45, marginBottom: '8px' }}
           >
             <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>swap_horiz</span>
@@ -553,7 +557,7 @@ export default function SwitchMortgage() {
             <div style={{ display: 'flex', gap: '10px' }}>
               <button
                 onClick={handleCompleteSwitch}
-                disabled={saving}
+                disabled={saving || isDemoMode}
                 style={{
                   flex: 2, background: '#4edea3', color: '#003824',
                   border: 'none', borderRadius: '10px',

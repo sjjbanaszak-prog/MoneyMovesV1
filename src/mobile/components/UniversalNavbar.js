@@ -28,7 +28,7 @@ const SECTIONS = ['pension', 'mortgage', 'savings', 'income'];
 // Segments listed here are navigable; all others are greyed-out and non-clickable.
 const ENABLED_SEGMENTS = {
   income:  ['', '/calculator'],
-  savings: [''],
+  savings: ['', '/insights'],
 };
 
 // `disabledSegments` lets a section grey out extra tabs at runtime

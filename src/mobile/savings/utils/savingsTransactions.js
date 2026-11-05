@@ -59,6 +59,7 @@ export function getAllTransactions(account) {
           debit:   override.direction === 'debit'  ? override.amount : 0,
           balance: null,
           isReturn: isReturnDescription(override.description),
+          isTransfer: /transfer/i.test(override.description || ''),
         };
       }
 
@@ -80,7 +81,7 @@ export function getAllTransactions(account) {
       }
 
       const balance = balCol ? parseAmount(row[balCol]) : null;
-      return { date, dateRaw, desc, credit, debit, balance, isReturn: isReturnDescription(desc) };
+      return { date, dateRaw, desc, credit, debit, balance, isReturn: isReturnDescription(desc), isTransfer: /transfer/i.test(String(desc)) };
     })
     .filter(Boolean);
 
@@ -94,6 +95,7 @@ export function getAllTransactions(account) {
     notes:   tx.notes || null,
     isManual: true,
     isReturn: tx.type === 'interest' || isReturnDescription(tx.description),
+    isTransfer: tx.type === 'transfer_in' || tx.type === 'transfer_out' || /transfer/i.test(tx.description || ''),
   })).filter(tx => tx.date);
 
   return [...rawTxs, ...manualTxs].sort((a, b) => b.date - a.date);
@@ -169,4 +171,72 @@ export function computeMonthlyHistory(account, mode, fyStartYear, calendarYear) 
   });
 
   return { monthlyData: buckets, monthlyGrowth: growth };
+}
+
+/** computeMonthlyHistory summed across several accounts (growth null only when no account has it). */
+export function monthlyHistoryForAccounts(accounts, mode, fyStartYear, calendarYear) {
+  let combined = null;
+  (accounts || []).forEach(account => {
+    const { monthlyData, monthlyGrowth } = computeMonthlyHistory(account, mode, fyStartYear, calendarYear);
+    if (!combined) {
+      combined = { monthlyData: monthlyData.map(b => ({ ...b })), monthlyGrowth: [...monthlyGrowth] };
+      return;
+    }
+    monthlyData.forEach((b, i) => {
+      combined.monthlyData[i].amount  += b.amount;
+      combined.monthlyData[i].debit   += b.debit;
+      combined.monthlyData[i].returns += b.returns;
+    });
+    monthlyGrowth.forEach((g, i) => {
+      if (g !== null) combined.monthlyGrowth[i] = (combined.monthlyGrowth[i] || 0) + g;
+    });
+  });
+  return combined || computeMonthlyHistory({}, mode, fyStartYear, calendarYear);
+}
+
+export function isIsaAccount(account) {
+  return /isa/i.test(account?.accountType || '');
+}
+
+function taxYearStartOf(date) {
+  const m = date.getMonth() + 1, d = date.getDate(), y = date.getFullYear();
+  return (m > 4 || (m === 4 && d >= 6)) ? y : y - 1;
+}
+
+/**
+ * Money paid into ISAs per UK tax year (6 April – 5 April), keyed by the year the
+ * tax year starts. Interest, prizes and dividends don't use the allowance, and
+ * neither do ISA transfers (moving an existing ISA between providers).
+ */
+export function isaDepositsByTaxYear(accounts) {
+  const totals = {};
+  (accounts || []).filter(isIsaAccount).forEach(account => {
+    getAllTransactions(account).forEach(tx => {
+      if (!tx.date || tx.isReturn || tx.isTransfer || !(tx.credit > 0)) return;
+      const fy = taxYearStartOf(tx.date);
+      totals[fy] = (totals[fy] || 0) + tx.credit;
+    });
+  });
+  return totals;
+}
+
+/**
+ * Cumulative money paid in (deposits − withdrawals, excluding interest / prizes /
+ * dividends) at the end of each 'YYYY-MM' month, across all accounts.
+ */
+export function cumulativeNetDeposits(accounts, months) {
+  const byMonth = {};
+  let before = 0;
+  const firstMonth = months[0];
+  (accounts || []).forEach(account => {
+    getAllTransactions(account).forEach(tx => {
+      if (!tx.date || tx.isReturn) return;
+      const key = `${tx.date.getFullYear()}-${String(tx.date.getMonth() + 1).padStart(2, '0')}`;
+      const net = (tx.credit || 0) - (tx.debit || 0);
+      if (firstMonth && key < firstMonth) before += net;
+      else byMonth[key] = (byMonth[key] || 0) + net;
+    });
+  });
+  let running = before;
+  return months.map(m => (running += byMonth[m] || 0));
 }

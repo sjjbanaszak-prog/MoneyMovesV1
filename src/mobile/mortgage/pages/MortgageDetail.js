@@ -778,58 +778,109 @@ export default function MortgageDetail() {
             <h3 style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 800, fontSize: '15px', color: '#dae2fd', margin: '0 0 14px' }}>
               Switch History
             </h3>
-            {[...(mortgage.switchHistory || [])].reverse().map((sw, i) => (
-              <div
-                key={i}
-                style={{
-                  paddingBottom: i < mortgage.switchHistory.length - 1 ? '14px' : 0,
-                  marginBottom: i < mortgage.switchHistory.length - 1 ? '14px' : 0,
-                  borderBottom: i < mortgage.switchHistory.length - 1 ? '1px solid rgba(173,198,255,0.06)' : 'none',
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-                  <div>
-                    <p style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 700, fontSize: '13px', color: '#dae2fd', margin: '0 0 2px' }}>
-                      {sw.previousLender} → {sw.completion?.newLender}
+            {[...(mortgage.switchHistory || [])].reverse().map((sw, i, list) => {
+              const red = sw.redemption || {};
+              const comp = sw.completion || {};
+              const feesAdded = comp.feesAddedToLoan || 0;
+              // Cost of switching: ERC + exit fee (in the redemption) + new lender's fees
+              const fees = (red.earlyRepaymentCharge || 0) + (red.exitFee || 0) + feesAdded + (comp.feesPayableOnCompletion || 0);
+              const redeemed = red.outstandingBalance ?? sw.previousBalance;
+              const newLoan  = comp.newMortgageAdvance != null ? comp.newMortgageAdvance + feesAdded : null;
+              const rateDelta = sw.previousRate != null && comp.newInterestRate != null
+                ? comp.newInterestRate - sw.previousRate
+                : null;
+              const cash = sw.cashReleasedToClient || 0;
+              const shortDate = d => new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+              const fixedTo = comp.newFixedRateEndDate
+                ? new Date(comp.newFixedRateEndDate).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })
+                : null;
+              const last = i === list.length - 1;
+              const rowStyle = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', marginBottom: '6px' };
+              const mutedLabel = { fontSize: '12px', color: '#64748b' };
+              const value = { fontSize: '12px', color: '#dae2fd', fontWeight: 600, fontVariantNumeric: 'tabular-nums' };
+              return (
+                <div
+                  key={i}
+                  style={{
+                    paddingBottom: last ? 0 : '14px',
+                    marginBottom:  last ? 0 : '14px',
+                    borderBottom:  last ? 'none' : '1px solid rgba(173,198,255,0.06)',
+                  }}
+                >
+                  {/* Lenders + date */}
+                  <div style={{ ...rowStyle, marginBottom: '8px' }}>
+                    <p style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 700, fontSize: '13px', color: '#dae2fd', margin: 0 }}>
+                      {sw.previousLender} → {comp.newLender}
                     </p>
-                    <p style={{ fontSize: '12px', color: '#64748b', margin: 0 }}>
-                      {sw.switchDate ? new Date(sw.switchDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : '–'}
+                    <p style={{ fontSize: '12px', color: '#64748b', margin: 0, flexShrink: 0 }}>
+                      {sw.switchDate ? shortDate(sw.switchDate) : '–'}
                     </p>
                   </div>
-                  {sw.cashReleasedToClient !== 0 && sw.cashReleasedToClient != null && (
-                    <span style={{
-                      fontSize: '12px', fontWeight: 700, padding: '3px 8px', borderRadius: '6px',
-                      background: sw.cashReleasedToClient > 0 ? 'rgba(78,222,163,0.1)' : 'rgba(255,185,95,0.1)',
-                      color: sw.cashReleasedToClient > 0 ? '#4edea3' : '#ffb95f',
-                    }}>
-                      {sw.cashReleasedToClient > 0
-                        ? `+${fmt(sw.cashReleasedToClient)} released`
-                        : `${fmt(Math.abs(sw.cashReleasedToClient))} paid`}
-                    </span>
-                  )}
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                  <div style={{ background: 'rgba(173,198,255,0.04)', borderRadius: '8px', padding: '8px 10px' }}>
-                    <p style={{ fontSize: '10px', color: '#64748b', margin: '0 0 2px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Redemption</p>
-                    <p style={{ fontSize: '13px', fontWeight: 700, color: '#ffb95f', margin: 0 }}>{fmt(sw.redemption?.totalRedemptionAmount)}</p>
-                  </div>
-                  <div style={{ background: 'rgba(173,198,255,0.04)', borderRadius: '8px', padding: '8px 10px' }}>
-                    <p style={{ fontSize: '10px', color: '#64748b', margin: '0 0 2px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>New Advance</p>
-                    <p style={{ fontSize: '13px', fontWeight: 700, color: '#4edea3', margin: 0 }}>{fmt(sw.completion?.newMortgageAdvance)}</p>
-                  </div>
-                  {sw.redemption?.earlyRepaymentCharge > 0 && (
-                    <div style={{ background: 'rgba(173,198,255,0.04)', borderRadius: '8px', padding: '8px 10px' }}>
-                      <p style={{ fontSize: '10px', color: '#64748b', margin: '0 0 2px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>ERC</p>
-                      <p style={{ fontSize: '13px', fontWeight: 700, color: '#adc6ff', margin: 0 }}>{fmt(sw.redemption.earlyRepaymentCharge)}</p>
+
+                  {/* Rate change */}
+                  {comp.newInterestRate != null && (
+                    <div style={rowStyle}>
+                      <span style={mutedLabel}>Rate</span>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={value}>
+                          {sw.previousRate != null ? `${sw.previousRate.toFixed(2)}% → ` : ''}{comp.newInterestRate.toFixed(2)}%
+                        </span>
+                        {rateDelta !== null && rateDelta !== 0 && (
+                          <span style={{
+                            fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '20px',
+                            background: rateDelta > 0 ? 'rgba(255,180,171,0.12)' : 'rgba(78,222,163,0.12)',
+                            color:      rateDelta > 0 ? '#ffb4ab' : '#4edea3',
+                          }}>
+                            {rateDelta > 0 ? '+' : '−'}{Math.abs(rateDelta).toFixed(2)}%
+                          </span>
+                        )}
+                      </span>
                     </div>
                   )}
-                  <div style={{ background: 'rgba(173,198,255,0.04)', borderRadius: '8px', padding: '8px 10px' }}>
-                    <p style={{ fontSize: '10px', color: '#64748b', margin: '0 0 2px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>New Rate</p>
-                    <p style={{ fontSize: '13px', fontWeight: 700, color: '#dae2fd', margin: 0 }}>{sw.completion?.newInterestRate?.toFixed(2)}%</p>
+
+                  {/* Monthly payment change */}
+                  {comp.newMonthlyPayment != null && (
+                    <div style={rowStyle}>
+                      <span style={mutedLabel}>Monthly payment</span>
+                      <span style={value}>
+                        {sw.previousMonthlyPayment != null ? `${fmt(sw.previousMonthlyPayment)} → ` : ''}{fmt(comp.newMonthlyPayment)}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Fixed until */}
+                  {fixedTo && (
+                    <div style={rowStyle}>
+                      <span style={mutedLabel}>Fixed until</span>
+                      <span style={value}>{fixedTo}</span>
+                    </div>
+                  )}
+
+                  {/* Redeemed + fees added = new loan */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginTop: '10px' }}>
+                    {[
+                      { label: 'Redeemed', value: redeemed != null ? fmt(redeemed) : '—', color: '#dae2fd' },
+                      { label: 'Fees',     value: fees > 0 ? fmt(fees) : '—',             color: fees > 0 ? '#ffb4ab' : '#64748b' },
+                      { label: 'New Loan', value: newLoan != null ? fmt(newLoan) : '—',   color: '#dae2fd' },
+                    ].map(c => (
+                      <div key={c.label} style={{ padding: '10px 12px', background: 'rgba(173,198,255,0.04)', borderRadius: '10px', minWidth: 0, textAlign: 'center' }}>
+                        <p style={{ fontSize: '10px', color: '#bbcabf', margin: '0 0 3px', lineHeight: 1.3 }}>{c.label}</p>
+                        <p style={{ fontWeight: 700, fontSize: '14px', color: c.color, margin: 0, fontVariantNumeric: 'tabular-nums' }}>
+                          {c.value}
+                        </p>
+                      </div>
+                    ))}
                   </div>
+
+                  {/* Cash released to / paid by you on completion */}
+                  {cash !== 0 && (
+                    <p style={{ fontSize: '12px', color: '#bbcabf', margin: '8px 0 0', textAlign: 'center' }}>
+                      {cash > 0 ? `${fmt(cash)} released to you on completion` : `${fmt(Math.abs(cash))} paid by you on completion`}
+                    </p>
+                  )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 

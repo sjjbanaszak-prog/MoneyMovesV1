@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePensionData } from '../PensionDataContext';
 import PensionDetailLayout from '../PensionDetailLayout';
+import { useDemoMode } from '../../../contexts/DemoModeContext';
+import DemoSaveNotice from '../../components/DemoSaveNotice';
 
 const ACCOUNT_TYPES = [
   { value: 'Workplace',        label: 'Workplace Pension' },
@@ -13,6 +15,7 @@ const ACCOUNT_TYPES = [
 ];
 
 export default function AddPension() {
+  const { isDemoMode } = useDemoMode(); // nothing is saved in demo mode
   const navigate = useNavigate();
   const { addEntry } = usePensionData();
 
@@ -50,6 +53,7 @@ export default function AddPension() {
 
   return (
     <PensionDetailLayout title="Add Pension" backTo="/mobile/pension">
+      <DemoSaveNotice />
       <div style={{ padding: '16px' }}>
 
         {/* Info pill */}
@@ -162,7 +166,7 @@ export default function AddPension() {
         <button
           className="primary-btn"
           onClick={handleConfirm}
-          disabled={!canSubmit}
+          disabled={!canSubmit || isDemoMode}
           style={{ opacity: canSubmit ? 1 : 0.5 }}
         >
           {isSaving ? 'Saving…' : 'Confirm Pension Provider'}

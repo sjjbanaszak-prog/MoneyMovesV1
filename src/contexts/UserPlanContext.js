@@ -5,6 +5,11 @@ import { useAuth } from './AuthContext';
 
 const UserPlanContext = createContext();
 
+// Paid plans aren't live yet: while this is false every user gets every feature
+// (no Premium locks or account limits) and plan/upgrade UI shows "coming soon".
+// Flip to true when Premium launches; users.plan then decides access again.
+export const PAYWALL_ENABLED = false;
+
 export function useUserPlan() {
   const context = useContext(UserPlanContext);
   if (!context) {
@@ -43,7 +48,8 @@ export function UserPlanProvider({ children }) {
 
   const value = {
     plan,
-    isPremium: plan === 'premium',
+    isPremium: !PAYWALL_ENABLED || plan === 'premium',
+    paywallEnabled: PAYWALL_ENABLED,
     planLoading,
   };
 

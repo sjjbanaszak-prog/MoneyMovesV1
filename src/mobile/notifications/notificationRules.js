@@ -136,7 +136,9 @@ export function evaluateRules({ savingsMetrics, pensionMetrics, mortgages = [], 
   }
 
   // ── Tax year end ──────────────────────────────────────────────────────────
-  if (taxDays <= 42 && taxDays > 14) {
+  // Only relevant to someone with an ISA or a pension to pay into
+  const hasTaxWrapper = (savingsMetrics?.isaBalance || 0) > 0 || (pensionMetrics?.totalValue || 0) > 0;
+  if (hasTaxWrapper && taxDays <= 42 && taxDays > 14) {
     results.push({
       key:       `tax_year_end_${taxYear}`,
       category:  'milestone',
@@ -147,7 +149,7 @@ export function evaluateRules({ savingsMetrics, pensionMetrics, mortgages = [], 
       body:      `April 5th is approaching — last chance to maximise your ISA, LISA, and pension contributions for this tax year.`,
       link:      '/mobile/savings',
     });
-  } else if (taxDays <= 14 && taxDays > 0) {
+  } else if (hasTaxWrapper && taxDays <= 14 && taxDays > 0) {
     results.push({
       key:       `tax_year_end_urgent_${taxYear}`,
       category:  'milestone',

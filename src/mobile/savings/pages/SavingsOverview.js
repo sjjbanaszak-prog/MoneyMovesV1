@@ -4,6 +4,8 @@ import { useDemoMode } from '../../../contexts/DemoModeContext';
 import { useUserPlan } from '../../../contexts/UserPlanContext';
 import { useSavingsData } from '../SavingsDataContext';
 import SavingsLayout from '../SavingsLayout';
+import EmptyState from '../../components/EmptyState';
+import { accountCategoryColor } from '../utils/accountCategories';
 import { formatLastUpdated } from '../../utils/formatLastUpdated';
 import UpgradeSheet from '../../components/UpgradeSheet';
 import SavingsGoalsSection from '../components/SavingsGoalsSection';
@@ -50,26 +52,9 @@ function computeNetDeposits(account) {
 }
 
 // Map account type → display colour
-const TYPE_COLORS = {
-  isa:             '#4edea3',
-  'cash isa':      '#4edea3',
-  'stocks & shares isa': '#4edea3',
-  'lifetime isa':  '#f472b6',
-  lisa:            '#f472b6',
-  'savings account': '#adc6ff',
-  'easy access':   '#adc6ff',
-  'current account': '#ffb95f',
-  'fixed rate':    '#a78bfa',
-  'premium bonds': '#38bdf8',
-  'bonds':         '#38bdf8',
-};
-
+// Colour by category (ISA / Savings / Bonds / Current), shared with the Insights donut
 function accountColor(accountType = '') {
-  const key = accountType.toLowerCase();
-  for (const [k, v] of Object.entries(TYPE_COLORS)) {
-    if (key.includes(k)) return v;
-  }
-  return '#adc6ff';
+  return accountCategoryColor(accountType);
 }
 
 function accountInitials(name = '') {
@@ -268,9 +253,13 @@ export default function SavingsOverview() {
               Loading accounts...
             </div>
           ) : accounts.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '32px 16px', background: '#171f33', borderRadius: '16px', color: '#64748b', fontSize: '14px' }}>
-              No savings accounts found. Add data on the desktop Savings Tracker page.
-            </div>
+            <EmptyState
+              icon="savings"
+              title="No savings accounts yet"
+              body="Add your ISAs, savings accounts and Premium Bonds to track balances, growth and your ISA allowance."
+              actionLabel="Add savings account"
+              onAction={() => navigate('/mobile/savings/add')}
+            />
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {sortedAccounts.map((account, i) => {
@@ -306,7 +295,7 @@ export default function SavingsOverview() {
                           {account.bank || account.accountName}
                         </h4>
                         <span style={{
-                          background: `rgba(${color === '#4edea3' ? '78,222,163' : color === '#ffb95f' ? '255,185,95' : color === '#f472b6' ? '244,114,182' : color === '#38bdf8' ? '56,189,248' : color === '#a78bfa' ? '167,139,250' : '173,198,255'},0.12)`,
+                          background: `${color}1f`, // ~12% opacity
                           color,
                           border: `1px solid ${color}40`,
                           borderRadius: '20px', padding: '3px 10px',
@@ -342,28 +331,30 @@ export default function SavingsOverview() {
           <SavingsGoalsSection />
         </div>
 
-        {/* Analysis Teaser Card (coming soon) */}
-        <div className="animate-in stagger-4" style={{
-          margin: '0 16px 24px',
-          position: 'relative', overflow: 'hidden',
-          padding: '28px 24px', borderRadius: '16px',
-          borderTop: '4px solid rgba(78,222,163,0.6)',
-          background: 'linear-gradient(135deg, rgba(78,222,163,0.18) 0%, #222a3d 100%)',
-        }}>
-          <div style={{ position: 'absolute', bottom: '-8px', right: '-8px', opacity: 0.1, pointerEvents: 'none', lineHeight: 1 }}>
-            <span className="material-symbols-outlined" style={{ fontSize: '140px', color: '#ffffff' }}>psychology</span>
+        {/* Analysis Teaser Card (coming soon) — only once there's data to analyse */}
+        {accounts.length > 0 && (
+          <div className="animate-in stagger-4" style={{
+            margin: '0 16px 24px',
+            position: 'relative', overflow: 'hidden',
+            padding: '28px 24px', borderRadius: '16px',
+            borderTop: '4px solid rgba(78,222,163,0.6)',
+            background: 'linear-gradient(135deg, rgba(78,222,163,0.18) 0%, #222a3d 100%)',
+          }}>
+            <div style={{ position: 'absolute', bottom: '-8px', right: '-8px', opacity: 0.1, pointerEvents: 'none', lineHeight: 1 }}>
+              <span className="material-symbols-outlined" style={{ fontSize: '140px', color: '#ffffff' }}>psychology</span>
+            </div>
+            <div style={{ position: 'absolute', top: '-40px', right: '-40px', width: '120px', height: '120px', background: 'rgba(78,222,163,0.05)', borderRadius: '50%', filter: 'blur(40px)', pointerEvents: 'none' }} />
+            <div style={{ position: 'relative', zIndex: 1 }}>
+              <h3 style={{ fontFamily: 'Manrope, sans-serif', fontSize: '20px', fontWeight: 900, color: '#dae2fd', margin: '0 0 8px' }}>
+                Optimise Your Savings
+              </h3>
+              <p style={{ fontSize: '13px', color: '#bbcabf', lineHeight: 1.6, maxWidth: '280px', margin: '0 0 16px' }}>
+                Coming soon: analysis to help you make the most of your ISA allowance and grow your savings faster.
+              </p>
+              <button className="primary-btn" disabled style={{ marginTop: '6px', opacity: 0.35, cursor: 'default' }}>See Savings Analysis</button>
+            </div>
           </div>
-          <div style={{ position: 'absolute', top: '-40px', right: '-40px', width: '120px', height: '120px', background: 'rgba(78,222,163,0.05)', borderRadius: '50%', filter: 'blur(40px)', pointerEvents: 'none' }} />
-          <div style={{ position: 'relative', zIndex: 1 }}>
-            <h3 style={{ fontFamily: 'Manrope, sans-serif', fontSize: '20px', fontWeight: 900, color: '#dae2fd', margin: '0 0 8px' }}>
-              Optimise Your Savings
-            </h3>
-            <p style={{ fontSize: '13px', color: '#bbcabf', lineHeight: 1.6, maxWidth: '280px', margin: '0 0 16px' }}>
-              Coming soon: analysis to help you make the most of your ISA allowance and grow your savings faster.
-            </p>
-            <button className="primary-btn" disabled style={{ marginTop: '6px', opacity: 0.35, cursor: 'default' }}>See Savings Insights</button>
-          </div>
-        </div>
+        )}
 
       </div>
 

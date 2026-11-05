@@ -20,7 +20,7 @@ export default function MobileNavDrawer() {
   const { pathname } = useLocation();
   const { currentUser } = useAuth();
 
-  const { isPremium } = useUserPlan();
+  const { isPremium, paywallEnabled } = useUserPlan();
   const { unreadCount } = useNotifications();
   const navigate = useNavigate();
   const close  = () => setIsOpen(false);
@@ -198,7 +198,7 @@ export default function MobileNavDrawer() {
               color: isPremium ? '#4edea3' : '#adc6ff',
               border: isPremium ? '1px solid rgba(78,222,163,0.3)' : '1px solid rgba(60,74,66,0.2)',
             }}>
-              {isPremium ? 'Premium Member' : 'Free Tier'}
+              {!paywallEnabled ? 'Early Access' : isPremium ? 'Premium Member' : 'Free Tier'}
             </span>
           </div>
         </div>

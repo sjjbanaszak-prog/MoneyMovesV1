@@ -1,7 +1,9 @@
 import React, { useMemo, useState } from 'react';
 import PensionLayout from '../PensionLayout';
+import { projectTaxYearContributions } from '../utils/allowanceProjection';
 import { usePensionData, parseDate, getTaxYearStart } from '../PensionDataContext';
 import PremiumGate from '../../components/PremiumGate';
+import AgeAssumptionNotice from '../components/AgeAssumptionNotice';
 
 function fmtShort(n) { return '£' + Math.round(n || 0).toLocaleString('en-GB'); }
 
@@ -217,6 +219,17 @@ export default function PensionAIAnalysis() {
     return { total, expiringThisYear, genuineExcess };
   }, [entries, now]);
 
+  // Where this tax year's contributions are heading by 5 April, and how much the
+  // year can take: the annual allowance plus carry forward available to it.
+  const projection = useMemo(() => projectTaxYearContributions(entries, now), [entries, now]);
+  const allowanceCapacity = useMemo(() => {
+    const ytd = projection.paidSoFar;
+    // carryForwardData.total is what's left after this year's excess so far; add back
+    // the part this year has already drawn (excess not covered is genuineExcess)
+    const cfDrawnThisYear = Math.max(0, ytd - ANNUAL_ALLOWANCE) - carryForwardData.genuineExcess;
+    return ANNUAL_ALLOWANCE + carryForwardData.total + Math.max(0, cfDrawnThisYear);
+  }, [projection, carryForwardData]);
+
   // Days remaining in the current tax year (until April 5)
   const daysUntilYearEnd = useMemo(() => {
     const currentFYStart = getTaxYearStart(now);
@@ -329,7 +342,6 @@ export default function PensionAIAnalysis() {
   const recommendations = useMemo(() => {
     const recs = [];
     const currentFYTotal = metrics.currentFYTotal || 0;
-    const allowanceMaxed = currentFYTotal >= ANNUAL_ALLOWANCE;
 
     // 1. Inactive providers — consolidation
     const inactive = entries.filter(e => {
@@ -361,26 +373,53 @@ export default function PensionAIAnalysis() {
       });
     }
 
-    // 4. Carry forward opportunity (only when allowance maxed AND carry forward exists, no genuine breach)
-    if (allowanceMaxed && carryForwardData.total > 0) {
+    // 3. Where this year's contributions are heading (projected to 5 April)
+    const { projected, typicalMonth, monthsRemaining } = projection;
+    const projectedOverrun = projected - allowanceCapacity;
+    const onTrackForFull   = projected >= ANNUAL_ALLOWANCE - 1000;
+    const projectedUnused  = Math.max(0, ANNUAL_ALLOWANCE - projected);
+
+    if (carryForwardData.genuineExcess === 0 && monthsRemaining > 0 && projectedOverrun > 500) {
+      // 3a. Current pace would go over the allowance and carry forward before 5 April
       recs.push({
-        icon: 'account_balance',
+        icon: 'speed',
         color: '#ffb95f',
-        title: 'Carry Forward Available',
-        body: `You've used your full £60,000 allowance this year. Based on your contribution history, you have an estimated ${fmtShort(carryForwardData.total)} of unused allowance from the previous 3 tax years that can be carried forward. You may be able to contribute above the standard limit — speak to an adviser to confirm your carry forward position before acting.`,
-        tag: 'Tax Efficiency',
+        title: 'On Track to Exceed Your Allowance',
+        body: `At your current pace (around ${fmtShort(typicalMonth)} a month) you'll contribute about ${fmtShort(projected)} this tax year, roughly ${fmtShort(projectedOverrun)} more than your annual allowance${carryForwardData.total > 0 ? ' and carry forward' : ''} allow. Contributions above this may trigger an annual allowance tax charge, so it may be worth reviewing them before 5 April.`,
+        tag: 'Plan Ahead',
         tagColor: '#ffb95f',
       });
-    }
-
-    // 3. Allowance remaining — deadline replaces standard rec when <31 days to year end
-    if (!allowanceMaxed && remainingAllowance > 0) {
+    } else if (carryForwardData.genuineExcess === 0 && onTrackForFull) {
+      // 3b. On course to use the full allowance
+      recs.push({
+        icon: 'verified',
+        color: '#4edea3',
+        title: 'On Track to Use Your Full Allowance',
+        body: monthsRemaining > 0
+          ? `At your current pace you'll contribute about ${fmtShort(projected)} by 5 April, using your full ${fmtShort(ANNUAL_ALLOWANCE)} annual allowance and getting the most tax relief available this year.`
+          : `You've used your full ${fmtShort(ANNUAL_ALLOWANCE)} annual allowance this tax year, getting the most tax relief available.`,
+        tag: 'Milestone',
+        tagColor: '#4edea3',
+      });
+      // Carry forward can take contributions beyond the standard limit
+      if (carryForwardData.total > 0) {
+        recs.push({
+          icon: 'account_balance',
+          color: '#ffb95f',
+          title: 'Carry Forward Available',
+          body: `Based on your contribution history, you have an estimated ${fmtShort(carryForwardData.total)} of unused allowance from the previous 3 tax years. You may be able to contribute above the standard limit this year — check your carry forward position with your provider or a regulated adviser before acting.`,
+          tag: 'Tax Efficiency',
+          tagColor: '#ffb95f',
+        });
+      }
+    } else if (projectedUnused > 0) {
+      // 3c. Allowance projected to go unused — deadline version in the last 30 days
       if (daysUntilYearEnd <= 30) {
         recs.push({
           icon: 'event_busy',
           color: '#ff8a80',
           title: 'Tax Year Deadline Approaching',
-          body: `You have ${fmtShort(remainingAllowance)} of allowance remaining with just ${daysUntilYearEnd} day${daysUntilYearEnd !== 1 ? 's' : ''} until 5 April. A contribution now could reduce your tax bill. Any unused current year allowance can be carried forward for up to 3 future tax years.`,
+          body: `You're on course to leave around ${fmtShort(projectedUnused)} of your annual allowance unused, with just ${daysUntilYearEnd} day${daysUntilYearEnd !== 1 ? 's' : ''} until 5 April. A contribution now could reduce your tax bill. Any unused allowance can be carried forward for up to 3 future tax years.`,
           tag: 'Deadline',
           tagColor: '#ff8a80',
         });
@@ -389,7 +428,7 @@ export default function PensionAIAnalysis() {
           icon: 'account_balance',
           color: '#ffb95f',
           title: 'Annual Allowance Available',
-          body: `You still have ${fmtShort(remainingAllowance)} of your annual pension allowance remaining this tax year. Making additional contributions before 5 April could reduce your tax liability.`,
+          body: `At your current pace you'll contribute about ${fmtShort(projected)} this tax year, leaving around ${fmtShort(projectedUnused)} of your ${fmtShort(ANNUAL_ALLOWANCE)} allowance unused. Additional contributions before 5 April could reduce your tax bill.`,
           tag: 'Tax Efficiency',
           tagColor: '#ffb95f',
         });
@@ -481,20 +520,15 @@ export default function PensionAIAnalysis() {
       });
     }
 
-    // 9. Increase monthly contributions — only shown when the extrapolated annual
-    // contribution pace is materially below the allowance limit. Requires >= 1.5
-    // months elapsed in the tax year so early lump sums don't skew the extrapolation.
-    // Falls back to currentFYTotal directly if too early to extrapolate reliably.
-    const taxYearStart = new Date(getTaxYearStart(now), 3, 6);
-    const monthsElapsed = (now - taxYearStart) / (1000 * 60 * 60 * 24 * 30.4375);
-    const annualisedRate = monthsElapsed >= 1.5
-      ? (currentFYTotal / monthsElapsed) * 12
-      : currentFYTotal;
-    if (currentFYTotal > 0 && remainingAllowance > 5000 && annualisedRate < ANNUAL_ALLOWANCE) {
+    // 9. Increase monthly contributions — only when an extra £200 a month for the rest
+    // of the tax year would still fit within this year's allowance (and the user isn't
+    // already on course to use it all)
+    const EXTRA_MONTHLY = 200;
+    if (currentFYTotal > 0 && !onTrackForFull && monthsRemaining > 0 && projectedUnused >= EXTRA_MONTHLY * monthsRemaining) {
       const monthlyRate = RATE / 12;
       const totalMonths = yearsToRetirement * 12;
       const projectedIncrease = totalMonths > 0
-        ? Math.round(200 * ((Math.pow(1 + monthlyRate, totalMonths) - 1) / monthlyRate))
+        ? Math.round(EXTRA_MONTHLY * ((Math.pow(1 + monthlyRate, totalMonths) - 1) / monthlyRate))
         : 0;
       recs.push({
         icon: 'trending_up',
@@ -507,7 +541,7 @@ export default function PensionAIAnalysis() {
     }
 
     return recs;
-  }, [entries, metrics, userProfile, sixMonthsAgo, remainingAllowance, carryForwardData, daysUntilYearEnd, now]);
+  }, [entries, metrics, userProfile, sixMonthsAgo, remainingAllowance, carryForwardData, daysUntilYearEnd, now, projection, allowanceCapacity]);
 
   return (
     <PensionLayout>
@@ -524,6 +558,9 @@ export default function PensionAIAnalysis() {
             Analysis
           </h1>
         </div>
+
+        {/* Prompt for date of birth while age is assumed */}
+        <AgeAssumptionNotice />
 
         {/* Hero */}
         <div className="animate-in stagger-1" style={{

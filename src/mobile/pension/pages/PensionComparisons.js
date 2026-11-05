@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import PensionLayout from '../PensionLayout';
 import { usePensionData } from '../PensionDataContext';
 import PremiumGate from '../../components/PremiumGate';
+import AgeAssumptionNotice from '../components/AgeAssumptionNotice';
 
 const TABS = ['Scenarios', 'Benchmark'];
 
@@ -89,6 +90,9 @@ export default function PensionComparisons() {
             Comparisons
           </h1>
         </div>
+
+        {/* Prompt for date of birth while age is assumed */}
+        <AgeAssumptionNotice />
 
         {/* Sub-tabs */}
         <div style={{ padding: '0 16px 16px', display: 'flex', gap: '8px', overflowX: 'auto' }}>

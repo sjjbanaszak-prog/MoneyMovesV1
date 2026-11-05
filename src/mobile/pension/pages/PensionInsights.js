@@ -1,294 +1,17 @@
 import React, { useMemo, useState } from 'react';
 import PensionLayout from '../PensionLayout';
+import ContributionsCard from '../components/ContributionsCard';
 import { usePensionData, parseDate, getTaxYearStart, taxYearLabel } from '../PensionDataContext';
 import PremiumGate from '../../components/PremiumGate';
+import AllowanceRow, { allowanceColor } from '../../components/AllowanceRow';
+import DonutChart from '../../components/DonutChart';
+import DualLineChart from '../../components/DualLineChart';
 
 const COLOR_PALETTE = ['#4edea3', '#adc6ff', '#ffb95f', '#f472b6', '#a78bfa', '#38bdf8'];
-
-// Interpolates amber → green → red based on allowance % used.
-// 0–60 %: #ffb95f (amber) → #4edea3 (green)
-// 60–99 %: #4edea3 (green) → near-red
-// 100 %+: #ff6b6b (red)
-function allowanceColor(pct) {
-  if (pct >= 100) return '#ff6b6b';
-  if (pct <= 60) {
-    const t = pct / 60;
-    return `rgb(${Math.round(255 + (78  - 255) * t)},${Math.round(185 + (222 - 185) * t)},${Math.round(95  + (163 - 95)  * t)})`;
-  }
-  const t = (pct - 60) / 39;
-  return `rgb(${Math.round(78  + (255 - 78)  * t)},${Math.round(222 + (107 - 222) * t)},${Math.round(163 + (107 - 163) * t)})`;
-}
-
-function cfLabel(amount, prefix) {
-  if (!amount) return null;
-  const val = amount >= 1000 ? `£${Math.round(amount / 1000)}k` : `£${amount.toLocaleString('en-GB')}`;
-  return `${prefix}${val} CF`;
-}
-
-// Single allowance year row — bar with carry-forward pills in the header.
-// +£Xk CF  = this year drew carry forward from prior years  (purple)
-// →£Xk CF  = this year's unused allowance was used by a future year  (muted teal)
-function AllowanceRow({ yr }) {
-  const usedLabel     = cfLabel(yr.carryForwardUsed,     '+');
-  const providedLabel = cfLabel(yr.carryForwardProvided, '→');
-
-  return (
-    <div style={{ marginBottom: '16px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-          <p style={{ fontSize: '13px', color: '#dae2fd', fontWeight: 600, margin: 0 }}>{yr.fy}</p>
-          {usedLabel && (
-            <span style={{
-              fontSize: '10px', fontWeight: 700, color: '#a78bfa',
-              background: 'rgba(167,139,250,0.12)', border: '1px solid rgba(167,139,250,0.25)',
-              borderRadius: '4px', padding: '1px 5px', lineHeight: '16px',
-            }}>
-              {usedLabel}
-            </span>
-          )}
-          {providedLabel && (
-            <span style={{
-              fontSize: '10px', fontWeight: 700, color: '#4edea3',
-              background: 'rgba(78,222,163,0.08)', border: '1px solid rgba(78,222,163,0.2)',
-              borderRadius: '4px', padding: '1px 5px', lineHeight: '16px',
-            }}>
-              {providedLabel}
-            </span>
-          )}
-        </div>
-        <p style={{ fontSize: '12px', color: '#bbcabf', margin: 0 }}>
-          £{yr.used.toLocaleString('en-GB')} / £{yr.limit.toLocaleString('en-GB')}
-        </p>
-      </div>
-      <div style={{ background: 'rgba(173,198,255,0.08)', borderRadius: '4px', height: '6px', overflow: 'hidden' }}>
-        <div style={{
-          width: `${yr.pct}%`, height: '100%', borderRadius: '4px',
-          background: yr.color, transition: 'width 0.5s ease',
-        }} />
-      </div>
-    </div>
-  );
-}
 
 function fmtShort(n) {
   const v = Math.round(n || 0);
   return (v < 0 ? '−' : '') + '£' + Math.abs(v).toLocaleString('en-GB');
-}
-
-// Negative values put the minus before the £ (−£12k), never £-12k
-function fmtK(n) {
-  if (!n) return '£0';
-  const sign = n < 0 ? '−' : '';
-  const abs  = Math.abs(n);
-  if (abs >= 1000) return `${sign}£${Math.round(abs / 1000).toLocaleString('en-GB')}k`;
-  return `${sign}£${Math.round(abs)}`;
-}
-
-// SVG donut chart
-function DonutChart({ providers, totalValue }) {
-  const total = providers.reduce((s, p) => s + p.value, 0) || 1;
-  const cx = 80, cy = 80, r = 60, strokeWidth = 18;
-  const circumference = 2 * Math.PI * r;
-  let offset = 0;
-
-  const segments = providers.map(p => {
-    const dash = (p.value / total) * circumference;
-    const seg = { ...p, dash, offset };
-    offset += dash;
-    return seg;
-  });
-
-  return (
-    <svg width="160" height="160" viewBox="0 0 160 160">
-      <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(173,198,255,0.08)" strokeWidth={strokeWidth} />
-      {segments.map((s, i) => (
-        <circle
-          key={i} cx={cx} cy={cy} r={r} fill="none"
-          stroke={s.color} strokeWidth={strokeWidth}
-          strokeDasharray={`${s.dash} ${circumference - s.dash}`}
-          strokeDashoffset={circumference / 4 - s.offset}
-          style={{ transition: 'stroke-dasharray 0.5s ease' }}
-        />
-      ))}
-      <text x={cx} y={cy - 6} textAnchor="middle" fill="#dae2fd" fontFamily="Manrope,sans-serif" fontWeight="900" fontSize="16">
-        {fmtK(totalValue)}
-      </text>
-      <text x={cx} y={cy + 12} textAnchor="middle" fill="#bbcabf" fontFamily="Inter,sans-serif" fontSize="10">
-        total
-      </text>
-    </svg>
-  );
-}
-
-// Dual-line SVG chart: total value (green) + cumulative contributions (blue)
-function DualLineChart({ valueSeries, contribSeries, labels }) {
-  const [hoveredIdx, setHoveredIdx] = useState(null);
-  const W = 320, H = 90;
-  const n = labels.length;
-
-  if (n < 2) {
-    return (
-      <div style={{ height: `${H}px`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <p style={{ fontSize: '12px', color: '#64748b', margin: 0 }}>Insufficient data to plot</p>
-      </div>
-    );
-  }
-
-  const allVals = [...valueSeries, ...contribSeries].filter(v => v > 0);
-  const maxVal = Math.max(...allVals, 1);
-
-  const toX = i => (i / (n - 1)) * W;
-  const toY = v => H - (v / maxVal) * (H - 12) - 6;
-
-  function buildPaths(series) {
-    const start = series.findIndex(v => v > 0);
-    if (start < 0 || series.length - start < 2) return { line: null, area: null };
-    const slice = series.slice(start);
-    const pts = slice.map((v, i) => `${toX(start + i)},${toY(v)}`).join(' L ');
-    return {
-      line: `M ${pts}`,
-      area: `M ${toX(start)},${H} L ${pts} L ${toX(start + slice.length - 1)},${H} Z`,
-    };
-  }
-
-  const vPaths = buildPaths(valueSeries);
-  const cPaths = buildPaths(contribSeries);
-
-  // X axis labels: first, middle, last
-  const labelIndices = [0, Math.floor((n - 1) / 2), n - 1];
-
-  const hi = hoveredIdx;
-  // Clamp tooltip left so it doesn't overflow the card edges
-  const tooltipLeftPct = hi !== null ? Math.min(Math.max((hi / (n - 1)) * 100, 8), 92) : null;
-  // Investment growth at the hovered month: total value minus contributions paid in
-  const growth = hi !== null ? (valueSeries[hi] || 0) - (contribSeries[hi] || 0) : 0;
-  const growthColor = growth < 0 ? '#ffb4ab' : '#4edea3';
-
-  return (
-    <>
-      <div style={{ position: 'relative' }}>
-        {/* Hover tooltip */}
-        {hi !== null && (
-          <div style={{
-            position: 'absolute',
-            bottom: 'calc(100% + 8px)',
-            left: `${tooltipLeftPct}%`,
-            transform: 'translateX(-50%)',
-            background: '#1a2744',
-            border: '1px solid rgba(173,198,255,0.15)',
-            borderRadius: '10px',
-            padding: '8px 12px',
-            zIndex: 20,
-            whiteSpace: 'nowrap',
-            pointerEvents: 'none',
-            boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
-          }}>
-            <p style={{ fontSize: '11px', fontWeight: 700, color: '#dae2fd', margin: '0 0 6px', fontFamily: 'Manrope, sans-serif' }}>
-              {labels[hi]}
-            </p>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', marginBottom: '3px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#4edea3', flexShrink: 0 }} />
-                <span style={{ fontSize: '11px', color: '#bbcabf' }}>Total value</span>
-              </div>
-              <span style={{ fontSize: '12px', fontWeight: 700, color: '#4edea3' }}>{fmtK(valueSeries[hi])}</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#adc6ff', flexShrink: 0 }} />
-                <span style={{ fontSize: '11px', color: '#bbcabf' }}>Contributions</span>
-              </div>
-              <span style={{ fontSize: '12px', fontWeight: 700, color: '#adc6ff' }}>{fmtK(contribSeries[hi])}</span>
-            </div>
-            <div style={{ borderTop: '1px solid rgba(173,198,255,0.1)', margin: '5px 0 4px' }} />
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: growthColor, flexShrink: 0 }} />
-                <span style={{ fontSize: '11px', color: '#bbcabf' }}>Growth</span>
-              </div>
-              <span style={{ fontSize: '12px', fontWeight: 700, color: growthColor }}>
-                {growth < 0 ? '−' : '+'}{fmtK(Math.abs(growth))}
-              </span>
-            </div>
-          </div>
-        )}
-
-        <svg
-          width="100%"
-          viewBox={`0 0 ${W} ${H}`}
-          style={{ display: 'block', overflow: 'visible' }}
-          onMouseLeave={() => setHoveredIdx(null)}
-        >
-          <defs>
-            <linearGradient id="vGradIns" x1="0" x2="0" y1="0" y2="1">
-              <stop offset="0%" stopColor="#4edea3" stopOpacity="0.2" />
-              <stop offset="100%" stopColor="#4edea3" stopOpacity="0" />
-            </linearGradient>
-            <linearGradient id="cGradIns" x1="0" x2="0" y1="0" y2="1">
-              <stop offset="0%" stopColor="#adc6ff" stopOpacity="0.12" />
-              <stop offset="100%" stopColor="#adc6ff" stopOpacity="0" />
-            </linearGradient>
-          </defs>
-
-          {cPaths.area && <path d={cPaths.area} fill="url(#cGradIns)" />}
-          {vPaths.area && <path d={vPaths.area} fill="url(#vGradIns)" />}
-          {cPaths.line && <path d={cPaths.line} fill="none" stroke="#adc6ff" strokeWidth="1.5" />}
-          {vPaths.line && <path d={vPaths.line} fill="none" stroke="#4edea3" strokeWidth="2" className="chart-glow" />}
-
-          {/* Vertical crosshair */}
-          {hi !== null && (
-            <line
-              x1={toX(hi)} y1={0} x2={toX(hi)} y2={H}
-              stroke="rgba(173,198,255,0.25)" strokeWidth="1" strokeDasharray="3,3"
-            />
-          )}
-
-          {/* Dots at hovered data points */}
-          {hi !== null && valueSeries[hi] > 0 && (
-            <circle cx={toX(hi)} cy={toY(valueSeries[hi])} r="3.5" fill="#0b1326" stroke="#4edea3" strokeWidth="2" />
-          )}
-          {hi !== null && contribSeries[hi] > 0 && (
-            <circle cx={toX(hi)} cy={toY(contribSeries[hi])} r="3.5" fill="#0b1326" stroke="#adc6ff" strokeWidth="2" />
-          )}
-
-          {/* Invisible hit strips — one per data point */}
-          {Array.from({ length: n }, (_, i) => {
-            const x     = toX(i);
-            const prev  = i > 0     ? toX(i - 1) : x;
-            const next  = i < n - 1 ? toX(i + 1) : x;
-            const left  = (x + prev) / 2;
-            const right = (x + next) / 2;
-            return (
-              <rect
-                key={i}
-                x={left} y={0}
-                width={Math.max(right - left, 1)} height={H}
-                fill="transparent"
-                onMouseEnter={() => setHoveredIdx(i)}
-              />
-            );
-          })}
-        </svg>
-      </div>
-
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px' }}>
-        {labelIndices.map(i => (
-          <span key={i} style={{ fontSize: '10px', color: '#64748b' }}>{labels[i]}</span>
-        ))}
-      </div>
-      {/* Legend */}
-      <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', marginTop: '10px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <div style={{ width: '16px', height: '2px', background: '#4edea3', borderRadius: '1px' }} />
-          <span style={{ fontSize: '11px', color: '#bbcabf' }}>Total value</span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <div style={{ width: '16px', height: '2px', background: '#adc6ff', borderRadius: '1px' }} />
-          <span style={{ fontSize: '11px', color: '#bbcabf' }}>Contributions</span>
-        </div>
-      </div>
-    </>
-  );
 }
 
 export default function PensionInsights() {
@@ -544,7 +267,7 @@ export default function PensionInsights() {
           ) : (
             <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
               <div style={{ flexShrink: 0 }}>
-                <DonutChart providers={providers} totalValue={metrics.totalValue} />
+                <DonutChart items={providers} totalValue={metrics.totalValue} />
               </div>
               <div style={{ flex: 1 }}>
                 {providers.map(p => (
@@ -622,7 +345,7 @@ export default function PensionInsights() {
         </div>
 
         {/* Allowance Utilisation */}
-        <div className="animate-in stagger-3 section-card" style={{ margin: '0 16px 24px' }}>
+        <div className="animate-in stagger-3 section-card" style={{ margin: '0 16px 16px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
             <h3 style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 800, fontSize: '16px', color: '#dae2fd', margin: 0 }}>
               Allowance Utilisation
@@ -645,6 +368,13 @@ export default function PensionInsights() {
             <AllowanceRow key={yr.fy} yr={yr} />
           ))}
         </div>
+
+        {/* Contributions across all pensions — same card as each provider page */}
+        <ContributionsCard
+          entries={entries}
+          className="animate-in stagger-4 section-card"
+          style={{ margin: '0 16px 24px' }}
+        />
 
         {/* Allowance Utilisation — full history modal */}
         {showAllAllowance && (

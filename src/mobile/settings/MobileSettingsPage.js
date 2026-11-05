@@ -10,7 +10,7 @@ export default function MobileSettingsPage() {
   const navigate = useNavigate();
   const { currentUser, logout } = useAuth();
   const [showDelete, setShowDelete] = useState(false);
-  const { isPremium } = useUserPlan();
+  const { isPremium, paywallEnabled } = useUserPlan();
   const [displayName, setDisplayName] = useState(
     currentUser?.displayName || currentUser?.email?.split('@')[0] || 'MoneyMoves User'
   );
@@ -80,7 +80,16 @@ export default function MobileSettingsPage() {
             <h2 style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 900, fontSize: '22px', color: '#dae2fd', margin: '0 0 8px' }}>
               {displayName}
             </h2>
-            {isPremium ? (
+            {!paywallEnabled ? (
+              <span style={{
+                display: 'inline-flex', alignItems: 'center',
+                padding: '4px 12px', borderRadius: '999px',
+                fontSize: '10px', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase',
+                background: 'rgba(78,222,163,0.1)', color: '#4edea3', border: '1px solid rgba(78,222,163,0.3)',
+              }}>
+                Early Access
+              </span>
+            ) : isPremium ? (
               <span style={{
                 display: 'inline-flex', alignItems: 'center',
                 padding: '4px 12px', borderRadius: '999px',
@@ -102,8 +111,24 @@ export default function MobileSettingsPage() {
           </div>
         </section>
 
-        {/* Upgrade / Subscription Card */}
-        {isPremium ? (
+        {/* Upgrade / Subscription Card — "coming soon" while paid plans aren't live */}
+        {!paywallEnabled ? (
+          <section style={{
+            position: 'relative', overflow: 'hidden',
+            borderRadius: '14px', marginBottom: '24px',
+            background: 'linear-gradient(135deg, #222a3d 0%, #171f33 100%)',
+            borderLeft: '4px solid #4edea3',
+            padding: '20px',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+              <span className="material-symbols-outlined" style={{ fontSize: '18px', color: '#4edea3' }}>rocket_launch</span>
+              <h3 style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 800, fontSize: '16px', color: '#4edea3', margin: 0 }}>Premium plans coming soon</h3>
+            </div>
+            <p style={{ fontSize: '13px', color: '#bbcabf', margin: 0, lineHeight: 1.5 }}>
+              While we're in early access, every feature is free. We'll let you know before anything changes.
+            </p>
+          </section>
+        ) : isPremium ? (
           <section style={{
             position: 'relative', overflow: 'hidden',
             borderRadius: '14px', marginBottom: '24px',

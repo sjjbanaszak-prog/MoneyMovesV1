@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useDemoMode } from '../../../contexts/DemoModeContext';
 import { useMortgageData } from '../MortgageDataContext';
 import MortgageLayout from '../MortgageLayout';
+import EmptyState from '../../components/EmptyState';
 import { formatLastUpdated } from '../../utils/formatLastUpdated';
 
 // ---- helpers ----
@@ -167,9 +168,13 @@ export default function MortgageOverview() {
           </div>
 
           {mortgages.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '32px 16px', background: '#171f33', borderRadius: '16px', color: '#64748b', fontSize: '14px' }}>
-              No mortgage data found. Enable Demo mode to explore, or add data on the desktop Mortgage Calculator page.
-            </div>
+            <EmptyState
+              icon="home"
+              title="No mortgages yet"
+              body="Add your mortgage to track what you owe, your equity and when your fixed rate ends."
+              actionLabel="Add mortgage"
+              onAction={() => navigate('/mobile/mortgage/add')}
+            />
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {mortgages.map((mortgage, i) => {
@@ -224,28 +229,30 @@ export default function MortgageOverview() {
           )}
         </div>
 
-        {/* Analysis Teaser Card */}
-        <div className="animate-in stagger-4" style={{
-          margin: '0 16px 24px',
-          position: 'relative', overflow: 'hidden',
-          padding: '28px 24px', borderRadius: '16px',
-          borderTop: '4px solid rgba(78,222,163,0.6)',
-          background: 'linear-gradient(135deg, rgba(78,222,163,0.18) 0%, #222a3d 100%)',
-        }}>
-          <div style={{ position: 'absolute', bottom: '-8px', right: '-8px', opacity: 0.1, pointerEvents: 'none', lineHeight: 1 }}>
-            <span className="material-symbols-outlined" style={{ fontSize: '140px', color: '#ffffff' }}>psychology</span>
+        {/* Analysis Teaser Card — only once there's data to analyse */}
+        {mortgages.length > 0 && (
+          <div className="animate-in stagger-4" style={{
+            margin: '0 16px 24px',
+            position: 'relative', overflow: 'hidden',
+            padding: '28px 24px', borderRadius: '16px',
+            borderTop: '4px solid rgba(78,222,163,0.6)',
+            background: 'linear-gradient(135deg, rgba(78,222,163,0.18) 0%, #222a3d 100%)',
+          }}>
+            <div style={{ position: 'absolute', bottom: '-8px', right: '-8px', opacity: 0.1, pointerEvents: 'none', lineHeight: 1 }}>
+              <span className="material-symbols-outlined" style={{ fontSize: '140px', color: '#ffffff' }}>psychology</span>
+            </div>
+            <div style={{ position: 'absolute', top: '-40px', right: '-40px', width: '120px', height: '120px', background: 'rgba(78,222,163,0.05)', borderRadius: '50%', filter: 'blur(40px)', pointerEvents: 'none' }} />
+            <div style={{ position: 'relative', zIndex: 1 }}>
+              <h3 style={{ fontFamily: 'Manrope, sans-serif', fontSize: '20px', fontWeight: 900, color: '#dae2fd', margin: '0 0 8px' }}>
+                Optimise Your Mortgage
+              </h3>
+              <p style={{ fontSize: '13px', color: '#bbcabf', lineHeight: 1.6, maxWidth: '280px', margin: '0 0 16px' }}>
+                Our analysis highlights overpayment opportunities and shows how you could pay off your mortgage sooner.
+              </p>
+              <button className="primary-btn" style={{ marginTop: '6px' }} onClick={() => navigate('/mobile/mortgage/ai')}>See Mortgage Analysis</button>
+            </div>
           </div>
-          <div style={{ position: 'absolute', top: '-40px', right: '-40px', width: '120px', height: '120px', background: 'rgba(78,222,163,0.05)', borderRadius: '50%', filter: 'blur(40px)', pointerEvents: 'none' }} />
-          <div style={{ position: 'relative', zIndex: 1 }}>
-            <h3 style={{ fontFamily: 'Manrope, sans-serif', fontSize: '20px', fontWeight: 900, color: '#dae2fd', margin: '0 0 8px' }}>
-              Optimise Your Mortgage
-            </h3>
-            <p style={{ fontSize: '13px', color: '#bbcabf', lineHeight: 1.6, maxWidth: '280px', margin: '0 0 16px' }}>
-              Our analysis highlights overpayment opportunities and shows how you could pay off your mortgage sooner.
-            </p>
-            <button className="primary-btn" style={{ marginTop: '6px' }} onClick={() => navigate('/mobile/mortgage/ai')}>See Mortgage Insights</button>
-          </div>
-        </div>
+        )}
 
       </div>
 

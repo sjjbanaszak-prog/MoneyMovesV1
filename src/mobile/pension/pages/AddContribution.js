@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate, useParams, Navigate } from 'react-router-dom';
 import { usePensionData, getTaxYearStart, taxYearLabel, parseDate } from '../PensionDataContext';
 import PensionDetailLayout from '../PensionDetailLayout';
+import { useDemoMode } from '../../../contexts/DemoModeContext';
+import DemoSaveNotice from '../../components/DemoSaveNotice';
 
 const CONTRIBUTION_TYPES = [
   { value: 'employee', label: 'Employee Contribution' },
@@ -11,6 +13,7 @@ const CONTRIBUTION_TYPES = [
 ];
 
 export default function AddContribution() {
+  const { isDemoMode } = useDemoMode(); // nothing is saved in demo mode
   const { idx } = useParams();
   const navigate = useNavigate();
   const { entries, updateEntry } = usePensionData();
@@ -78,6 +81,7 @@ export default function AddContribution() {
 
   return (
     <PensionDetailLayout title="Add Contribution" backTo={`/mobile/pension/provider/${idx}`}>
+      <DemoSaveNotice />
       <div style={{ padding: '16px' }}>
 
         {/* Provider context pill */}
@@ -229,7 +233,7 @@ export default function AddContribution() {
         <button
           className="primary-btn"
           onClick={handleConfirm}
-          disabled={!amount || amountNum <= 0 || isSaving}
+          disabled={!amount || amountNum <= 0 || isSaving || isDemoMode}
           style={{ opacity: (!amount || amountNum <= 0 || isSaving) ? 0.5 : 1 }}
         >
           {isSaving ? 'Saving…' : 'Confirm Contribution'}

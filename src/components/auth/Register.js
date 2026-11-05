@@ -185,10 +185,10 @@ const Register = () => {
                 We've sent a verification email to <strong>{formData.email}</strong>
               </p>
               <p className="verification-subtext">
-                Please click the link in the email to verify your account before signing in.
+                Click the link in the email to verify your address. You can start using MoneyMoves straight away.
               </p>
-              <Link to="/login" className="auth-btn auth-btn-primary">
-                Go to Login
+              <Link to="/mobile/dashboard" className="auth-btn auth-btn-primary">
+                Continue to MoneyMoves
               </Link>
             </div>
           </div>

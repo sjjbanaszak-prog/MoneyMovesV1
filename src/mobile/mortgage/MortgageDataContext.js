@@ -8,6 +8,7 @@ const MortgageDataContext = createContext(null);
 
 export function MortgageDataProvider({ children }) {
   const { isDemoMode, demoData } = useDemoMode();
+  const [isLoading, setIsLoading] = useState(true);
   const [user, setUser]           = useState(null);
   const [mortgages, setMortgages] = useState([]);
   const [lastUpdated, setLastUpdated] = useState(null);
@@ -23,6 +24,7 @@ export function MortgageDataProvider({ children }) {
     if (!user) return;
 
     async function load() {
+      setIsLoading(true);
       if (isDemoMode) {
         setMortgages(demoData?.mortgages || []);
         setLastUpdated(null);
@@ -43,6 +45,7 @@ export function MortgageDataProvider({ children }) {
           setLastUpdated(null);
         }
       }
+      setIsLoading(false);
     }
 
     load();
@@ -163,7 +166,7 @@ export function MortgageDataProvider({ children }) {
   }
 
   return (
-    <MortgageDataContext.Provider value={{ mortgages, updateMortgage, addMortgage, switchMortgage, isDemoMode, lastUpdated }}>
+    <MortgageDataContext.Provider value={{ mortgages, updateMortgage, addMortgage, switchMortgage, isDemoMode, lastUpdated, isLoading }}>
       {children}
     </MortgageDataContext.Provider>
   );

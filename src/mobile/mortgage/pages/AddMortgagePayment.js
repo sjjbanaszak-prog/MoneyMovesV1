@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate, useParams, Navigate } from 'react-router-dom';
 import { useMortgageData } from '../MortgageDataContext';
 import MortgageDetailLayout from '../MortgageDetailLayout';
+import { useDemoMode } from '../../../contexts/DemoModeContext';
+import DemoSaveNotice from '../../components/DemoSaveNotice';
 
 const PAYMENT_TYPES = [
   { value: 'monthly',     label: 'Monthly Payment' },
@@ -19,6 +21,7 @@ function fmtFull(n) {
 }
 
 export default function AddMortgagePayment() {
+  const { isDemoMode } = useDemoMode(); // nothing is saved in demo mode
   const { idx }                        = useParams();
   const navigate                       = useNavigate();
   const { mortgages, updateMortgage }  = useMortgageData();
@@ -65,6 +68,7 @@ export default function AddMortgagePayment() {
 
   return (
     <MortgageDetailLayout title="Add Payment" backTo={`/mobile/mortgage/${idx}`}>
+      <DemoSaveNotice />
       <div style={{ padding: '16px' }}>
 
         {/* Property context pill */}
@@ -205,7 +209,7 @@ export default function AddMortgagePayment() {
         <button
           className="primary-btn"
           onClick={handleConfirm}
-          disabled={!amount || amountNum <= 0 || isSaving}
+          disabled={!amount || amountNum <= 0 || isSaving || isDemoMode}
           style={{ opacity: (!amount || amountNum <= 0 || isSaving) ? 0.5 : 1 }}
         >
           {isSaving ? 'Saving…' : 'Confirm Payment'}

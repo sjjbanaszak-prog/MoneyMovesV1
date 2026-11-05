@@ -251,7 +251,7 @@ export default function IncomeOverview() {
             <p style={{ fontSize: '13px', color: '#bbcabf', lineHeight: 1.6, maxWidth: '280px', margin: '0 0 16px' }}>
               Coming soon: salary benchmarks and tax-efficiency insights to help you grow your take-home pay.
             </p>
-            <button className="primary-btn" disabled style={{ marginTop: '6px', opacity: 0.35, cursor: 'default' }}>See Income Insights</button>
+            <button className="primary-btn" disabled style={{ marginTop: '6px', opacity: 0.35, cursor: 'default' }}>See Income Analysis</button>
           </div>
         </div>
 

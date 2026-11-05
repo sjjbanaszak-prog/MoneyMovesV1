@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MobileNavDrawer from '../../components/MobileNavDrawer';
 import { useSavingsData } from '../SavingsDataContext';
+import { useDemoMode } from '../../../contexts/DemoModeContext';
+import DemoSaveNotice from '../../components/DemoSaveNotice';
 
 const ACCOUNT_TYPES = [
   { value: 'Cash ISA',              label: 'Cash ISA' },
@@ -25,6 +27,7 @@ const labelStyle = {
 };
 
 export default function AddSavingsAccount() {
+  const { isDemoMode } = useDemoMode(); // nothing is saved in demo mode
   const navigate = useNavigate();
   const { addAccount } = useSavingsData();
 
@@ -70,6 +73,7 @@ export default function AddSavingsAccount() {
   return (
     <div className="mobile-screen" style={{ paddingTop: '50px', paddingBottom: '40px', background: '#0b1326', minHeight: '100vh' }}>
       <MobileNavDrawer />
+      <DemoSaveNotice />
 
       {/* Sub-header */}
       <div style={{ padding: '20px 20px 0', display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -241,7 +245,7 @@ export default function AddSavingsAccount() {
         <button
           className="primary-btn"
           onClick={handleConfirm}
-          disabled={!canSubmit}
+          disabled={!canSubmit || isDemoMode}
           style={{ opacity: canSubmit ? 1 : 0.5 }}
         >
           {isSaving ? 'Saving…' : 'Confirm Savings Account'}

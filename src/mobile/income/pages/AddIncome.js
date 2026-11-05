@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useIncomeData } from '../IncomeDataContext';
 import IncomeDetailLayout from '../IncomeDetailLayout';
+import { useDemoMode } from '../../../contexts/DemoModeContext';
+import DemoSaveNotice from '../../components/DemoSaveNotice';
 
 const EMPLOYMENT_TYPES = [
   { value: 'Full-time',     label: 'Full-time Employment' },
@@ -78,6 +80,7 @@ function BonusRow({ index, entry, onChange, onRemove, canRemove }) {
 }
 
 export default function AddIncome() {
+  const { isDemoMode } = useDemoMode(); // nothing is saved in demo mode
   const navigate = useNavigate();
   const { addIncome } = useIncomeData();
 
@@ -139,6 +142,7 @@ export default function AddIncome() {
 
   return (
     <IncomeDetailLayout title="Add Income" backTo="/mobile/income">
+      <DemoSaveNotice />
       <div style={{ padding: '16px' }}>
 
         {/* Info pill */}
@@ -328,7 +332,7 @@ export default function AddIncome() {
         <button
           className="primary-btn"
           onClick={handleConfirm}
-          disabled={!canSubmit}
+          disabled={!canSubmit || isDemoMode}
           style={{ opacity: canSubmit ? 1 : 0.5 }}
         >
           {isSaving ? 'Saving…' : 'Confirm Income Stream'}

@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useMortgageData } from '../MortgageDataContext';
 import MortgageDetailLayout from '../MortgageDetailLayout';
 import { lookupPropertyValue } from '../utils/propertyLookup';
+import { useDemoMode } from '../../../contexts/DemoModeContext';
+import DemoSaveNotice from '../../components/DemoSaveNotice';
 
 const MORTGAGE_TYPES = [
   { value: 'Residential',      label: 'Residential' },
@@ -92,6 +94,7 @@ function SectionHeader({ title }) {
 }
 
 export default function AddMortgage() {
+  const { isDemoMode } = useDemoMode(); // nothing is saved in demo mode
   const navigate = useNavigate();
   const { addMortgage } = useMortgageData();
 
@@ -179,6 +182,7 @@ export default function AddMortgage() {
 
   return (
     <MortgageDetailLayout title="Add Mortgage" backTo="/mobile/mortgage">
+      <DemoSaveNotice />
       <div style={{ padding: '16px' }}>
 
         {/* Context pill */}
@@ -504,7 +508,7 @@ export default function AddMortgage() {
         <button
           className="primary-btn"
           onClick={handleConfirm}
-          disabled={!canSubmit}
+          disabled={!canSubmit || isDemoMode}
           style={{ opacity: canSubmit ? 1 : 0.5 }}
         >
           {isSaving ? 'Saving…' : 'Confirm Mortgage Provider'}

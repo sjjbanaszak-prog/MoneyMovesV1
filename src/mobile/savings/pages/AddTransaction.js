@@ -4,6 +4,8 @@ import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 import { useSavingsData } from '../SavingsDataContext';
 import SavingsDetailLayout from '../SavingsDetailLayout';
+import { useDemoMode } from '../../../contexts/DemoModeContext';
+import DemoSaveNotice from '../../components/DemoSaveNotice';
 
 dayjs.extend(customParseFormat);
 
@@ -101,6 +103,7 @@ function computeIsaUsedInFY(accounts, fyStart) {
 }
 
 export default function AddTransaction() {
+  const { isDemoMode } = useDemoMode(); // nothing is saved in demo mode
   const { idx } = useParams();
   const navigate = useNavigate();
   const { accounts, addTransaction } = useSavingsData();
@@ -171,6 +174,7 @@ export default function AddTransaction() {
 
   return (
     <SavingsDetailLayout title="Add Transaction" backTo={`/mobile/savings/account/${idx}`}>
+      <DemoSaveNotice />
       <div style={{ padding: '16px' }}>
 
         {/* Account context pill */}
@@ -388,7 +392,7 @@ export default function AddTransaction() {
         <button
           className="primary-btn"
           onClick={handleConfirm}
-          disabled={!amount || amountNum <= 0 || isSaving}
+          disabled={!amount || amountNum <= 0 || isSaving || isDemoMode}
           style={{
             opacity: (!amount || amountNum <= 0 || isSaving) ? 0.5 : 1,
             background: isDeposit ? '#4edea3' : '#ff6b6b',

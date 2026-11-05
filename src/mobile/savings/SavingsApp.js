@@ -9,6 +9,7 @@ import SavingsAccountDetail  from './pages/SavingsAccountDetail';
 import AddSavingsAccount     from './pages/AddSavingsAccount';
 import AddTransaction        from './pages/AddTransaction';
 import AllTransactions       from './pages/AllTransactions';
+import SavingsInsights       from './pages/SavingsInsights';
 
 /**
  * SavingsApp
@@ -16,7 +17,7 @@ import AllTransactions       from './pages/AllTransactions';
  *   /mobile/savings          → SavingsOverview
  *   /mobile/savings/calculator   → (coming soon — placeholder redirects to overview)
  *   /mobile/savings/comparisons → (coming soon — placeholder redirects to overview)
- *   /mobile/savings/insights    → (coming soon — placeholder redirects to overview)
+ *   /mobile/savings/insights    → SavingsInsights (Premium)
  *   /mobile/savings/ai          → (coming soon — placeholder redirects to overview)
  */
 export default function SavingsApp() {
@@ -30,7 +31,7 @@ export default function SavingsApp() {
         <Route path="account/:idx/transactions" element={<AllTransactions />} />
         <Route path="calculator"       element={<Navigate to="/mobile/savings" replace />} />
         <Route path="comparisons"      element={<Navigate to="/mobile/savings" replace />} />
-        <Route path="insights"         element={<Navigate to="/mobile/savings" replace />} />
+        <Route path="insights"         element={<SavingsInsights />} />
         <Route path="ai"               element={<Navigate to="/mobile/savings" replace />} />
         <Route path="*"                element={<Navigate to="/mobile/savings" replace />} />
       </Routes>

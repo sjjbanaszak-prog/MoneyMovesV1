@@ -79,7 +79,7 @@ src/mobile/<section>/
 
 - **`components/MobileNavDrawer.js`** — top bar + slide-out menu. Items can be `disabled: true` (greyed out, not clickable).
 - **`components/UniversalNavbar.js`** — shared bottom tabs: Overview / Calculator / Compare / Insights / AI, mapped to `/mobile/<section><segment>`. `ENABLED_SEGMENTS` limits tabs per section; the `disabledSegments` prop disables tabs at runtime (e.g. Income Overview).
-- **`components/PremiumGate.js`** + `contexts/UserPlanContext.js` (`isPremium`) gate Premium screens. `UpgradeSheet.js` / `upgrade/MobileUpgradePage.js` handle upsell.
+- **`components/PremiumGate.js`** + `contexts/UserPlanContext.js` (`isPremium`) gate Premium screens. **Paid plans aren't live:** `PAYWALL_ENABLED = false` in `UserPlanContext.js` makes everyone Premium (no locks or account limits) and shows "Early Access" / "Premium plans coming soon" in the drawer, Settings and Upgrade page. Flip it to `true` at launch. In demo mode free users can preview them (sample data) with a "Premium preview" banner and Upgrade button. `UpgradeSheet.js` / `upgrade/MobileUpgradePage.js` handle upsell.
 - **`pages/MobileDashboard.js`** — net worth hero, Net Worth History chart (1Y/5Y/AT, % pill follows the timeframe), section summaries.
 
 ### Demo mode
@@ -191,7 +191,7 @@ Financial logic changes need tests; UI-only changes need a build check at minimu
 - **Family** (`src/mobile/family/`): nav item disabled, routes redirect to dashboard, JISA notifications off, privacy wording hidden behind `SHOW_FAMILY_SECTION` in `PrivacyPolicyPage.js`. Re-enable steps are in the comment in `MobileApp.js`. The Upgrade page still advertises Family features.
 - **Income Overview**: Income defaults to the Calculator. Overview is only available to users who have saved income entries (`hasSavedIncomes` in `IncomeDataContext.js`).
 - **Debt**: nav item disabled.
-- Savings: only Overview tab enabled; Income: Overview + Calculator (`ENABLED_SEGMENTS` in `UniversalNavbar.js`).
+- Savings: Overview + Insights tabs enabled; Income: Overview + Calculator (`ENABLED_SEGMENTS` in `UniversalNavbar.js`).
 
 ## Legacy Code
 
