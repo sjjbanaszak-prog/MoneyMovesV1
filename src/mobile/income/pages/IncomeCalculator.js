@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth, db } from '../../../firebase';
@@ -136,7 +137,11 @@ function DeductionRow({ label, value, pct, color }) {
 // ── Main Component ────────────────────────────────────────────────────────────
 
 export default function IncomeCalculator() {
-  const { incomes } = useIncomeData();
+  const { incomes, isLoading: incomeLoading, hasSavedIncomes, isDemoMode } = useIncomeData();
+  const navigate = useNavigate();
+  // New users land here with Income Overview locked until they save an income,
+  // so give them a way to add their first one
+  const showTrackIncome = !incomeLoading && !hasSavedIncomes && !isDemoMode;
   const [step, setStep]     = useState(0);
   const [period, setPeriod] = useState('annual'); // 'weekly' | 'monthly' | 'annual'
 
@@ -289,6 +294,37 @@ export default function IncomeCalculator() {
           </div>
 
           <div style={{ padding: '0 16px' }}>
+
+            {/* ── Track your income (until the first income is saved) ── */}
+            {showTrackIncome && (
+              <div style={{ ...cardStyle, display: 'flex', alignItems: 'center', gap: '14px' }}>
+                <div style={{
+                  width: '40px', height: '40px', borderRadius: '12px', flexShrink: 0,
+                  background: 'rgba(78,222,163,0.1)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <span className="material-symbols-outlined" style={{ color: '#4edea3', fontSize: '22px' }}>work</span>
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 800, fontSize: '14px', color: '#dae2fd', margin: '0 0 2px' }}>
+                    Track your income
+                  </p>
+                  <p style={{ fontSize: '12px', color: '#bbcabf', lineHeight: 1.5, margin: 0 }}>
+                    Save your employer and salary to see your earnings over time and unlock your Income Overview.
+                  </p>
+                </div>
+                <button
+                  onClick={() => navigate('/mobile/income/add')}
+                  style={{
+                    flexShrink: 0, background: '#4edea3', color: '#003824',
+                    border: 'none', borderRadius: '10px', padding: '9px 14px',
+                    fontWeight: 700, fontSize: '13px', cursor: 'pointer',
+                  }}
+                >
+                  Add
+                </button>
+              </div>
+            )}
 
             {/* ── Monthly Earnings card ── */}
             <div style={{ ...cardStyle, borderLeft: '4px solid #4edea3' }}>
