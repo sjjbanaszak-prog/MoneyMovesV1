@@ -220,13 +220,13 @@ export default function MobileNavDrawer() {
                 background: active ? 'rgba(78,222,163,0.12)' : 'transparent',
                 transition: 'background 0.2s',
                 cursor: item.disabled ? 'default' : 'pointer',
-                opacity: item.disabled ? 0.35 : 1,
               }}>
                 <span
                   className="material-symbols-outlined"
                   style={{
                     fontSize: '22px',
                     color: active ? '#4edea3' : '#adc6ff',
+                    opacity: item.disabled ? 0.35 : 1,
                     transition: 'color 0.2s',
                   }}
                 >
@@ -237,10 +237,23 @@ export default function MobileNavDrawer() {
                   fontWeight: active ? 700 : 500,
                   fontSize: '15px',
                   color: active ? '#4edea3' : '#adc6ff',
+                  opacity: item.disabled ? 0.35 : 1,
                   transition: 'color 0.2s',
                 }}>
                   {item.label}
                 </span>
+                {item.disabled && (
+                  <span style={{
+                    marginLeft: 'auto',
+                    fontSize: '10px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
+                    color: '#adc6ff',
+                    background: 'rgba(173,198,255,0.08)',
+                    border: '1px solid rgba(173,198,255,0.15)',
+                    borderRadius: '20px', padding: '2px 8px',
+                  }}>
+                    Soon
+                  </span>
+                )}
                 {active && (
                   <div style={{
                     marginLeft: 'auto',
