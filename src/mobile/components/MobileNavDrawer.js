@@ -251,7 +251,7 @@ export default function MobileNavDrawer() {
                     border: '1px solid rgba(173,198,255,0.15)',
                     borderRadius: '20px', padding: '2px 8px',
                   }}>
-                    Soon
+                    Coming Soon
                   </span>
                 )}
                 {active && (

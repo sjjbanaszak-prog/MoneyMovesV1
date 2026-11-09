@@ -94,6 +94,16 @@ function Toggle({ value, onChange }) {
 
 // ── % / £ mode pill toggle ────────────────────────────────────────────────────
 
+// Convert an input between % of salary and £ when its mode is switched, so the
+// same amount carries over (e.g. 10% of £139,253 ⇄ £13,925).
+function convertModeValue(value, toMode, salary) {
+  const v = parseFloat(value);
+  if (!v || !(salary > 0)) return value;
+  return toMode === 'amount'
+    ? String(Math.round(salary * v / 100))
+    : String(Number(((v / salary) * 100).toFixed(2)));
+}
+
 function ModeToggle({ mode, onChange }) {
   return (
     <div style={{ display: 'flex', background: '#060e20', borderRadius: '10px', padding: '3px', gap: '2px' }}>
@@ -153,6 +163,7 @@ export default function IncomeCalculator() {
   const [annualIncome,    setAnnualIncome]    = useState(String(seedSalary));
   const [hasBonus,        setHasBonus]        = useState(false);
   const [bonus,           setBonus]           = useState('');
+  const [bonusMode,       setBonusMode]       = useState('percentage'); // 'percentage' (% of gross salary) | 'amount' (£)
 
   const [pensionEnabled,  setPensionEnabled]  = useState(true);
   // Shared mode toggle for both pension amount and employer match
@@ -161,6 +172,20 @@ export default function IncomeCalculator() {
   const [pensionScheme,   setPensionScheme]   = useState('salary_sacrifice');
   const [hasEmployerMatch,setHasEmployerMatch]= useState(true);
   const [employerMatch,   setEmployerMatch]   = useState('3');
+
+  // Switching % ⇄ £ keeps the same amount (Employer Match shares the pension switch)
+  function changeBonusMode(next) {
+    if (next === bonusMode) return;
+    setBonus(b => convertModeValue(b, next, parseFloat(annualIncome) || 0));
+    setBonusMode(next);
+  }
+  function changePensionMode(next) {
+    if (next === pensionMode) return;
+    const salary = parseFloat(annualIncome) || 0;
+    setPensionAmount(v => convertModeValue(v, next, salary));
+    setEmployerMatch(v => convertModeValue(v, next, salary));
+    setPensionMode(next);
+  }
 
   const [taxYear,         setTaxYear]         = useState('2026/27');
   const [taxCode,         setTaxCode]         = useState('1257L');
@@ -190,6 +215,9 @@ export default function IncomeCalculator() {
       if (p.annualIncome    != null) setAnnualIncome(String(p.annualIncome));
       if (p.hasBonus        != null) setHasBonus(p.hasBonus);
       if (p.bonus           != null) setBonus(String(p.bonus));
+      // Bonuses saved before the % option existed were in £
+      if (p.bonusMode != null) setBonusMode(p.bonusMode);
+      else if (p.bonus != null && p.bonus !== '') setBonusMode('amount');
       if (p.pensionEnabled  != null) setPensionEnabled(p.pensionEnabled);
       if (p.pensionMode     != null) setPensionMode(p.pensionMode);
       if (p.pensionAmount   != null) setPensionAmount(String(p.pensionAmount));
@@ -210,7 +238,7 @@ export default function IncomeCalculator() {
     try {
       await setDoc(doc(db, 'incomePots', user.uid), {
         calculatorParams: {
-          annualIncome, hasBonus, bonus,
+          annualIncome, hasBonus, bonus, bonusMode,
           pensionEnabled, pensionMode, pensionAmount, pensionScheme,
           hasEmployerMatch, employerMatch,
           taxYear,
@@ -226,7 +254,7 @@ export default function IncomeCalculator() {
     }
   }, [
     user,
-    annualIncome, hasBonus, bonus,
+    annualIncome, hasBonus, bonus, bonusMode,
     pensionEnabled, pensionMode, pensionAmount, pensionScheme,
     hasEmployerMatch, employerMatch,
     taxYear,
@@ -247,7 +275,8 @@ export default function IncomeCalculator() {
 
     return {
       annualIncome:        income,
-      bonusAmount:         parseFloat(bonus) || 0,
+      // Bonus entered as £, or as a % of gross annual salary
+      bonusAmount:         bonusMode === 'percentage' ? income * (parseFloat(bonus) || 0) / 100 : (parseFloat(bonus) || 0),
       hasBonusCommission:  hasBonus,
       taxYear:             taxYear,
       taxCode:             taxCode || '1257L',
@@ -262,7 +291,7 @@ export default function IncomeCalculator() {
       benefitsList:        [],
     };
   }, [
-    annualIncome, hasBonus, bonus,
+    annualIncome, hasBonus, bonus, bonusMode,
     pensionEnabled, pensionMode, pensionAmount, pensionScheme,
     hasEmployerMatch, employerMatch,
     taxYear, taxCode, hasStudentLoan, studentLoanPlan,
@@ -363,17 +392,34 @@ export default function IncomeCalculator() {
                 </div>
                 {hasBonus && (
                   <div style={{ marginTop: '12px', position: 'relative' }}>
+                    {/* % / £ mode toggle — % is of the gross annual salary above */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                      <p style={{ fontSize: '12px', color: '#64748b', margin: 0 }}>Input mode</p>
+                      <ModeToggle mode={bonusMode} onChange={changeBonusMode} />
+                    </div>
                     <label style={labelStyle}>Annual Bonus Amount</label>
                     <div style={{ position: 'relative' }}>
-                      <span style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: '#bbcabf', fontWeight: 700, fontFamily: 'Manrope, sans-serif', pointerEvents: 'none' }}>£</span>
+                      {bonusMode === 'amount' && (
+                        <span style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: '#bbcabf', fontWeight: 700, fontFamily: 'Manrope, sans-serif', pointerEvents: 'none' }}>£</span>
+                      )}
                       <input
                         type="number"
                         value={bonus}
                         onChange={e => setBonus(e.target.value)}
-                        placeholder="0"
-                        style={{ ...inputStyle, paddingLeft: '30px' }}
+                        placeholder={bonusMode === 'percentage' ? '10' : '0'}
+                        style={{ ...inputStyle, paddingLeft: bonusMode === 'amount' ? '30px' : '16px', paddingRight: bonusMode === 'percentage' ? '40px' : '16px' }}
                       />
+                      {bonusMode === 'percentage' && (
+                        <span style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', color: '#ffb95f', fontWeight: 700, fontFamily: 'Manrope, sans-serif', pointerEvents: 'none' }}>%</span>
+                      )}
                     </div>
+                    {income > 0 && (parseFloat(bonus) || 0) > 0 && (
+                      <p style={{ fontSize: '11px', color: '#64748b', margin: '6px 0 0' }}>
+                        {bonusMode === 'percentage'
+                          ? `${fmt(income * (parseFloat(bonus) || 0) / 100)} / year bonus`
+                          : `${((parseFloat(bonus) || 0) / income * 100).toFixed(1)}% of salary`}
+                      </p>
+                    )}
                   </div>
                 )}
               </div>
@@ -394,7 +440,7 @@ export default function IncomeCalculator() {
                   {/* % / £ mode toggle — applies to both fields */}
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
                     <p style={{ fontSize: '12px', color: '#64748b', margin: 0 }}>Input mode</p>
-                    <ModeToggle mode={pensionMode} onChange={setPensionMode} />
+                    <ModeToggle mode={pensionMode} onChange={changePensionMode} />
                   </div>
 
                   {/* Pension Amount */}
@@ -462,7 +508,7 @@ export default function IncomeCalculator() {
                             style={{ ...inputStyle, paddingLeft: pensionMode === 'amount' ? '30px' : '16px', paddingRight: pensionMode === 'percentage' ? '40px' : '16px' }}
                           />
                           {pensionMode === 'percentage' && (
-                            <span style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', color: '#4edea3', fontWeight: 700, fontFamily: 'Manrope, sans-serif', pointerEvents: 'none' }}>%</span>
+                            <span style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', color: '#ffb95f', fontWeight: 700, fontFamily: 'Manrope, sans-serif', pointerEvents: 'none' }}>%</span>
                           )}
                         </div>
                         {income > 0 && (parseFloat(employerMatch) || 0) > 0 && (
@@ -593,7 +639,7 @@ export default function IncomeCalculator() {
             <button
               onClick={() => {
                 setAnnualIncome(String(seedSalary));
-                setHasBonus(false); setBonus('');
+                setHasBonus(false); setBonus(''); setBonusMode('percentage');
                 setPensionEnabled(true); setPensionMode('percentage');
                 setPensionAmount('5'); setPensionScheme('salary_sacrifice');
                 setHasEmployerMatch(true); setEmployerMatch('3');

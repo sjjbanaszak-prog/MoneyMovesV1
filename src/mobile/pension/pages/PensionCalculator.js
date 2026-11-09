@@ -145,7 +145,8 @@ export default function PensionCalculator() {
       }
       const calcInputs = {
         annualIncome:        income,
-        bonusAmount:         parseFloat(p.bonus) || 0,
+        // Bonus may be saved as £ or as a % of salary (bonusMode)
+        bonusAmount:         p.bonusMode === 'percentage' ? income * (parseFloat(p.bonus) || 0) / 100 : (parseFloat(p.bonus) || 0),
         hasBonusCommission:  p.hasBonus || false,
         taxYear:             p.taxYear || '2026/27',
         taxCode:             p.taxCode || '1257L',
